@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import base64
 import html
+import os
+import secrets
 import sys
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -34,8 +37,12 @@ from app.leads.lead_manager import (
 from Sayyed_EdVantage_Lead_Manager_FOLLOWUPS import followups_page
 
 
-HOST = "127.0.0.1"
-PORT = 8000
+HOST = os.environ.get("SE_CRM_HOST", "127.0.0.1")
+PORT = int(os.environ.get("PORT", os.environ.get("SE_CRM_PORT", "8000")))
+# Optional HTTP Basic Auth: active only when BOTH SE_CRM_USER and
+# SE_CRM_PASSWORD are set (Railway sets them; local runs stay open).
+CRM_USER = os.environ.get("SE_CRM_USER", "")
+CRM_PASSWORD = os.environ.get("SE_CRM_PASSWORD", "")
 
 STATUSES = [
     "New",
@@ -1294,6 +1301,31 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print(f"[CRM] {self.address_string()} - {fmt % args}")
 
+    def _auth_ok(self):
+        if not CRM_USER or not CRM_PASSWORD:
+            return True
+        auth = self.headers.get("Authorization", "")
+        if not auth.startswith("Basic "):
+            return False
+        try:
+            decoded = base64.b64decode(auth[6:].strip()).decode("utf-8")
+        except Exception:
+            return False
+        user, sep, password = decoded.partition(":")
+        return sep == ":" and secrets.compare_digest(user, CRM_USER) and secrets.compare_digest(password, CRM_PASSWORD)
+
+    def _require_auth(self):
+        if self._auth_ok():
+            return True
+        body = b"Authentication required."
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="Sayyed EdVantage CRM"')
+        self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+        return False
+
     def send_html(self, content, status=200):
         data = content.encode("utf-8")
         self.send_response(status)
@@ -1308,6 +1340,8 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        if not self._require_auth():
+            return
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
 
@@ -1368,6 +1402,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_html("<h1>404 - Not Found</h1>", 404)
 
     def do_POST(self):
+        if not self._require_auth():
+            return
         parsed = urlparse(self.path)
 
         if parsed.path == "/follow-up-action":

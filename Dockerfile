@@ -17,4 +17,4 @@ EXPOSE 8000
 
 # Default: run the CRM dashboard. The AI Agent API is started separately
 # (see docker-compose.yml) or via: uvicorn app.main:app --host 0.0.0.0 --port 8001
-CMD ["python", "Sayyed_EdVantage_CRM_BATCH1.py"]
+CMD ["python", "Sayyed_EdVantage_Lead_Manager_Batch1_FINAL_FIXED.py"]
