@@ -3,7 +3,7 @@ import os
 import secrets
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Path, Request
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel, Field
 
@@ -78,6 +78,68 @@ class HealthResponse(BaseModel):
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse(status="ok", service="sayyed-edvantage-agent")
+
+
+PRIVACY_HTML = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy &ndash; Sayyed EdVantage</title>
+<style>
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:760px;margin:2rem auto;padding:0 1.25rem;line-height:1.65;color:#1a1a2e}
+h1{color:#0f1f4b}h2{color:#0f1f4b;margin-top:2rem}
+</style>
+</head>
+<body>
+<h1>Privacy Policy &ndash; Sayyed EdVantage</h1>
+<p><em>Effective: 26 September 2026</em></p>
+
+<h2>Who we are</h2>
+<p>Sayyed EdVantage (&ldquo;Empowering Students for Success&rdquo;) provides training
+and counselling for courses including Data Science, Artificial Intelligence, Generative AI,
+Python Programming, Data Analytics, Linux, DevOps, Cyber Security and Ethical Hacking.<br>
+Contact: <a href="mailto:sayyededvantage@gmail.com">sayyededvantage@gmail.com</a> &middot; +91 7977877884</p>
+
+<h2>Data we collect via WhatsApp</h2>
+<p>When you message us on WhatsApp we collect your phone number, the messages you send,
+and basic delivery metadata. If you share your name, email address, or course interests,
+we store those so we can counsel you about our programs.</p>
+
+<h2>How we use it</h2>
+<p>We use this data to respond to your queries (including through an AI assistant),
+share course information and fees, follow up on admissions, and improve our services.
+We do not sell your personal data.</p>
+
+<h2>Sharing</h2>
+<p>We share data only with providers needed to operate this service: Meta/WhatsApp
+for message delivery and OpenAI for generating AI replies. We do not share your data
+with advertisers.</p>
+
+<h2>Retention</h2>
+<p>Conversation records are kept while you are an active prospect or student, and
+deleted on request.</p>
+
+<h2>Your rights</h2>
+<p>You may ask for a copy, correction, or deletion of your data at any time by writing
+to <a href="mailto:sayyededvantage@gmail.com">sayyededvantage@gmail.com</a>.
+To stop receiving WhatsApp messages from us, simply reply asking us to stop.</p>
+
+<h2>Security</h2>
+<p>We apply reasonable safeguards to protect your data. No method of transmission
+or storage is completely secure.</p>
+
+<h2>Changes</h2>
+<p>We may update this policy from time to time. The current version is always
+available at this page.</p>
+</body>
+</html>
+"""
+
+
+@app.get("/privacy", response_class=HTMLResponse)
+def privacy_policy() -> HTMLResponse:
+    return HTMLResponse(PRIVACY_HTML)
 
 
 @app.post(
