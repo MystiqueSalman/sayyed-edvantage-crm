@@ -1,12 +1,18 @@
+import logging
 import os
 import secrets
 
-from fastapi import Depends, FastAPI, HTTPException, Path
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Path, Request
+from fastapi.responses import PlainTextResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel, Field
 
+from app import whatsapp
 from app.ai.agent import ask_agent
 from app.ai.memory import clear_memory
+
+
+logger = logging.getLogger("sayyed_edvantage.api")
 
 
 app = FastAPI(
@@ -105,3 +111,54 @@ def reset_chat(
     ),
 ) -> None:
     clear_memory(session_id)
+
+
+# ---------------------------------------------------------------------------
+# WhatsApp Cloud API webhook.
+#
+# Meta calls these endpoints directly, so they intentionally do NOT use the
+# HTTP Basic Auth above (Meta cannot send custom auth headers). Protection
+# comes from the URL itself: configure Meta's callback URL as
+#   https://<host>/webhook/<WHATSAPP_VERIFY_TOKEN>
+# so only someone who knows the secret token can reach these routes.
+# ---------------------------------------------------------------------------
+
+_seen_whatsapp_ids: set[str] = set()
+
+
+@app.get("/webhook/{path_token}")
+def whatsapp_verify(path_token: str, request: Request):
+    if not whatsapp.check_path_token(path_token):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    mode = request.query_params.get("hub.mode")
+    token = request.query_params.get("hub.verify_token", "")
+    challenge = request.query_params.get("hub.challenge", "")
+    expected = os.environ.get("WHATSAPP_VERIFY_TOKEN", "")
+    if mode == "subscribe" and expected and secrets.compare_digest(token, expected):
+        return PlainTextResponse(challenge)
+    raise HTTPException(status_code=403, detail="Verification failed")
+
+
+@app.post("/webhook/{path_token}")
+async def whatsapp_incoming(
+    path_token: str, request: Request, background_tasks: BackgroundTasks
+):
+    if not whatsapp.check_path_token(path_token):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+    if not whatsapp.is_configured():
+        logger.warning("WhatsApp webhook hit but WHATSAPP_* env vars are not set")
+        return {"status": "ignored_not_configured"}
+    for sender, text, msg_id in whatsapp.extract_text_messages(payload):
+        if msg_id:
+            if msg_id in _seen_whatsapp_ids:
+                continue  # Meta retried a delivery; don't answer twice.
+            _seen_whatsapp_ids.add(msg_id)
+            if len(_seen_whatsapp_ids) > 10000:
+                _seen_whatsapp_ids.clear()
+        # Answer in the background so Meta gets its HTTP 200 immediately.
+        background_tasks.add_task(whatsapp.process_incoming, sender, text)
+    return {"status": "ok"}
