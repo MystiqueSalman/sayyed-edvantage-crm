@@ -1,4 +1,8 @@
-from fastapi import FastAPI, HTTPException, Path
+import os
+import secrets
+
+from fastapi import Depends, FastAPI, HTTPException, Path
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel, Field
 
 from app.ai.agent import ask_agent
@@ -10,6 +14,39 @@ app = FastAPI(
     version="1.0.0",
     description="CRM-aware education counselling agent for Sayyed EdVantage.",
 )
+
+
+# HTTP Basic Auth for the /api/* endpoints. Uses the same credentials as the
+# CRM dashboard (SE_CRM_USER / SE_CRM_PASSWORD). /health stays open so the
+# hosting platform's healthcheck keeps working.
+security = HTTPBasic(auto_error=False)
+
+
+def _api_user() -> str:
+    return os.environ.get("SE_CRM_USER", "")
+
+
+def _api_password() -> str:
+    return os.environ.get("SE_CRM_PASSWORD", "")
+
+
+def require_auth(
+    credentials: HTTPBasicCredentials | None = Depends(security),
+) -> None:
+    expected_user = _api_user()
+    expected_password = _api_password()
+    if not expected_user or not expected_password:
+        # Fail closed: never serve the API without credentials configured.
+        raise HTTPException(status_code=503, detail="API auth not configured")
+    if credentials is None or not (
+        secrets.compare_digest(credentials.username, expected_user)
+        and secrets.compare_digest(credentials.password, expected_password)
+    ):
+        raise HTTPException(
+            status_code=401,
+            detail="Unauthorized",
+            headers={"WWW-Authenticate": "Basic"},
+        )
 
 
 class ChatRequest(BaseModel):
@@ -37,7 +74,11 @@ def health() -> HealthResponse:
     return HealthResponse(status="ok", service="sayyed-edvantage-agent")
 
 
-@app.post("/api/chat", response_model=ChatResponse)
+@app.post(
+    "/api/chat",
+    response_model=ChatResponse,
+    dependencies=[Depends(require_auth)],
+)
 def chat(request: ChatRequest) -> ChatResponse:
     message = request.message.strip()
     if not message:
@@ -51,7 +92,11 @@ def chat(request: ChatRequest) -> ChatResponse:
     return ChatResponse(session_id=request.session_id, response=response)
 
 
-@app.delete("/api/chat/{session_id}", status_code=204)
+@app.delete(
+    "/api/chat/{session_id}",
+    status_code=204,
+    dependencies=[Depends(require_auth)],
+)
 def reset_chat(
     session_id: str = Path(
         min_length=1,
