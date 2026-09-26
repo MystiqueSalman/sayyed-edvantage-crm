@@ -1,0 +1,630 @@
+{
+  "student_test_02": [
+    {
+      "role": "user",
+      "content": "My son is 17 years old and has completed 12th Science."
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you. Since your son is 17 and has completed 12th Science, he can explore several paths, including Artificial Intelligence, Data Science, software development, cloud computing, and other technical fields.\n\nTo recommend the right course, could you tell me:\n\n1. Did he study Mathematics in 12th?\n2. What interests him most—coding, AI, data, computers, engineering, or something else?\n3. Is he looking for a degree, a job-oriented certification, or short-term skill development?"
+    },
+    {
+      "role": "user",
+      "content": "Which course would be suitable for him?"
+    },
+    {
+      "role": "assistant",
+      "content": "Since your son is 17 and has completed 12th Science, several technical paths could suit him. The best option depends mainly on his Mathematics background and interests:\n\n- **Artificial Intelligence / Machine Learning** — suitable if he enjoys mathematics, logical thinking, and coding.\n- **Data Science / Data Analytics** — good if he likes working with numbers, patterns, and problem-solving.\n- **Software Development** — ideal if he is interested in coding, websites, mobile apps, or building software.\n- **Cloud Computing / DevOps** — suitable if he likes computer systems, networks, and technical infrastructure.\n- **Beginner Python Programming** — a good starting point if he is interested in technology but has no coding experience yet.\n\nTo recommend one specific course, please tell me just two things:\n\n1. Did he study Mathematics in 12th?\n2. What interests him more: coding, AI, data, apps/websites, or computer systems?\n\nAlso, is he seeking a degree pathway or a shorter job-oriented skill course?"
+    }
+  ],
+  "test_courses": [
+    {
+      "role": "user",
+      "content": "What courses do you offer?"
+    },
+    {
+      "role": "assistant",
+      "content": "Sayyed EdVantage currently offers training options in these areas:\n\n- **Data Science** — Python, machine learning, deep learning, SQL, visualization and projects. **Fee: ₹50,000**\n- **Data Analytics** — Advanced Excel, SQL, Power BI, Tableau, statistics and dashboards. **Fee: ₹40,000**\n- **Combined Data Science and Data Analytics program** — Includes major projects, a capstone project and career preparation. **Fee: ₹80,000**\n- **Linux System Administration** — Linux fundamentals, networking, shell scripting, backup and recovery. **Fee: ₹25,000**\n- **DevOps** — Jenkins, Docker, Kubernetes, Terraform, Ansible and cloud basics. **Fee: ₹45,000**\n- **Combined Linux and DevOps program** — Includes major projects, a capstone project and career preparation. **Fee: ₹60,000**\n- **Artificial Intelligence** — Machine learning, deep learning, natural language processing and computer vision. **Fee: ₹50,000**\n- **Generative AI** — Prompt engineering, large language models, chatbots, RAG and AI agents. **Fee: ₹30,000**\n- **Combined AI and Generative AI program** — Includes major projects, a capstone project and career preparation. **Fee: ₹70,000**\n- **Python Programming** — Fundamentals, data structures, object-oriented programming, file handling and mini-projects. **Fee: ₹30,000**\n\nThe official course titles, duration, eligibility, learning mode and GST applicability are not listed in the current information, so the admissions team should confirm those details.\n\nWhich area interests you most—data, AI, Python, Linux or DevOps? Also, what is your current education or work background?"
+    }
+  ],
+  "test_spanish": [
+    {
+      "role": "user",
+      "content": "Mi hijo ha terminado el grado 12 y quiere estudiar Ciencia de Datos, pero no sabe Python. ¿Puede hacer este curso?"
+    },
+    {
+      "role": "assistant",
+      "content": "Sí, en principio puede estudiar Ciencia de Datos aunque todavía no sepa Python. El programa incluye **Python Programming** desde el plan de estudios, además de Machine Learning, Deep Learning, SQL, análisis y visualización de datos, proyectos reales y preparación para entrevistas.\n\nHaber terminado el grado 12 es un buen punto de partida. Sin embargo, como la elegibilidad oficial y la duración no están especificadas, conviene confirmarlas con el equipo de admisiones de Sayyed EdVantage. También ayudaría saber si estudió **Matemáticas o Estadística** en el grado 12, ya que estas materias facilitan el aprendizaje de Ciencia de Datos.\n\n¿Qué rama o asignaturas cursó en grado 12?"
+    }
+  ],
+  "test_french": [
+    {
+      "role": "user",
+      "content": "Mon fils a terminé ses études secondaires et souhaite étudier la science des données, mais il ne connaît pas Python. Peut-il suivre ce cours ?"
+    },
+    {
+      "role": "assistant",
+      "content": "Oui, il peut envisager la science des données même s’il ne connaît pas encore Python. Le programme de Sayyed EdVantage comprend notamment **Python, l’analyse de données, SQL, le machine learning, le deep learning, la visualisation et des projets pratiques**.\n\nPour un débutant, il faudra toutefois apprendre d’abord les bases de Python et consolider progressivement les mathématiques et les statistiques. L’éligibilité exacte après les études secondaires n’étant pas précisée, elle devra être confirmée avec l’équipe des admissions.\n\nPour mieux l’orienter, quelle était sa filière au secondaire, et avait-il des mathématiques parmi ses matières ?"
+    }
+  ],
+  "test_no_lead": [
+    {
+      "role": "user",
+      "content": "What is the fee for Data Science?"
+    },
+    {
+      "role": "assistant",
+      "content": "The listed fee for the Sayyed EdVantage Data Science program is **₹50,000**. GST applicability, payment options, and the latest fee details should be confirmed with the admissions team."
+    }
+  ],
+  "test_admission_01": [
+    {
+      "role": "user",
+      "content": "I want to take admission for Data Science. My name is Test Student and my phone number is 9999999999. I am from India and I have completed 12th Science."
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you, Test Student. I’ve noted your interest in admission to the Data Science program, along with your Indian location, 12th Science qualification, and phone number ending in 9999.\n\nThe listed course fee is ₹50,000. It covers Python Programming, Machine Learning, Deep Learning, SQL and Databases, Data Analysis and Visualization, real-world projects, and interview preparation. GST applicability, eligibility, duration, learning mode, and current batch availability need confirmation from the Sayyed EdVantage admissions team.\n\nTo continue your admission enquiry, please share your email address.\n\nYour admission enquiry has been registered successfully. Your enquiry ID is SE-00001. Our admissions team can use this ID to assist you further."
+    }
+  ],
+  "test_spanish_admission": [
+    {
+      "role": "user",
+      "content": "Hola, quiero inscribirme en el curso de Ciencia de Datos. Mi nombre es Carlos Garcia, mi número es 600123456, vivo en España y he terminado el bachillerato."
+    },
+    {
+      "role": "assistant",
+      "content": "¡Hola, Carlos! Gracias por tu interés en inscribirte en el programa orientado a Ciencia de Datos de Sayyed EdVantage.\n\nTengo estos datos:\n- Nombre: Carlos Garcia\n- País: España\n- Estudios: Bachillerato finalizado\n- Teléfono: 600123456\n\nEl programa incluye Python, Machine Learning, Deep Learning, SQL, análisis y visualización de datos, proyectos prácticos y preparación para entrevistas. La elegibilidad definitiva, duración, modalidad, moneda de la tarifa y horarios deben confirmarse con el equipo de admisiones.\n\nPara avanzar con tu solicitud, ¿puedes indicarme tu correo electrónico y confirmar si tu teléfono completo es **+34 600 123 456**?\n\nYour admission enquiry has been registered successfully. Your enquiry ID is SE-00002. Our admissions team can use this ID to assist you further."
+    }
+  ],
+  "test_french_admission": [
+    {
+      "role": "user",
+      "content": "Bonjour, je souhaite m’inscrire au cours de Data Science. Je m’appelle Jean Dupont, mon numéro est 0612345678, je vis en France et j’ai terminé mes études secondaires."
+    },
+    {
+      "role": "assistant",
+      "content": "Bonjour Jean, merci pour votre intérêt. J’ai bien noté que vous vivez en France, avez terminé vos études secondaires et souhaitez vous inscrire au programme orienté Data Science.\n\nLe programme couvre notamment Python, le Machine Learning, le Deep Learning, SQL, l’analyse et la visualisation de données, des projets pratiques et la préparation aux entretiens. Le tarif indiqué est de **50 000** ; la devise, les taxes éventuelles, la durée, le mode d’apprentissage et votre admissibilité doivent être confirmés par l’équipe des admissions.\n\nPour poursuivre votre demande, quelle est votre adresse e-mail ?\n\nYour admission enquiry has been registered successfully. Your enquiry ID is SE-00003. Our admissions team can use this ID to assist you further."
+    }
+  ],
+  "test_international_usa_ds": [
+    {
+      "role": "user",
+      "content": "Hi, I am from USA and I want to join Data Science. What will be my international fee?"
+    },
+    {
+      "role": "assistant",
+      "content": "Hi! For students from the USA, the **Data Science** international fee is:\n\n- Base fee: **₹200,000**\n- International student discount: **25%**\n- Final fee after discount: **₹150,000 plus applicable GST**\n- Approximate equivalent: **USD 1,567.50 plus applicable GST**\n\nThe discount is already included. Since exchange rates may change, the admissions team will confirm the final payable amount and payment instructions.\n\nAs you’re interested in joining, may I know your name to help you with the next admission step?"
+    }
+  ],
+  "test_international_germany_da": [
+    {
+      "role": "user",
+      "content": "Hello, I am from Germany and I want to join Data Analytics. What will be my international fee?"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! For students from Germany, the international fee for the **Data Analytics** program is:\n\n- Base fee: ₹160,000  \n- International student discount: 25%  \n- Final fee after discount: **₹120,000 + applicable GST**  \n- Approximate value: **€1,083.12 + applicable GST**\n\nThe discount is already included, so no additional discount should be deducted. As exchange rates may change, the final payable amount and payment instructions should be confirmed with the Sayyed EdVantage admissions team.\n\nSince you’d like to join, may I know your name to help you with the next admission step?"
+    }
+  ],
+  "test_international_dubai_ai": [
+    {
+      "role": "user",
+      "content": "Hello, I am from Dubai and I want to join Artificial Intelligence. What will be my international fee?"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! Since you’re from Dubai, the international fee for the **Artificial Intelligence (AI)** Professional Program is:\n\n- Base fee: ₹200,000  \n- International student discount: 25%  \n- Final fee: **₹150,000 + applicable GST**  \n- Approximate amount in Dubai: **AED 5,756.55 + applicable GST**\n\nThe international discount is already included. The AED amount is approximate because exchange rates can change; the admissions team will confirm the final payable amount and payment instructions.\n\nSince you’d like to join, may I have your name to help you with the next admission step?"
+    }
+  ],
+  "test_india_ds": [
+    {
+      "role": "user",
+      "content": "Hello, I am from India and I want to join Data Science. What is the course fee?"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! The **Data Science** course fee for students in India is **₹50,000 plus applicable GST**.\n\nSince you’d like to join, may I know your **name and highest educational qualification**? I’ll guide you with the next admission step."
+    }
+  ],
+  "test_eligibility_usa_ds": [
+    {
+      "role": "user",
+      "content": "I am from USA. I completed 12th grade and I want to join Data Science, but I do not know Python. Can I join the course?"
+    },
+    {
+      "role": "assistant",
+      "content": "Yes, you can apply for the **Data Science** Professional Program even if you do not currently know Python. The course includes **Python Programming**, followed by Machine Learning, Deep Learning, SQL and Databases, Data Analysis and Visualization, real-world projects, and interview preparation.\n\nSince you have completed 12th grade, your exact eligibility should be confirmed by the Sayyed EdVantage admissions team. A mathematics or statistics background can be helpful, but I would first like to understand your academic background.\n\nFor a student from the USA, the configured international fee after the 25% international discount is **₹150,000 plus applicable GST**, approximately **USD 1,567.50 plus applicable taxes**. The final payable amount and payment instructions should be confirmed by admissions.\n\nWhich subjects did you study in 12th grade, and did you have Mathematics?"
+    }
+  ],
+  "test_ready_admission_usa_ds": [
+    {
+      "role": "user",
+      "content": "I am from USA, my name is John Smith, I completed 12th grade with Mathematics, and I want to join Data Science. I want to proceed with admission. My phone is 1234567890."
+    },
+    {
+      "role": "assistant",
+      "content": "Hi John, thank you for choosing Sayyed EdVantage. Your 12th-grade Mathematics background provides a useful foundation for the **Data Science** Professional Program. Formal eligibility will be confirmed by our admissions team.\n\nThe program covers Python Programming, Machine Learning, Deep Learning, SQL and Databases, Data Analysis and Visualization, real-world projects, and interview preparation.\n\nFor a student from the USA:\n\n- International fee after the configured 25% discount: **₹150,000**\n- Approximate equivalent: **USD 1,567.50**\n- **GST is applicable**\n- The discount has already been applied\n\nThe final payable amount, payment instructions, course duration, learning mode, and current batch schedule should be confirmed by the admissions team.\n\nI have your name, country, education, course interest, and phone number. To continue your admission enquiry, please share your **email address**.\n\nYour admission enquiry has been registered successfully. Your enquiry ID is SE-00004. Our admissions team can use this ID to assist you further."
+    },
+    {
+      "role": "user",
+      "content": "My email address is john.smith@example.com. Please add it to my admission enquiry and continue with the admission process."
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you, John. Your email address, **john.smith@example.com**, has been added to admission enquiry **SE-00004** for the **Data Science** Professional Program.\n\nThe admissions team will need to confirm your formal eligibility, learning mode, duration, current batch schedule, GST-inclusive final amount, and payment instructions.\n\nTo arrange the next step, please share your **preferred contact method—phone or email—and a convenient time with your USA time zone**.\n\nYour admission enquiry has been registered successfully. Your enquiry ID is SE-00005. Our admissions team can use this ID to assist you further."
+    }
+  ],
+  "returning_student_test": [
+    {
+      "role": "user",
+      "content": "My name is Duplicate Test Student. My phone is 9876543210 and my email is duplicate@test.com. I want to continue with my Data Science admission."
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you, Duplicate Test Student. I’ve noted your interest in continuing with the **Data Science** admission, along with your phone number and email address.\n\nTo guide you with the correct fee and next admission step, which country are you currently living or studying in?\n\nYour existing admission enquiry has been updated successfully. Your enquiry ID remains SE-00006. Our admissions team can continue assisting you using this ID."
+    }
+  ],
+  "test_returning_student_profile": [
+    {
+      "role": "user",
+      "content": "My name is Duplicate Test Student. I want to continue my Data Science admission. My phone is 9876543210 and my email is duplicate@test.com."
+    },
+    {
+      "role": "assistant",
+      "content": "Welcome back, Duplicate Test Student. We’ll continue with your existing **Data Science** admission enquiry, **SE-00006**. Your contact details, USA location, and 12th Grade with Mathematics education are already recorded.\n\nThe configured international fee is **₹150,000 plus applicable GST**, approximately **USD 1,567.50 plus applicable GST**. The international discount is already included. The admissions team will confirm the final payable amount, learning schedule, availability, and payment instructions.\n\nWould you prefer the admissions team to contact you by **phone or email**?\n\nYour admission enquiry has been registered successfully. Your enquiry ID is SE-00006. Our admissions team can use this ID to assist you further."
+    }
+  ],
+  "LIVE_LT01": [
+    {
+      "role": "user",
+      "content": "Hello, I want to know about your courses."
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! Welcome to **Sayyed EdVantage — Empowering Students for Success.**\n\nWe currently offer these programs:\n\n- **Data & AI:** Data Science, Data Analytics, Data Science + Data Analytics Combo  \n- **Artificial Intelligence:** Artificial Intelligence (AI), Generative AI (Gen AI), AI + Gen AI Combo  \n- **Programming:** Python Programming  \n- **Infrastructure & DevOps:** Linux Administration, DevOps Professional, Linux + DevOps Combo  \n\nTo help you choose the right course, please tell me your **current education or work background** and your **career goal or area of interest**."
+    }
+  ],
+  "LIVE_TEST_001": [
+    {
+      "role": "user",
+      "content": "Hello, I want to know about your courses."
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! Sayyed EdVantage currently offers the **Data Science – Professional Program**.\n\nIt is designed for learners interested in data analysis, statistics, programming, and building a career in Data Science. The verified fee for students in India is **₹50,000**; applicable taxes and payment details should be confirmed with admissions. International pricing is currently available only on request.\n\nTo guide you properly, could you share your current education level and what career or skill you’re interested in?"
+    }
+  ],
+  "LIVE_TEST_INDIA_FEE": [
+    {
+      "role": "user",
+      "content": "I am from India and interested in Data Science. What is the fee?"
+    },
+    {
+      "role": "assistant",
+      "content": "The fee for Sayyed EdVantage’s **Data Science – Professional Program** in India is **₹50,000**. Applicable taxes and final payment details should be confirmed with the admissions team.\n\nWould you also like guidance on eligibility and prerequisites?"
+    }
+  ],
+  "LIVE_TEST_USA_FEE": [
+    {
+      "role": "user",
+      "content": "I am from the USA and interested in Data Science. What is the fee?"
+    },
+    {
+      "role": "assistant",
+      "content": "For students in the USA, the fee for the **Data Science – Professional Program** is **₹150,000** after the configured 25% international student discount. This is approximately **USD 1,567.80** at the current configured exchange rate.\n\nThe discount is already included, so no additional discount applies. The final payable amount and payment instructions should be confirmed with the Sayyed EdVantage admissions team."
+    }
+  ],
+  "LIVE_MEMORY_001": [
+    {
+      "role": "user",
+      "content": "My name is Salman and I am interested in Data Science."
+    },
+    {
+      "role": "assistant",
+      "content": "Hi Salman, great to hear that you’re interested in Sayyed EdVantage’s **Data Science – Professional Program**.\n\nTo guide you on suitability and the admission process, what is your current or highest education qualification? Also, do you have any previous programming or Python experience? Beginners are welcome to share that they’re starting from scratch."
+    },
+    {
+      "role": "user",
+      "content": "What course did I say I was interested in?"
+    },
+    {
+      "role": "assistant",
+      "content": "You said you were interested in the **Data Science – Professional Program**."
+    }
+  ],
+  "LIVE_CRM_001": [
+    {
+      "role": "user",
+      "content": "I want to continue my counselling."
+    },
+    {
+      "role": "assistant",
+      "content": "Of course, we can continue. I don’t have your earlier counselling details in this chat, so please briefly tell me where we left off—such as the course discussed or your last question."
+    },
+    {
+      "role": "user",
+      "content": "I am continuing counselling for lead SE-00001."
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you. I’ve noted your lead reference **SE-00001**. What would you like to continue with—course counselling, fees, eligibility, or the admission process?"
+    },
+    {
+      "role": "user",
+      "content": "What do you already know about me?"
+    },
+    {
+      "role": "assistant",
+      "content": "So far, I only know that:\n\n- You’re continuing counselling with Sayyed EdVantage.\n- Your lead reference is **SE-00001**.\n\nI don’t currently have access to any other profile details, such as your name, education, country, or course preference. You can tell me where your earlier counselling stopped, and we’ll continue from there."
+    },
+    {
+      "role": "user",
+      "content": "I am continuing counselling for lead SE-00001."
+    },
+    {
+      "role": "assistant",
+      "content": "Welcome back, Test Student. We can continue your counselling for **Data Science – Professional Program** under lead **SE-00001**.\n\nI have your education as **completed 12th Science**, your country as **India**, and the course fee is **₹50,000**. Applicable taxes and final payment details should be confirmed by the admissions team.\n\nWould you like to discuss your suitability for the course or proceed with the next admission step?"
+    },
+    {
+      "role": "user",
+      "content": "What do you already know about me?"
+    },
+    {
+      "role": "assistant",
+      "content": "Here’s what I currently know about you:\n\n- **Name:** Test Student  \n- **Lead reference:** SE-00001  \n- **Country:** India  \n- **Preferred language:** English  \n- **Education:** Completed 12th Science  \n- **Course interest:** Data Science  \n- **Admission status:** Interested in joining  \n- **Phone number:** Already available in your profile  \n\nThe relevant Sayyed EdVantage course is **Data Science – Professional Program**, with an Indian fee of **₹50,000**. Applicable taxes and final payment details need confirmation from the admissions team."
+    }
+  ],
+  "LIVE_TEST_001_CONTROLLED": [
+    {
+      "role": "user",
+      "content": "Hello"
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! Welcome to Sayyed EdVantage. How can I help you today—are you looking for course guidance, fee information, or admission support?"
+    },
+    {
+      "role": "user",
+      "content": "Tell me about the Data Science Professional Program."
+    },
+    {
+      "role": "assistant",
+      "content": "The **Data Science – Professional Program** is an active Sayyed EdVantage course designed for learners interested in data science as a professional skill or career path.\n\nData science generally involves using data to identify patterns, generate insights, and support better decisions. It often includes areas such as programming, statistics, data analysis, and machine learning. However, the program’s exact modules, duration, eligibility, learning mode, certification, and batch schedule are not currently listed in the available course information, so these should be confirmed with the admissions team.\n\n**Fee for students in India:** ₹50,000. Applicable taxes and payment details should be confirmed with admissions. International pricing is not currently available and should not be estimated from the Indian fee.\n\nWould you like to know whether this program suits your education and career goals, or are you interested in admission details?"
+    },
+    {
+      "role": "user",
+      "content": "I am an Indian student. What is the fee for Data Science?"
+    },
+    {
+      "role": "assistant",
+      "content": "The fee for the **Data Science – Professional Program** in India is **₹50,000**. Applicable taxes and payment details should be confirmed with the Sayyed EdVantage admissions team."
+    },
+    {
+      "role": "user",
+      "content": "I am an international student. What is the fee for Data Science?"
+    },
+    {
+      "role": "assistant",
+      "content": "You previously mentioned that you were an Indian student, but now you’ve said you’re an international student. If you are applying under the **international student category**, the fee for the **Data Science – Professional Program** is not currently available and must be confirmed by admissions; the Indian fee cannot be applied or converted.\n\nWhich country are you currently applying from?"
+    },
+    {
+      "role": "user",
+      "content": "I am a beginner. What are the eligibility requirements for Data Science?"
+    },
+    {
+      "role": "assistant",
+      "content": "Beginners may be able to learn Data Science, but the official eligibility and prerequisites for the **Data Science – Professional Program** are not listed in the available course information, so admissions must confirm them.\n\nIn general, basic mathematics, logical thinking, and computer familiarity are helpful. Prior Python or Data Science experience is not always necessary for beginner-level learning, but I cannot confirm whether this particular program starts from the basics.\n\nWhat is your highest education level and stream? I can then tell you whether Data Science is likely to suit your background."
+    },
+    {
+      "role": "user",
+      "content": "Which course should I choose?"
+    },
+    {
+      "role": "assistant",
+      "content": "Since you’re a beginner interested in Data Science, the **Data Science – Professional Program** is the relevant Sayyed EdVantage option currently available. However, I need your **highest education level and stream** to judge whether it is the right fit for you.\n\nFor example: 12th Science, 12th Commerce, diploma, graduate, or working professional."
+    },
+    {
+      "role": "user",
+      "content": "I want to continue my counselling."
+    },
+    {
+      "role": "assistant",
+      "content": "Of course. You’re a beginner considering the **Data Science – Professional Program**. To continue and assess whether it suits you, what is your **highest education level and stream**—for example, 12th Science, 12th Commerce, diploma, graduate, or working professional?"
+    },
+    {
+      "role": "user",
+      "content": "The course fee is expensive. Can you explain the options?"
+    },
+    {
+      "role": "assistant",
+      "content": "I understand—₹50,000 for the **Data Science – Professional Program** can feel expensive, especially for a beginner.\n\nPossible options to explore with the Sayyed EdVantage admissions team are:\n\n- Whether installment or flexible payment plans are available  \n- Whether any current scholarship, discount, or promotional offer applies  \n- The exact applicable taxes and final payable amount  \n\nThese options are not confirmed in the available course information, so I don’t want to promise them without admissions verification.\n\nBefore investing, we should also check whether the program matches your background and career goal. What is your highest education level and stream?"
+    },
+    {
+      "role": "user",
+      "content": "Does the Data Science course guarantee a certification?"
+    },
+    {
+      "role": "assistant",
+      "content": "The available information does not confirm whether the **Data Science – Professional Program** includes a certification. Please verify the certification terms with the Sayyed EdVantage admissions team before enrolling.\n\nAlso, certification should not be confused with a guaranteed job or placement; neither is confirmed for this program."
+    },
+    {
+      "role": "user",
+      "content": "Will this course guarantee me a job and salary?"
+    },
+    {
+      "role": "assistant",
+      "content": "No, a job or salary guarantee is **not confirmed** for the **Data Science – Professional Program**. You should not enroll based on an assumption of guaranteed placement or income.\n\nYour job opportunities and salary will depend on factors such as your education, practical skills, project portfolio, interview performance, experience, and the job market. Before enrolling, ask the admissions team to confirm any current placement support in writing.\n\nTo assess your realistic career path as a beginner, what is your highest education level and stream?"
+    },
+    {
+      "role": "user",
+      "content": "What is my lead ID?"
+    },
+    {
+      "role": "assistant",
+      "content": "You don’t have a lead ID yet because no admission enquiry has been created in the available record. I can’t invent one; the actual ID must be generated by the lead-management system when an enquiry is registered."
+    },
+    {
+      "role": "user",
+      "content": "I want to make the payment and enroll."
+    },
+    {
+      "role": "assistant",
+      "content": "Great! We can proceed with your admission enquiry for the **Data Science – Professional Program**.\n\nThe course fee in India is **₹50,000**. Applicable taxes and the final payable amount must be confirmed by the admissions team. Please make payment only through an official Sayyed EdVantage payment link or verified account provided by admissions.\n\nTo begin the enrollment process, what is the **student’s full name**?"
+    },
+    {
+      "role": "user",
+      "content": "Tell me about Quantum Rocket Engineering Professional Program."
+    },
+    {
+      "role": "assistant",
+      "content": "The **Quantum Rocket Engineering Professional Program** is not listed among Sayyed EdVantage’s currently available courses, so I can’t confirm its fee, curriculum, eligibility, duration, or admission status.\n\nThe active course currently listed is the **Data Science – Professional Program**. If you meant a different course name or are looking for guidance on aerospace or rocket engineering, please clarify, and I can provide general educational guidance."
+    }
+  ],
+  "LIVE_TEST_001_MEMORY": [
+    {
+      "role": "user",
+      "content": "I am interested in Data Science."
+    },
+    {
+      "role": "assistant",
+      "content": "Great! Sayyed EdVantage offers the **Data Science – Professional Program**.\n\nTo check whether it’s the right fit for you, could you tell me your **current education or qualification** and whether you have any experience with **mathematics, Python, or programming**? Beginners are welcome to share “no experience” as well."
+    },
+    {
+      "role": "user",
+      "content": "What course did I say I was interested in?"
+    },
+    {
+      "role": "assistant",
+      "content": "You said you were interested in the **Data Science – Professional Program**."
+    }
+  ],
+  "LIVE_TEST_002_DISCOVERY": [
+    {
+      "role": "user",
+      "content": "Hello, I am looking for a course to build my career in technology."
+    },
+    {
+      "role": "assistant",
+      "content": "Hello! I’d be happy to guide you.\n\nSayyed EdVantage currently offers the **Data Science – Professional Program**, which may suit you if you’re interested in working with data, analytics, and technology. Before recommending it, could you share:\n\n1. Your current education or qualification  \n2. Whether you have any coding or mathematics experience  \n3. Which area interests you most—data, software development, AI, cloud, or something else?"
+    },
+    {
+      "role": "user",
+      "content": "I am a beginner and I am interested in data science."
+    },
+    {
+      "role": "assistant",
+      "content": "That’s absolutely fine—data science can be learned from the beginner level. Sayyed EdVantage’s **Data Science – Professional Program** may be suitable, but I’d first like to check your academic background so I can guide you correctly.\n\nWhat is your current or highest qualification, and have you studied mathematics or statistics?"
+    },
+    {
+      "role": "user",
+      "content": "What are the modules and duration?"
+    },
+    {
+      "role": "assistant",
+      "content": "The module list and duration for the **Data Science – Professional Program** are not included in the currently available course information, so I don’t want to guess. Please confirm these details with the Sayyed EdVantage admissions team.\n\nOnce the syllabus is available, I can also explain each module in beginner-friendly language."
+    },
+    {
+      "role": "user",
+      "content": "And what is the fee for me as an Indian student?"
+    },
+    {
+      "role": "assistant",
+      "content": "For you as an Indian student, the fee for the **Data Science – Professional Program** is **₹50,000**. Applicable taxes and final payment details should be confirmed with the Sayyed EdVantage admissions team."
+    },
+    {
+      "role": "user",
+      "content": "The fee is a little high. I am worried about whether I can learn it as a beginner."
+    },
+    {
+      "role": "assistant",
+      "content": "That concern is completely understandable. Being a beginner does not prevent you from learning data science, but the course should start with fundamentals and provide enough practice and support. The current course information does not confirm the modules, prerequisites, duration, or beginner support, so I don’t want to make assumptions.\n\nSince ₹50,000 feels high, you can also ask the admissions team whether any instalment plans, scholarships, or current discounts are available.\n\nTo judge whether the **Data Science – Professional Program** is suitable for you, what is your highest qualification, and have you studied basic mathematics or statistics?"
+    },
+    {
+      "role": "user",
+      "content": "Can you guide me through counselling and the next steps?"
+    },
+    {
+      "role": "assistant",
+      "content": "Absolutely. I’ll guide you step by step without rushing into admission.\n\nFor the **Data Science – Professional Program**, we’ll first:\n\n1. Check whether it suits your academic background and beginner level.  \n2. Ask admissions to confirm the syllabus, duration, prerequisites, learning mode, and beginner support.  \n3. Confirm the final fee details, including applicable taxes, and ask about instalments, scholarships, or discounts, since the ₹50,000 fee is a concern.  \n4. If everything is suitable, proceed with the admission enquiry and enrolment process.\n\nTo begin the counselling, what is your highest qualification, and have you studied basic mathematics or statistics?"
+    },
+    {
+      "role": "user",
+      "content": "Actually, I also want to understand DevOps Professional."
+    },
+    {
+      "role": "assistant",
+      "content": "Certainly. **DevOps** is a technology career path focused on managing software deployment, servers, cloud systems, automation, and collaboration between development and IT operations teams. It commonly involves Linux, cloud platforms, networking, scripting, containers, and deployment tools.\n\nA simple comparison:\n\n- **Data Science** suits you if you enjoy data, mathematics, analysis, predictions, or AI.\n- **DevOps** may suit you if you enjoy systems, cloud infrastructure, troubleshooting, automation, and how applications are deployed and maintained.\n\nHowever, **DevOps Professional is not listed in the current Sayyed EdVantage course catalogue**, so I cannot confirm its syllabus, fee, duration, eligibility, or availability. The admissions team would need to confirm whether it is available.\n\nAs a beginner, which sounds more interesting to you: **analysing data and AI**, or **cloud, servers, and system automation**?"
+    },
+    {
+      "role": "user",
+      "content": "What is the fee for that course in India?"
+    },
+    {
+      "role": "assistant",
+      "content": "If you mean the **DevOps Professional** course, its fee in India is not available in the current Sayyed EdVantage course catalogue. Its availability and latest fee need to be confirmed with the admissions team.\n\nFor comparison, the **Data Science – Professional Program** fee in India is **₹50,000**, with applicable taxes and final payment details to be confirmed by admissions."
+    }
+  ],
+  "DEBUG_C2": [
+    {
+      "role": "user",
+      "content": "Actually, I also want to understand DevOps Professional."
+    },
+    {
+      "role": "assistant",
+      "content": "Certainly. **DevOps Professional** generally teaches how software is built, tested, deployed, and maintained using automation, cloud platforms, Linux, version control, and CI/CD tools. It is usually suitable for learners interested in cloud engineering, system administration, software deployment, or IT infrastructure.\n\nHowever, a **DevOps Professional** course is not currently listed in the available Sayyed EdVantage course catalogue, so I can’t confirm its modules, fee, duration, eligibility, or availability. The admissions team would need to confirm the latest status.\n\nAre you comparing DevOps with **Data Science – Professional Program**, or do you mainly want DevOps career guidance?"
+    },
+    {
+      "role": "user",
+      "content": "What is the fee for that course in India?"
+    },
+    {
+      "role": "assistant",
+      "content": "If you mean the **DevOps Professional** course, its India fee is not available in the current Sayyed EdVantage catalogue. The admissions team would need to confirm its availability and latest fee.\n\nFor comparison, the **Data Science – Professional Program** fee in India is **₹50,000**, with applicable taxes and details to be confirmed by admissions."
+    }
+  ],
+  "LIVE_TEST_I06": [
+    {
+      "role": "user",
+      "content": "I am from India and interested in Data Science. What is the fee?"
+    },
+    {
+      "role": "assistant",
+      "content": "The fee for Sayyed EdVantage’s **Data Science – Professional Program** in India is **₹50,000**. Applicable taxes and final payment details should be confirmed with the admissions team."
+    }
+  ],
+  "LIVE_I06_V2": [
+    {
+      "role": "user",
+      "content": "I am from India and interested in Data Science. What is the fee?"
+    },
+    {
+      "role": "assistant",
+      "content": "The fee for Sayyed EdVantage’s **Data Science – Professional Program** in India is **₹50,000**. Applicable taxes and final payment details should be confirmed with the admissions team."
+    }
+  ],
+  "LIVE_I06_V4": [
+    {
+      "role": "user",
+      "content": "I am from India and interested in Data Science. What is the fee?"
+    },
+    {
+      "role": "assistant",
+      "content": "The fee for Sayyed EdVantage’s **Data Science – Professional Program** is **₹50,000** for students in India. Applicable taxes and the final payable amount should be confirmed with the admissions team."
+    }
+  ],
+  "default_student": [
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "Welcome to Sayyed EdVantage! How can I help you today—are you exploring a course, checking fees, or looking for admission guidance?"
+    },
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "Certainly. Please share the student’s actual enquiry or reply—such as the course they’re interested in, education level, or admission goal—so I can respond appropriately and prepare the next follow-up."
+    },
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "Please share the student’s latest actual message or enquiry. No student details or enquiry have been provided yet, so I can’t prepare a personalised response or follow-up without guessing.\n\nYou may paste their exact message, for example: “I completed 12th and want to join Data Science.”"
+    },
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "Please paste the student’s actual enquiry or latest message. No student details have been provided yet, so a personalised response and follow-up cannot be prepared without guessing."
+    },
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "Please paste the student’s actual latest message or enquiry. At present, no student details or question have been provided, so I cannot personalise the response or prepare an accurate follow-up without guessing.\n\nYou can send it like this:\n\n**Student’s message:** “I completed 12th and want to know about the Data Science course.”"
+    },
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "Please paste the student’s actual enquiry or latest reply. No student details have been provided yet, so I can’t prepare an accurate response or follow-up without guessing.\n\nFor example:\n\n**Student’s message:** “I completed 12th and want to join the Data Science program.”"
+    },
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "I’m ready to handle it, but the student’s actual enquiry has not been included yet. Please paste their latest message exactly as received. I’ll then prepare:\n\n1. The immediate response to the student  \n2. The most appropriate next follow-up message"
+    },
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "Please paste the student’s actual latest message or enquiry. None has been provided yet, so I can’t prepare a personalised response or accurate follow-up without guessing.\n\nOnce shared, I’ll provide:\n1. The immediate reply to the student  \n2. The next follow-up message"
+    },
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "Please paste the student’s actual enquiry or latest reply. No student details have been provided yet, so I can’t prepare a personalised response without guessing.\n\nOnce you share it, I’ll provide:\n1. The immediate reply to the student  \n2. The appropriate next follow-up message"
+    },
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "Please paste the student’s actual enquiry or latest reply. It still hasn’t been provided, so I can’t prepare an accurate, personalised response without guessing.\n\nOnce shared, I’ll prepare:\n1. The immediate response to the student  \n2. The most suitable next follow-up message"
+    },
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "Please paste the student’s actual latest message. No enquiry or student details have been supplied yet, so preparing a personalised response or follow-up would require guessing."
+    },
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "Please paste the student’s actual enquiry or latest reply. It has not been provided, so I can’t prepare an accurate response or follow-up without guessing.\n\nOnce shared, I’ll provide:\n1. The immediate reply to the student  \n2. The next follow-up message"
+    },
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "The student’s actual enquiry is still missing. Please paste only their latest message exactly as received. I’ll return:\n\n1. A ready-to-send response  \n2. The next follow-up message  \n\n**Required input:** “Student’s latest message: …”"
+    },
+    {
+      "role": "user",
+      "content": "Handle this student's enquiry and prepare the next follow-up"
+    },
+    {
+      "role": "assistant",
+      "content": "Please provide the student’s actual latest enquiry. It is still missing, so I cannot prepare a personalised response or follow-up without guessing.\n\n**Student’s latest message:** “…”"
+    }
+  ]
+}

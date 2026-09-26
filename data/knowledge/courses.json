@@ -1,0 +1,214 @@
+{
+  "academy": "Sayyed EdVantage",
+  "catalogue_version": "launch_v2",
+  "currency": "INR",
+  "tax": "GST applicable",
+  "international_pricing": {
+    "base_multiplier": 4,
+    "discount_percent": 25,
+    "final_multiplier": 3,
+    "pricing_currency": "INR",
+    "description": "International students receive a 25% discount on the Sayyed EdVantage International Base Fee."
+  },
+  "courses": [
+    {
+      "course_id": "SE-DS-001",
+      "course_name": "Data Science",
+      "category": "Data & AI",
+      "type": "Professional Program",
+      "india_fee": 50000,
+      "international_base_fee_inr": 200000,
+      "international_discount_percent": 25,
+      "international_final_fee_inr": 150000,
+      "gst_applicable": true,
+      "modules": [
+        "Python Programming",
+        "Machine Learning",
+        "Deep Learning",
+        "SQL & Database",
+        "Data Analysis & Visualization",
+        "Real-World Projects",
+        "Interview Preparation"
+      ]
+    },
+    {
+      "course_id": "SE-DA-001",
+      "course_name": "Data Analytics",
+      "category": "Data & AI",
+      "type": "Professional Program",
+      "india_fee": 40000,
+      "international_base_fee_inr": 160000,
+      "international_discount_percent": 25,
+      "international_final_fee_inr": 120000,
+      "gst_applicable": true,
+      "modules": [
+        "Advanced Excel",
+        "SQL for Analytics",
+        "Data Cleaning & Transformation",
+        "Power BI & Tableau",
+        "Statistics for Analytics",
+        "Dashboard & Reporting",
+        "Real-World Projects"
+      ]
+    },
+    {
+      "course_id": "SE-DSDA-001",
+      "course_name": "Data Science + Data Analytics Combo",
+      "category": "Data & AI",
+      "type": "Combo Program",
+      "india_fee": 80000,
+      "international_base_fee_inr": 320000,
+      "international_discount_percent": 25,
+      "international_final_fee_inr": 240000,
+      "gst_applicable": true,
+      "modules": [
+        "All Data Science Modules",
+        "All Data Analytics Modules",
+        "2 Major Projects",
+        "Capstone Project",
+        "Interview Preparation",
+        "Priority Placement Support",
+        "Career Guidance"
+      ]
+    },
+    {
+      "course_id": "SE-LINUX-001",
+      "course_name": "Linux Administration",
+      "category": "Infrastructure",
+      "type": "Professional Program",
+      "india_fee": 25000,
+      "international_base_fee_inr": 100000,
+      "international_discount_percent": 25,
+      "international_final_fee_inr": 75000,
+      "gst_applicable": true,
+      "modules": [
+        "Linux Fundamentals",
+        "System Administration",
+        "Shell Scripting",
+        "Networking Essentials",
+        "Backup & Recovery",
+        "Real-World Labs"
+      ]
+    },
+    {
+      "course_id": "SE-DEVOPS-001",
+      "course_name": "DevOps Professional",
+      "category": "DevOps",
+      "type": "Professional Program",
+      "india_fee": 45000,
+      "international_base_fee_inr": 180000,
+      "international_discount_percent": 25,
+      "international_final_fee_inr": 135000,
+      "gst_applicable": true,
+      "modules": [
+        "Linux for DevOps",
+        "CI/CD with Jenkins",
+        "Docker & Kubernetes",
+        "Terraform",
+        "Ansible",
+        "AWS / Cloud Basics",
+        "Monitoring & Logging",
+        "Real-World Projects"
+      ]
+    },
+    {
+      "course_id": "SE-LD-001",
+      "course_name": "Linux + DevOps Combo",
+      "category": "Infrastructure & DevOps",
+      "type": "Combo Program",
+      "india_fee": 60000,
+      "international_base_fee_inr": 240000,
+      "international_discount_percent": 25,
+      "international_final_fee_inr": 180000,
+      "gst_applicable": true,
+      "modules": [
+        "All Linux Modules",
+        "All DevOps Modules",
+        "3 Major Projects",
+        "Capstone Project",
+        "Interview Preparation",
+        "Priority Internship Support",
+        "Career Guidance"
+      ]
+    },
+    {
+      "course_id": "SE-AI-001",
+      "course_name": "Artificial Intelligence (AI)",
+      "category": "Artificial Intelligence",
+      "type": "Professional Program",
+      "india_fee": 50000,
+      "international_base_fee_inr": 200000,
+      "international_discount_percent": 25,
+      "international_final_fee_inr": 150000,
+      "gst_applicable": true,
+      "modules": [
+        "AI Fundamentals",
+        "Machine Learning",
+        "Deep Learning",
+        "NLP Basics",
+        "Computer Vision",
+        "Real-World Projects"
+      ]
+    },
+    {
+      "course_id": "SE-GENAI-001",
+      "course_name": "Generative AI (Gen AI)",
+      "category": "Generative AI",
+      "type": "Professional Program",
+      "india_fee": 30000,
+      "international_base_fee_inr": 120000,
+      "international_discount_percent": 25,
+      "international_final_fee_inr": 90000,
+      "gst_applicable": true,
+      "modules": [
+        "Prompt Engineering",
+        "LLMs & Chatbots",
+        "Generative AI Tools",
+        "RAG Concepts",
+        "AI Agents Basics",
+        "Real-World Projects"
+      ]
+    },
+    {
+      "course_id": "SE-AIGEN-001",
+      "course_name": "AI + Gen AI Combo",
+      "category": "Artificial Intelligence & Generative AI",
+      "type": "Combo Program",
+      "india_fee": 70000,
+      "international_base_fee_inr": 280000,
+      "international_discount_percent": 25,
+      "international_final_fee_inr": 210000,
+      "gst_applicable": true,
+      "modules": [
+        "All AI Modules",
+        "All Gen AI Modules",
+        "2 Major Projects",
+        "Capstone Project",
+        "Interview Preparation",
+        "Priority Internship Support",
+        "Career Guidance"
+      ]
+    },
+    {
+      "course_id": "SE-PY-001",
+      "course_name": "Python Programming",
+      "category": "Programming",
+      "type": "Professional Program",
+      "india_fee": 30000,
+      "international_base_fee_inr": 120000,
+      "international_discount_percent": 25,
+      "international_final_fee_inr": 90000,
+      "gst_applicable": true,
+      "modules": [
+        "Python Fundamentals",
+        "Data Structures",
+        "OOPs Concepts",
+        "File Handling",
+        "Modules & Packages",
+        "Exception Handling",
+        "Mini Projects",
+        "Interview Preparation"
+      ]
+    }
+  ]
+}

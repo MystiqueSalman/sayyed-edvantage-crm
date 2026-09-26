@@ -1,0 +1,53 @@
+SAYYED EDVANTAGE CRM — PORTAL END-TO-END VERIFICATION
+
+1. Copy TEST_CRM_PORTAL_E2E.py into:
+   C:\Users\SALMAN SAYYED\Documents\SayyedEdVantage-AI-Agent
+
+2. Activate the virtual environment:
+   .\.venv\Scripts\Activate.ps1
+
+3. Start the CRM in PowerShell:
+   python .\YOUR_CURRENT_CRM_FILE.py
+
+   Use the CRM file you are actually using. Do not replace it with an older copy.
+
+4. Open:
+   http://127.0.0.1:8000
+
+5. In a SECOND PowerShell window, activate .venv and run:
+   python .\TEST_CRM_PORTAL_E2E.py
+
+6. The automated test is READ-ONLY. It does not POST, create, modify, send,
+   or execute anything.
+
+7. After the automated test passes, perform the manual persistence test:
+
+   A. Open an existing test lead, preferably one of the six test leads.
+   B. Record exactly ONE test counselling session.
+   C. Save it.
+   D. Confirm it appears in Counselling History.
+   E. Confirm its next follow-up appears in Follow-up Manager.
+   F. Refresh the lead profile.
+   G. Stop and restart the CRM.
+   H. Open the same lead again and confirm the counselling + follow-up remain.
+   I. Confirm Activity Timeline reflects the change.
+   J. Verify payment history/fee fields if you are testing payment workflow.
+   K. Confirm no message was sent and no external action was executed.
+
+8. For the strongest integration check, compare the same lead ID in:
+   CRM → Lead Profile
+   CRM → Counselling/Follow-up history
+   AI Agent → Phase-2 certificate/gate record
+
+PASS CRITERIA:
+- Same lead ID everywhere
+- History remains attached to the correct lead
+- Changes persist after restart
+- No cross-lead contamination
+- Authorization remains human-controlled
+- Execution remains disabled
+- No-send remains enforced
+- No unexpected external action occurs
+
+DO NOT use a real student's sensitive data for the test. Use the existing
+synthetic/test lead data where possible.

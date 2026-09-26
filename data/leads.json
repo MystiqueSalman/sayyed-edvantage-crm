@@ -1,0 +1,327 @@
+{
+  "SE-00001": {
+    "lead_id": "SE-00001",
+    "name": "Test Student",
+    "phone": "9999999999",
+    "email": "",
+    "country": "India",
+    "preferred_language": "English",
+    "course_interest": "Data Science",
+    "education": "Completed 12th Science",
+    "message": "Wants to take admission for Data Science.",
+    "source": "AI Agent",
+    "status": "Interested",
+    "created_at": "2026-08-18T15:27:10",
+    "updated_at": "2026-09-03T22:50:57",
+    "counselling_history": [
+      {
+        "session_id": "CS-00001",
+        "counsellor": "Test Counsellor",
+        "counselling_date": "2026-09-03",
+        "counselling_time": "22:50",
+        "mode": "Phone",
+        "outcome": "Interested",
+        "notes": "TEST COUNSELLING - CRM PORTAL E2E VERIFICATION",
+        "next_follow_up_date": "2026-09-04",
+        "next_follow_up_time": "17:00",
+        "created_at": "2026-09-03T22:50:57",
+        "updated_at": "2026-09-03T22:50:57"
+      }
+    ],
+    "assigned_counsellor": "Test Counsellor",
+    "last_contacted_at": "2026-09-03T22:50:57",
+    "follow_up_date": "2026-09-04",
+    "follow_up_time": "17:00",
+    "follow_up_notes": "TEST COUNSELLING - CRM PORTAL E2E VERIFICATION"
+  },
+  "SE-00002": {
+    "lead_id": "SE-00002",
+    "name": "Carlos Garcia",
+    "phone": "600123456",
+    "email": "",
+    "country": "España",
+    "preferred_language": "español",
+    "course_interest": "Ciencia de Datos",
+    "education": "Bachillerato terminado",
+    "message": "Quiere inscribirse en el curso de Ciencia de Datos.",
+    "source": "AI Agent",
+    "status": "New",
+    "created_at": "2026-08-18T15:30:00",
+    "updated_at": "2026-08-18T15:30:00"
+  },
+  "SE-00003": {
+    "lead_id": "SE-00003",
+    "name": "Jean Dupont",
+    "phone": "0612345678",
+    "email": "",
+    "country": "France",
+    "preferred_language": "French",
+    "course_interest": "Data Science",
+    "education": "Completed secondary education",
+    "message": "Wants to enroll in the Data Science course.",
+    "source": "AI Agent",
+    "status": "New",
+    "created_at": "2026-08-18T15:32:53",
+    "updated_at": "2026-08-18T15:32:53"
+  },
+  "SE-00004": {
+    "lead_id": "SE-00004",
+    "name": "John Smith",
+    "phone": "1234567890",
+    "email": "",
+    "country": "USA",
+    "preferred_language": "English",
+    "course_interest": "Data Science",
+    "education": "Completed 12th grade with Mathematics",
+    "message": "Wants to join Data Science and proceed with admission.",
+    "source": "AI Agent",
+    "status": "New",
+    "created_at": "2026-08-18T17:53:23",
+    "updated_at": "2026-08-18T17:53:23"
+  },
+  "SE-00005": {
+    "lead_id": "SE-00005",
+    "name": "John Smith",
+    "phone": "1234567890",
+    "email": "john.smith@example.com",
+    "country": "USA",
+    "preferred_language": "English",
+    "course_interest": "Data Science",
+    "education": "Completed 12th grade with Mathematics",
+    "message": "John Smith wants his email added to his Data Science admission enquiry and wishes to continue the admission process.",
+    "source": "AI Agent",
+    "status": "Interested",
+    "created_at": "2026-08-18T17:54:48",
+    "updated_at": "2026-08-24T21:54:47",
+    "payment_status": "Partial",
+    "follow_up_date": "2026-08-25",
+    "follow_up_time": "18:00",
+    "assigned_counsellor": "Salman",
+    "follow_up_notes": "Test counselling session — student interested in Data Science. Discussed course, fees and admission process.",
+    "international_student": true,
+    "counselling_history": [
+      {
+        "session_id": "CS-00001",
+        "counsellor": "Salman",
+        "counselling_date": "2026-08-18",
+        "counselling_time": "20:30",
+        "mode": "Phone",
+        "outcome": "Interested",
+        "notes": "Student is interested in Data Science. Discussed course curriculum, fees and batch schedule. Student requested follow-up regarding admission and payment.",
+        "next_follow_up_date": "2026-08-19",
+        "next_follow_up_time": "20:00",
+        "created_at": "2026-08-18T22:06:22",
+        "updated_at": "2026-08-18T22:06:22"
+      },
+      {
+        "session_id": "CS-00002",
+        "counsellor": "Salman",
+        "counselling_date": "2026-08-20",
+        "counselling_time": "21:00",
+        "mode": "Phone",
+        "outcome": "Interested",
+        "notes": "Student confirmed interest in Data Science. Discussed fees and batch schedule. Student wants to proceed and requested follow-up for admission.",
+        "next_follow_up_date": "2026-08-22",
+        "next_follow_up_time": "20:00",
+        "created_at": "2026-08-20T16:05:05",
+        "updated_at": "2026-08-20T16:05:05"
+      },
+      {
+        "session_id": "CS-00003",
+        "counsellor": "Salman",
+        "counselling_date": "2026-08-20",
+        "counselling_time": "21:30",
+        "mode": "Phone",
+        "outcome": "Interested",
+        "notes": "Student is interested in the Data Science program and requested a follow-up regarding admission and fees.",
+        "next_follow_up_date": "2026-08-21",
+        "next_follow_up_time": "21:30",
+        "created_at": "2026-08-20T21:22:05",
+        "updated_at": "2026-08-20T21:22:05"
+      },
+      {
+        "session_id": "CS-00004",
+        "counsellor": "Salman",
+        "counselling_date": "2026-08-24",
+        "counselling_time": "22:00",
+        "mode": "Phone",
+        "outcome": "Interested",
+        "notes": "Test counselling session — student interested in Data Science. Discussed course, fees and admission process.",
+        "next_follow_up_date": "2026-08-25",
+        "next_follow_up_time": "18:00",
+        "created_at": "2026-08-24T21:54:47",
+        "updated_at": "2026-08-24T21:54:47"
+      }
+    ],
+    "last_contacted_at": "2026-08-24T21:54:47",
+    "follow_up_history": [
+      {
+        "action_id": "FU-00001",
+        "action_at": "2026-08-20T01:42:56",
+        "counsellor": "Salman",
+        "outcome": "Contacted",
+        "notes": "Contacted student regarding Data Science admission. Student is interested and requested follow-up regarding payment and batch schedule.",
+        "previous_follow_up_date": "2026-08-19",
+        "previous_follow_up_time": "20:00",
+        "next_follow_up_date": "2026-08-21",
+        "next_follow_up_time": "20:00",
+        "status_after": "Contacted"
+      },
+      {
+        "action_id": "FU-00002",
+        "action_at": "2026-08-20T16:14:29",
+        "counsellor": "Salman",
+        "outcome": "Contacted",
+        "notes": "Spoke with student regarding Data Science admission. Student confirmed interest and requested another follow-up for admission and payment.",
+        "previous_follow_up_date": "2026-08-22",
+        "previous_follow_up_time": "20:00",
+        "next_follow_up_date": "2026-08-24",
+        "next_follow_up_time": "21:13",
+        "status_after": "Contacted"
+      },
+      {
+        "action_id": "FU-00003",
+        "action_at": "2026-08-20T16:24:29",
+        "counsellor": "Salman",
+        "outcome": "Contacted",
+        "notes": "Spoke with student regarding Data Science admission. Student confirmed interest and requested another follow-up for admission and payment.",
+        "previous_follow_up_date": "2026-08-24",
+        "previous_follow_up_time": "21:13",
+        "next_follow_up_date": "2026-08-25",
+        "next_follow_up_time": "21:00",
+        "status_after": "Contacted"
+      },
+      {
+        "action_id": "FU-00004",
+        "action_at": "2026-08-20T21:23:44",
+        "counsellor": "Salman",
+        "outcome": "Contacted",
+        "notes": "Student contacted successfully. Further discussion required.",
+        "previous_follow_up_date": "2026-08-21",
+        "previous_follow_up_time": "21:30",
+        "next_follow_up_date": "2026-08-22",
+        "next_follow_up_time": "18:30",
+        "status_after": "Contacted"
+      }
+    ],
+    "status_history": [
+      {
+        "status": "Contacted",
+        "changed_at": "2026-08-18T17:54:48"
+      },
+      {
+        "status": "Counselling",
+        "changed_at": "2026-08-20T06:42:07"
+      },
+      {
+        "status": "Interested",
+        "changed_at": "2026-08-20T16:05:05"
+      },
+      {
+        "status": "Contacted",
+        "changed_at": "2026-08-20T16:14:29"
+      },
+      {
+        "status": "Interested",
+        "changed_at": "2026-08-20T21:22:05"
+      },
+      {
+        "status": "Contacted",
+        "changed_at": "2026-08-20T21:23:44"
+      },
+      {
+        "status": "Interested",
+        "changed_at": "2026-08-24T21:54:47"
+      }
+    ],
+    "base_fee": 49999.0,
+    "discount": 5000.0,
+    "currency": "INR",
+    "converted_amount": 0.0,
+    "final_fee": 44999.0,
+    "total_paid": 10000.0,
+    "balance_amount": 34999.0,
+    "payment_history": [
+      {
+        "payment_id": "PAY-00001",
+        "amount": 10000.0,
+        "payment_mode": "Online",
+        "transaction_id": "",
+        "payment_date": "2026-08-24",
+        "notes": "",
+        "recorded_at": "2026-08-24T19:12:26"
+      }
+    ],
+    "payment_mode": "Online",
+    "transaction_id": "",
+    "payment_date": "2026-08-24"
+  },
+  "SE-00006": {
+    "lead_id": "SE-00006",
+    "name": "Duplicate Test Student",
+    "phone": "9876543210",
+    "email": "duplicate@test.com",
+    "country": "USA",
+    "preferred_language": "English",
+    "course_interest": "Data Science",
+    "education": "UPDATED - 12th Grade with Mathematics",
+    "message": "Wants to continue admission to the Data Science course.",
+    "source": "AI Agent",
+    "status": "Counselling",
+    "created_at": "2026-08-18T18:06:25",
+    "updated_at": "2026-08-24T21:02:49",
+    "payment_status": "Partial",
+    "follow_up_date": "",
+    "follow_up_time": "",
+    "assigned_counsellor": "",
+    "follow_up_notes": "",
+    "last_contacted_at": "2026-08-24T21:02:49",
+    "international_student": true,
+    "base_fee": 49999.0,
+    "discount": 5000.0,
+    "currency": "INR",
+    "converted_amount": 0.0,
+    "final_fee": 44999.0,
+    "total_paid": 10000.0,
+    "balance_amount": 34999.0,
+    "payment_history": [
+      {
+        "payment_id": "PAY-00001",
+        "amount": 10000.0,
+        "payment_mode": "Online",
+        "transaction_id": "",
+        "payment_date": "2026-08-24",
+        "notes": "",
+        "recorded_at": "2026-08-24T21:02:35"
+      }
+    ],
+    "payment_mode": "Online",
+    "transaction_id": "",
+    "payment_date": "2026-08-24",
+    "counselling_history": [
+      {
+        "session_id": "CS-00001",
+        "counsellor": "",
+        "counselling_date": "2026-08-24",
+        "counselling_time": "",
+        "mode": "Phone",
+        "outcome": "Pending",
+        "notes": "",
+        "next_follow_up_date": "",
+        "next_follow_up_time": "",
+        "created_at": "2026-08-24T21:02:49",
+        "updated_at": "2026-08-24T21:02:49"
+      }
+    ],
+    "status_history": [
+      {
+        "status": "Enrolled",
+        "changed_at": "2026-08-18T18:06:25"
+      },
+      {
+        "status": "Counselling",
+        "changed_at": "2026-08-24T21:02:49"
+      }
+    ]
+  }
+}
