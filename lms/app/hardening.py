@@ -612,8 +612,20 @@ def health_checks():
     except Exception as exc:  # noqa: BLE001
         checks["db"] = {"ok": False, "error": str(exc)[:200]}
     try:
-        base = os.environ.get("SE_DATA_DIR", "").strip() or \
-            current_app.instance_path
+        # Prefer the directory of the actual database file so the check
+        # works on Railway (DB at /app/data via SQLITE_PATH/SE_DATA_DIR)
+        # as well as on local default installs (instance_path).
+        base = ""
+        try:
+            sp = sqlite_path()
+            if sp:
+                base = os.path.dirname(os.path.abspath(sp))
+        except Exception:
+            base = ""
+        if not base:
+            base = os.environ.get("SE_DATA_DIR", "").strip() or \
+                current_app.instance_path
+        os.makedirs(base, exist_ok=True)
         usage = shutil.disk_usage(base)
         free_mb = usage.free // (1024 * 1024)
         checks["disk"] = {"ok": free_mb > 100, "free_mb": free_mb,
