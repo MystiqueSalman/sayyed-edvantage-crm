@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Edit Badge — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🏅 Edit Badge</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.badge_list') }}">← Badges</a></div>
+<div class="card"><div class="body">
+<form method="post" style="display:grid;gap:10px;max-width:520px">
+  <label>Name<input name="name" value="{{ badge.name }}" required maxlength="80"></label>
+  <label>Icon (emoji)<input name="icon" value="{{ badge.icon }}" maxlength="16"></label>
+  <label>Description<input name="description" value="{{ badge.description }}" maxlength="200"></label>
+  <label>Criterion
+    <select name="criterion" {% if badge.is_system %}disabled{% endif %}>
+      {% for c in criteria %}<option value="{{ c }}" {% if c == badge.criterion %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+    {% if badge.is_system %}<small style="color:var(--muted)">System badge criteria can't be changed.</small>{% endif %}
+  </label>
+  <label>Threshold<input type="number" step="any" name="threshold" value="{{ badge.threshold }}" min="1"></label>
+  <label>Course scope
+    <select name="course_id"><option value="">Platform-wide</option>
+      {% for c in courses %}<option value="{{ c.id }}" {% if badge.course_id == c.id %}selected{% endif %}>{{ c.title }}</option>{% endfor %}
+    </select>
+  </label>
+  <div><button class="btn btn-gold" type="submit">Save badge</button></div>
+</form>
+</div></div>
+{% endblock %}

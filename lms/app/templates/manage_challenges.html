@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Challenges — Manage{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎯 Challenges</h2><div class="line"></div>
+  <a class="btn btn-gold btn-sm" href="{{ url_for('manage.challenge_new') }}">+ New challenge</a></div>
+
+{% for ch in challenges %}
+<div class="card" style="margin-bottom:10px"><div class="body">
+  <b>{{ ch.title }}</b>
+  {% if ch.is_live %}<span class="tag green" style="margin-left:8px">live</span>
+  {% else %}<span class="tag" style="margin-left:8px">{{ 'paused' if not ch.is_active else 'ended' }}</span>{% endif %}
+  <div style="color:var(--muted);font-size:.88rem">{{ ch.target_label }} · ⭐ {{ ch.reward_points }} pts{% if ch.course %} · {{ ch.course.title }}{% endif %}{% if ch.ends_at %} · ends {{ ch.ends_at.strftime('%d %b %Y') }}{% endif %}</div>
+  <div style="color:var(--muted);font-size:.85rem">{{ ch.enrollments|length }} participant{{ 's' if ch.enrollments|length != 1 }} · {{ ch.enrollments|selectattr('completed')|list|length }} completed</div>
+  <div style="margin-top:6px">
+    <a class="btn btn-sm" href="{{ url_for('manage.challenge_edit', challenge_id=ch.id) }}">Edit</a>
+    <form method="post" action="{{ url_for('manage.challenge_toggle', challenge_id=ch.id) }}" style="display:inline">
+      <button class="btn btn-sm" type="submit">{{ 'Pause' if ch.is_active else 'Activate' }}</button>
+    </form>
+  </div>
+</div></div>
+{% else %}
+<div class="card"><div class="body" style="color:var(--muted)">No challenges yet. Create one to boost engagement!</div></div>
+{% endfor %}
+{% endblock %}

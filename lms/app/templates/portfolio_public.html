@@ -38,6 +38,17 @@
 </div></div>
 {% endif %}
 
+{% if badges %}
+<div class="card" style="margin-bottom:18px"><div class="body">
+  <h3>🏆 Achievements</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:10px">
+    {% for ub in badges %}
+    <span class="tag gold" title="{{ ub.badge.description }}" style="font-size:1rem;padding:8px 12px">{{ ub.badge.icon }} {{ ub.badge.name }}</span>
+    {% endfor %}
+  </div>
+</div></div>
+{% endif %}
+
 {% if sections.courses %}
 <div class="card"><div class="body">
   <h3>📚 Courses</h3>

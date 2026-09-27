@@ -16,7 +16,7 @@ from .career import (GUIDANCE_DISCLAIMER, INTERVIEW_QUESTIONS,
 from .decorators import manager_or_admin, role_required
 from .models import (Certificate, Course, Enrollment, Job, JobApplication,
                      MockInterview, MockInterviewQA, Portfolio, ReadinessWeights,
-                     Resume, User, ROLE_EMPLOYER)
+                     Resume, User, UserBadge, ROLE_EMPLOYER)
 
 career_bp = Blueprint("career", __name__)
 student_only = role_required("student")
@@ -152,8 +152,11 @@ def portfolio_public(code):
     if not pf.is_public:
         abort(404)
     sections = resume_sections(pf.user)
+    # Phase 8: badge showcase on public portfolio
+    badges = (UserBadge.query.filter_by(user_id=pf.user_id)
+              .order_by(UserBadge.awarded_at.desc()).all())
     return render_template("portfolio_public.html", portfolio=pf,
-                           sections=sections, owner=pf.user)
+                           sections=sections, owner=pf.user, badges=badges)
 
 
 @career_bp.route("/portfolio/<code>/resume.pdf")
@@ -248,6 +251,10 @@ def interview_answer(session_id):
         next_q = nq
     else:
         interview_finalize(session)
+        # Phase 8: mock interview completion points
+        from . import gamification as G
+        G.award_points(current_user.id, "mock_interview_complete",
+                       "interview", session.id)
     return jsonify({"score": score, "feedback": feedback, "done": done,
                     "next_question": next_q,
                     "overall": session.score if done else None})
@@ -261,6 +268,10 @@ def interview_finish(session_id):
         abort(404)
     if session.status == MockInterview.STATUS_ACTIVE:
         interview_finalize(session)
+        # Phase 8: mock interview completion points (idempotent)
+        from . import gamification as G
+        G.award_points(current_user.id, "mock_interview_complete",
+                       "interview", session.id)
         flash("Interview completed — see your feedback below.", "success")
     return redirect(url_for("career.interview_session", session_id=session.id))
 

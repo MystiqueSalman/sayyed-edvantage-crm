@@ -10,16 +10,26 @@ from werkzeug.utils import secure_filename
 
 from . import db
 from .decorators import role_required
-from .models import (Announcement, Assignment, Certificate, Course, Enrollment, Lesson,
+from .models import (Announcement, Assignment, Certificate, Challenge,
+                     ChallengeEnrollment, Course, Enrollment, Lesson,
                      LessonProgress, LiveSession, Module, Project, ProjectSubmission,
-                     Quiz, QuizAnswer, QuizAttempt, Review, Submission, Wishlist)
+                     Quiz, QuizAnswer, QuizAttempt, Review, Submission, UserBadge,
+                     Wishlist)
 from .pdfcert import certificate_path, generate_certificate_pdf
 from .routes_crm import _onboarding_for  # Phase 4: onboarding checklist
+from . import gamification as G  # Phase 8: points/badges/streaks/challenges
 
 student_bp = Blueprint("student", __name__)
 student_only = role_required("student")
 
 ALLOWED_SUBMIT_EXTS = {"pdf", "doc", "docx", "zip", "txt", "png", "jpg", "jpeg", "py", "ipynb"}
+
+
+def _flash_new_badges(badges):
+    """Phase 8: celebrate newly earned badges."""
+    for b in badges or []:
+        flash(f"🏅 Badge earned: {b.icon} {b.name} — {b.description}",
+              "success")
 
 
 def _active_enrollment_or_403(course_id):
@@ -114,10 +124,22 @@ def dashboard():
         if len(weak_topics) >= 6:
             break
     plan_items = todays_plan_items(current_user.id)
+    # Phase 8: gamification widgets
+    game_profile = G.get_profile(current_user.id)
+    recent_badges = (UserBadge.query.filter_by(user_id=current_user.id)
+                     .order_by(UserBadge.awarded_at.desc()).limit(4).all())
+    my_challenges = (ChallengeEnrollment.query
+                     .filter_by(user_id=current_user.id, completed=False)
+                     .join(Challenge).filter(Challenge.is_active.is_(True))
+                     .all())
+    my_challenges = [e for e in my_challenges if e.challenge.is_live][:3]
     return render_template("dashboard.html", enrollments=enrollments,
                            pending=pending, certs=certs, live_sessions=live_sessions,
                            now=now, onboarding=_onboarding_for(current_user),
-                           weak_topics=weak_topics, plan_items=plan_items)
+                           weak_topics=weak_topics, plan_items=plan_items,
+                           game_profile=game_profile,
+                           recent_badges=recent_badges,
+                           my_challenges=my_challenges)
 
 
 @student_bp.route("/lesson/<int:lesson_id>")
@@ -166,6 +188,10 @@ def lesson_complete(lesson_id):
             user_id=current_user.id, lesson_id=lesson.id).first():
         db.session.add(LessonProgress(user_id=current_user.id, lesson_id=lesson.id))
         db.session.commit()
+        # Phase 8: points + streak + badges + challenges
+        _pts, new_badges = G.award_points(
+            current_user.id, "lesson_complete", "lesson", lesson.id)
+        _flash_new_badges(new_badges)
     cert = check_and_issue_certificate(current_user.id, course.id)
     if cert:
         flash("Course completed! Your certificate is ready.", "success")
@@ -252,6 +278,17 @@ def quiz(quiz_id):
                 is_correct=g.is_correct, marks_awarded=g.marks_awarded,
                 needs_review=g.needs_review))
         db.session.commit()
+        # Phase 8: quiz points (base + score-scaled bonus) + streak/badges
+        _pts, new_badges = G.award_points(
+            current_user.id, "quiz_attempt", "attempt", attempt.id)
+        bonus = int(attempt.percent * G.bonus_rate(
+            G.QUIZ_BONUS_RATE_SETTING, 0.2))
+        if bonus > 0:
+            _b2, more = G.award_points(
+                current_user.id, "quiz_score_bonus", "attempt", attempt.id,
+                points=bonus)
+            new_badges = (new_badges or []) + (more or [])
+        _flash_new_badges(new_badges)
         if not pending:
             cert = check_and_issue_certificate(current_user.id, course.id)
             if cert:
@@ -397,6 +434,11 @@ def assignment_detail(assignment_id):
                              file_path=filename, note=note)
             db.session.add(sub)
         db.session.commit()
+        # Phase 8: assignment points (idempotent per assignment)
+        _pts, new_badges = G.award_points(
+            current_user.id, "assignment_submit", "assignment",
+            assignment.id)
+        _flash_new_badges(new_badges)
         flash("Assignment submitted.", "success")
         return redirect(url_for("student.assignment_detail", assignment_id=assignment.id))
     return render_template("assignment_detail.html", assignment=assignment, sub=sub)
@@ -485,6 +527,10 @@ def project_detail(project_id):
                                     notes=notes, status="submitted")
             db.session.add(sub)
         db.session.commit()
+        # Phase 8: project submission points (idempotent per project)
+        _pts, new_badges = G.award_points(
+            current_user.id, "project_submit", "project", project.id)
+        _flash_new_badges(new_badges)
         flash("Project submitted for evaluation.", "success")
         return redirect(url_for("student.project_detail", project_id=project.id))
     return render_template("project_detail.html", project=project, sub=sub,

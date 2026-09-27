@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Badges — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🏅 Badge Definitions</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.gamification') }}">⭐ Points</a></div>
+
+<div class="card" style="margin-bottom:18px"><div class="body">
+  <h3>Create badge</h3>
+  <form method="post" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+    <label>Name<input name="name" required maxlength="80"></label>
+    <label>Icon (emoji)<input name="icon" value="🏅" maxlength="16"></label>
+    <label>Description<input name="description" maxlength="200"></label>
+    <label>Criterion
+      <select name="criterion">
+        {% for c in criteria %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Threshold<input type="number" step="any" name="threshold" value="1" min="1"></label>
+    <label>Course scope (optional)
+      <select name="course_id"><option value="">Platform-wide</option>
+        {% for c in courses %}<option value="{{ c.id }}">{{ c.title }}</option>{% endfor %}
+      </select>
+    </label>
+    <div><button class="btn btn-gold btn-sm" type="submit" style="margin-top:22px">Create</button></div>
+  </form>
+</div></div>
+
+{% for b in badges %}
+<div class="card" style="margin-bottom:8px"><div class="body">
+  <span style="font-size:1.6rem">{{ b.icon }}</span> <b>{{ b.name }}</b>
+  {% if b.is_system %}<span class="tag gold" style="margin-left:6px">system</span>{% endif %}
+  {% if not b.is_active %}<span class="tag" style="margin-left:6px">off</span>{% endif %}
+  <div style="color:var(--muted);font-size:.88rem">{{ b.description }} · <code>{{ b.criterion }} ≥ {{ b.threshold }}</code> · {{ b.scope_label }}</div>
+  <div style="margin-top:6px">
+    <a class="btn btn-sm" href="{{ url_for('admin.badge_edit', badge_id=b.id) }}">Edit</a>
+    <form method="post" action="{{ url_for('admin.badge_toggle', badge_id=b.id) }}" style="display:inline">
+      <button class="btn btn-sm" type="submit">{{ 'Deactivate' if b.is_active else 'Activate' }}</button>
+    </form>
+  </div>
+</div></div>
+{% endfor %}
+{% endblock %}

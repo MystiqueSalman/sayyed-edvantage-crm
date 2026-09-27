@@ -645,6 +645,13 @@ def project_evaluate(sub_id):
     sub.evaluated_at = datetime.utcnow()
     sub.evaluated_by = current_user.id
     db.session.commit()
+    # Phase 8: evaluation bonus points (scaled by %) — triggers Project Star
+    from . import gamification as G
+    bonus = int((sub.percent or 0) * G.bonus_rate(
+        G.PROJECT_BONUS_RATE_SETTING, 0.3))
+    if bonus > 0:
+        G.award_points(sub.user_id, "project_evaluated", "project_submission",
+                       sub.id, points=bonus)
     flash("Project evaluated.", "success")
     return redirect(url_for("manage.project_submissions",
                             project_id=sub.project_id))
@@ -866,3 +873,138 @@ def recording_delete(recording_id):
     db.session.commit()
     flash("Recording deleted.", "info")
     return redirect(url_for("manage.course_home", course_id=course.id))
+
+
+# ------------------------------------------------- Phase 8: challenges
+CHALLENGE_CRITERIA = ("lessons", "quiz_score", "points", "project", "course")
+
+
+@manage_bp.route("/challenges")
+@content_manager_required
+def manage_challenges():
+    from .models import Challenge
+    challenges = Challenge.query.order_by(Challenge.created_at.desc()).all()
+    return render_template("manage_challenges.html", challenges=challenges)
+
+
+def _challenge_form_data(challenge=None):
+    from datetime import datetime as _dt
+    from .models import Course, Quiz
+    courses = [c for c in Course.query.order_by(Course.title).all()
+               if current_user.can_manage_course(c)]
+    quizzes = Quiz.query.filter(Quiz.title != "__question_bank__").all()
+    data = {"courses": courses, "quizzes": quizzes,
+            "criteria": CHALLENGE_CRITERIA, "challenge": challenge}
+    return data
+
+
+@manage_bp.route("/challenges/new", methods=["GET", "POST"])
+@content_manager_required
+def challenge_new():
+    from datetime import datetime as _dt
+    from .models import Challenge
+    import json as _json
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        criterion = request.form.get("criterion", "").strip()
+        if not title or criterion not in CHALLENGE_CRITERIA:
+            flash("Title and a valid challenge type are required.", "danger")
+            return redirect(url_for("manage.challenge_new"))
+        target = {}
+        if criterion == "lessons":
+            target["count"] = max(1, int(request.form.get("count", 5) or 5))
+        elif criterion == "quiz_score":
+            target["quiz_id"] = request.form.get("quiz_id", type=int)
+            target["percent"] = max(1, min(100, int(
+                request.form.get("percent", 80) or 80)))
+        elif criterion == "points":
+            target["points"] = max(1, int(request.form.get("points", 50) or 50))
+        course_id = request.form.get("course_id", type=int) or None
+        if course_id:
+            _course_or_403(course_id)
+        starts_at = _dt.utcnow()
+        ends_at = None
+        if request.form.get("ends_at"):
+            try:
+                ends_at = _dt.strptime(request.form.get("ends_at"),
+                                      "%Y-%m-%d")
+            except ValueError:
+                pass
+        db.session.add(Challenge(
+            title=title[:160],
+            description=request.form.get("description", "").strip(),
+            criterion=criterion, target_json=_json.dumps(target),
+            course_id=course_id, starts_at=starts_at, ends_at=ends_at,
+            reward_points=max(0, int(request.form.get("reward_points", 50)
+                                     or 50)),
+            created_by=current_user.id))
+        db.session.commit()
+        flash("Challenge created.", "success")
+        return redirect(url_for("manage.manage_challenges"))
+    return render_template("manage_challenge_form.html",
+                           **_challenge_form_data())
+
+
+@manage_bp.route("/challenges/<int:challenge_id>/edit",
+                 methods=["GET", "POST"])
+@content_manager_required
+def challenge_edit(challenge_id):
+    from datetime import datetime as _dt
+    from .models import Challenge
+    import json as _json
+    ch = Challenge.query.get_or_404(challenge_id)
+    if ch.course_id and not current_user.can_manage_course(ch.course):
+        abort(403)
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        criterion = request.form.get("criterion", "").strip()
+        if not title or criterion not in CHALLENGE_CRITERIA:
+            flash("Title and a valid challenge type are required.", "danger")
+            return redirect(url_for("manage.challenge_edit",
+                                    challenge_id=ch.id))
+        target = ch.target
+        if criterion == "lessons":
+            target = {"count": max(1, int(request.form.get("count", 5) or 5))}
+        elif criterion == "quiz_score":
+            target = {"quiz_id": request.form.get("quiz_id", type=int),
+                      "percent": max(1, min(100, int(
+                          request.form.get("percent", 80) or 80)))}
+        elif criterion == "points":
+            target = {"points": max(1, int(request.form.get("points", 50)
+                                           or 50))}
+        ch.title, ch.criterion = title[:160], criterion
+        ch.target_json = _json.dumps(target)
+        ch.description = request.form.get("description", "").strip()
+        course_id = request.form.get("course_id", type=int) or None
+        if course_id:
+            _course_or_403(course_id)
+        ch.course_id = course_id
+        if request.form.get("ends_at"):
+            try:
+                ch.ends_at = _dt.strptime(request.form.get("ends_at"),
+                                         "%Y-%m-%d")
+            except ValueError:
+                pass
+        else:
+            ch.ends_at = None
+        ch.reward_points = max(0, int(request.form.get("reward_points", 50)
+                                     or 50))
+        db.session.commit()
+        flash("Challenge updated.", "success")
+        return redirect(url_for("manage.manage_challenges"))
+    return render_template("manage_challenge_form.html",
+                           **_challenge_form_data(ch))
+
+
+@manage_bp.route("/challenges/<int:challenge_id>/toggle", methods=["POST"])
+@content_manager_required
+def challenge_toggle(challenge_id):
+    from .models import Challenge
+    ch = Challenge.query.get_or_404(challenge_id)
+    if ch.course_id and not current_user.can_manage_course(ch.course):
+        abort(403)
+    ch.is_active = not ch.is_active
+    db.session.commit()
+    flash(f"Challenge '{ch.title}' "
+          f"{'activated' if ch.is_active else 'paused'}.", "success")
+    return redirect(url_for("manage.manage_challenges"))

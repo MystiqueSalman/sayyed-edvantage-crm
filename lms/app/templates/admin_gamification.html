@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Gamification Settings — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>⭐ Gamification — Points</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.badge_list') }}">🏅 Badges</a></div>
+
+<form method="post">
+<div class="card" style="margin-bottom:16px"><div class="body">
+  <h3>Point values per activity</h3>
+  <p style="color:var(--muted)"><small>Changes apply to future awards only — past awards stay in the ledger.</small></p>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+    {% for action, meta in actions.items() %}
+    <label style="display:block">{{ meta[1] }}
+      <input type="number" name="points_{{ action }}" min="0" max="1000"
+             value="{{ settings|selectattr('action','equalto',action)|map(attribute='points')|first|default(meta[0]) }}">
+    </label>
+    {% endfor %}
+  </div>
+</div></div>
+
+<div class="card" style="margin-bottom:16px"><div class="body">
+  <h3>Score bonus rates</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+    <label style="display:block">Quiz score bonus — points per % (90% → 18 at 0.2)
+      <input type="number" step="0.05" min="0" max="2" name="quiz_bonus_rate" value="{{ quiz_rate }}">
+    </label>
+    <label style="display:block">Project evaluation bonus — points per % (85% → 25 at 0.3)
+      <input type="number" step="0.05" min="0" max="2" name="project_bonus_rate" value="{{ proj_rate }}">
+    </label>
+  </div>
+</div></div>
+
+<button class="btn btn-gold" type="submit">Save point values</button>
+</form>
+
+<div class="card" style="margin-top:20px"><div class="body">
+  <h3>One-time backfill</h3>
+  <p style="color:var(--muted)"><small>Awards starter points + the 🌱 Pioneer badge to existing students from their real historical activity. {{ 'Already done.' if backfill_done }}</small></p>
+  <form method="post"><button class="btn btn-blue btn-sm" name="run_backfill" value="1" type="submit">Run backfill now</button></form>
+</div></div>
+{% endblock %}

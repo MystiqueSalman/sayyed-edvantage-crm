@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}🎯 Challenges — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎯 Challenges</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('game.achievements') }}">🏆 My Achievements</a></div>
+
+{% if live %}
+<div class="section-title"><h3>Live now</h3><div class="line"></div></div>
+{% for c in live %}
+<div class="card" style="margin-bottom:12px"><div class="body">
+  <b>{{ c.title }}</b>
+  {% if c.id in mine and mine[c.id].completed %}<span class="tag green" style="margin-left:8px">🏆 Completed</span>
+  {% elif c.id in mine %}<span class="tag gold" style="margin-left:8px">{{ mine[c.id].progress|round(1) }}% done</span>{% endif %}
+  <div style="color:var(--muted);font-size:.9rem;margin:4px 0">{{ c.description or c.target_label }}</div>
+  <div style="color:var(--muted);font-size:.85rem">🎯 {{ c.target_label }} · ⭐ {{ c.reward_points }} pts{% if c.ends_at %} · ends {{ c.ends_at.strftime('%d %b %Y') }}{% endif %}{% if c.course %} · {{ c.course.title }}{% endif %}</div>
+  <div style="margin-top:8px">
+    <a class="btn btn-gold btn-sm" href="{{ url_for('game.challenge_detail', challenge_id=c.id) }}">{{ 'View progress' if c.id in mine else 'Join challenge' }}</a>
+  </div>
+</div></div>
+{% endfor %}
+{% else %}
+<div class="card"><div class="body" style="color:var(--muted)">No live challenges right now — check back soon!</div></div>
+{% endif %}
+
+{% if past %}
+<div class="section-title" style="margin-top:24px"><h3>Ended</h3><div class="line"></div></div>
+{% for c in past %}
+<div class="card" style="margin-bottom:10px"><div class="body">
+  <b>{{ c.title }}</b> <span class="tag" style="margin-left:8px">ended</span>
+  <a class="btn btn-sm" style="float:right" href="{{ url_for('game.challenge_detail', challenge_id=c.id) }}">Results</a>
+  <div style="clear:both"></div>
+</div></div>
+{% endfor %}
+{% endif %}
+{% endblock %}

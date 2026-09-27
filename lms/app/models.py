@@ -1176,3 +1176,178 @@ class ReadinessWeights(db.Model):
                 "projects": self.w_projects, "resume": self.w_resume,
                 "interviews": self.w_interviews,
                 "certificates": self.w_certificates}
+
+
+# --------------------------------------------------------------------------
+# Phase 8 — Gamification & engagement (§15)
+# --------------------------------------------------------------------------
+class PointSetting(db.Model):
+    """Admin-configurable point values per activity (§15.2)."""
+    __tablename__ = "point_settings"
+    id = db.Column(db.Integer, primary_key=True)
+    action = db.Column(db.String(40), unique=True, nullable=False, index=True)
+    points = db.Column(db.Integer, default=0)
+    label = db.Column(db.String(120), default="")
+    counts_for_streak = db.Column(db.Boolean, default=True)
+
+
+class PointTransaction(db.Model):
+    """Audit ledger: every point award, recomputable (§15.2).
+
+    (user_id, action, ref_type, ref_id) is unique so the same activity is
+    never double-awarded.
+    """
+    __tablename__ = "point_transactions"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False,
+                       index=True)
+    action = db.Column(db.String(40), nullable=False, index=True)
+    ref_type = db.Column(db.String(40), default="")
+    ref_id = db.Column(db.String(60), default="")
+    points = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    user = db.relationship("User", backref="point_transactions")
+    __table_args__ = (db.UniqueConstraint(
+        "user_id", "action", "ref_type", "ref_id",
+        name="uq_point_txn"),)
+
+
+class GameProfile(db.Model):
+    """Denormalized per-student gamification state (§15.2, §15.3)."""
+    __tablename__ = "game_profiles"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), unique=True,
+                       nullable=False, index=True)
+    points_total = db.Column(db.Integer, default=0)
+    current_streak = db.Column(db.Integer, default=0)
+    longest_streak = db.Column(db.Integer, default=0)
+    last_active_date = db.Column(db.Date, nullable=True)
+
+    user = db.relationship("User", backref=db.backref(
+        "game_profile", uselist=False, cascade="all, delete-orphan"))
+
+
+class Badge(db.Model):
+    """Badge definition: auto-awarded by the criteria engine (§15.1)."""
+    __tablename__ = "badges"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80), nullable=False)
+    icon = db.Column(db.String(16), default="🏅")
+    description = db.Column(db.String(200), default="")
+    criterion = db.Column(db.String(40), nullable=False, index=True)
+    threshold = db.Column(db.Float, default=1.0)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"),
+                         nullable=True)  # NULL = platform-wide
+    is_active = db.Column(db.Boolean, default=True)
+    is_system = db.Column(db.Boolean, default=False)  # seeded, criteria fixed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    course = db.relationship("Course")
+
+    @property
+    def scope_label(self):
+        return self.course.title if self.course else "Platform-wide"
+
+
+class UserBadge(db.Model):
+    """A badge earned by a student (§15.1)."""
+    __tablename__ = "user_badges"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False,
+                       index=True)
+    badge_id = db.Column(db.Integer, db.ForeignKey("badges.id"),
+                        nullable=False)
+    awarded_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship("User", backref="user_badges")
+    badge = db.relationship("Badge", backref="awards")
+    __table_args__ = (db.UniqueConstraint("user_id", "badge_id",
+                                         name="uq_user_badge"),)
+
+
+class Challenge(db.Model):
+    """Time-boxed learning challenge created by faculty/admin (§15.5)."""
+    __tablename__ = "challenges"
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(160), nullable=False)
+    description = db.Column(db.Text, default="")
+    criterion = db.Column(db.String(40), nullable=False)  # lessons|quiz_score|points|project|course
+    target_json = db.Column(db.Text, default="{}")  # params e.g. {"count": 5}
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"),
+                         nullable=True)
+    starts_at = db.Column(db.DateTime, default=datetime.utcnow)
+    ends_at = db.Column(db.DateTime, nullable=True)
+    reward_points = db.Column(db.Integer, default=50)
+    is_active = db.Column(db.Boolean, default=True)
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id"),
+                          nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    course = db.relationship("Course")
+
+    @property
+    def target(self):
+        import json as _json
+        try:
+            return _json.loads(self.target_json or "{}")
+        except Exception:
+            return {}
+
+    @property
+    def target_label(self):
+        t = self.target
+        if self.criterion == "lessons":
+            return f"Complete {t.get('count', 0)} lessons"
+        if self.criterion == "quiz_score":
+            return f"Score {t.get('percent', 0)}%+ on a quiz"
+        if self.criterion == "points":
+            return f"Earn {t.get('points', 0)} points"
+        if self.criterion == "project":
+            return "Get a project evaluated"
+        if self.criterion == "course":
+            return "Complete the course"
+        return "Complete the challenge"
+
+    @property
+    def is_live(self):
+        from datetime import datetime as _dt
+        now = _dt.utcnow()
+        if not self.is_active or self.starts_at > now:
+            return False
+        return not self.ends_at or self.ends_at >= now
+
+
+class ChallengeEnrollment(db.Model):
+    """A student's opt-in to a challenge + live progress (§15.5)."""
+    __tablename__ = "challenge_enrollments"
+    id = db.Column(db.Integer, primary_key=True)
+    challenge_id = db.Column(db.Integer, db.ForeignKey("challenges.id"),
+                            nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False,
+                       index=True)
+    joined_at = db.Column(db.DateTime, default=datetime.utcnow)
+    progress = db.Column(db.Float, default=0.0)  # 0..100
+    completed = db.Column(db.Boolean, default=False)
+    completed_at = db.Column(db.DateTime, nullable=True)
+
+    challenge = db.relationship("Challenge", backref="enrollments")
+    user = db.relationship("User")
+    __table_args__ = (db.UniqueConstraint("challenge_id", "user_id",
+                                         name="uq_challenge_enroll"),)
+
+
+class GamificationSetting(db.Model):
+    """Single-row (id=1) gamification flags (§15)."""
+    __tablename__ = "gamification_settings"
+    id = db.Column(db.Integer, primary_key=True)
+    backfill_done = db.Column(db.Boolean, default=False)
+
+    @classmethod
+    def get(cls):
+        row = db.session.get(cls, 1)
+        if not row:
+            row = cls(id=1)
+            db.session.add(row)
+            db.session.commit()
+        return row

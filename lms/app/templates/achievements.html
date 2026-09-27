@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}🏆 My Achievements — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🏆 My Achievements</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('game.challenge_list') }}">🎯 Challenges</a></div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px">
+  <div class="card"><div class="body" style="text-align:center">
+    <div style="font-size:2rem">⭐</div>
+    <div style="font-size:1.6rem;font-weight:700;color:var(--gold)">{{ profile.points_total or 0 }}</div>
+    <div style="color:var(--muted)">Total points</div>
+  </div></div>
+  <div class="card"><div class="body" style="text-align:center">
+    <div style="font-size:2rem">🔥</div>
+    <div style="font-size:1.6rem;font-weight:700;color:#ff8c42">{{ profile.current_streak or 0 }} day{{ 's' if (profile.current_streak or 0) != 1 }}</div>
+    <div style="color:var(--muted)">Current streak · best {{ profile.longest_streak or 0 }}</div>
+  </div></div>
+  <div class="card"><div class="body" style="text-align:center">
+    <div style="font-size:2rem">🏅</div>
+    <div style="font-size:1.6rem;font-weight:700;color:var(--blue)">{{ badges|length }}</div>
+    <div style="color:var(--muted)">Badges earned</div>
+  </div></div>
+</div>
+
+<div class="section-title"><h3>🏅 My Badges</h3><div class="line"></div></div>
+{% if badges %}
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px">
+  {% for ub in badges %}
+  <div class="card"><div class="body" style="text-align:center">
+    <div style="font-size:2.2rem">{{ ub.badge.icon }}</div>
+    <b>{{ ub.badge.name }}</b>
+    <div style="color:var(--muted);font-size:.85rem">{{ ub.badge.description }}</div>
+    <div style="color:var(--muted);font-size:.75rem;margin-top:4px">{{ ub.awarded_at.strftime('%d %b %Y') if ub.awarded_at }}</div>
+  </div></div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card"><div class="body" style="color:var(--muted)">No badges yet — complete lessons and quizzes to start earning them!</div></div>
+{% endif %}
+
+<div class="section-title" style="margin-top:24px"><h3>🎯 My Challenges</h3><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('game.challenge_list') }}">Browse all</a></div>
+{% if enrollments %}
+{% for e in enrollments %}
+<div class="card" style="margin-bottom:10px"><div class="body">
+  <b>{{ e.challenge.icon if e.challenge.icon }}{{ e.challenge.title }}</b>
+  {% if e.completed %}<span class="tag green" style="margin-left:8px">🏆 Completed</span>
+  {% else %}<span class="tag gold" style="margin-left:8px">{{ e.progress|round(1) }}%</span>{% endif %}
+  <div style="background:#222;border-radius:8px;height:10px;overflow:hidden;margin:8px 0">
+    <div style="height:100%;width:{{ e.progress }}%;background:linear-gradient(90deg,var(--gold),#f3d47c)"></div>
+  </div>
+  <a class="btn btn-sm" href="{{ url_for('game.challenge_detail', challenge_id=e.challenge.id) }}">View</a>
+</div></div>
+{% endfor %}
+{% else %}
+<div class="card"><div class="body" style="color:var(--muted)">Not in any challenge yet. <a href="{{ url_for('game.challenge_list') }}">Join one</a> to earn bonus points!</div></div>
+{% endif %}
+{% endblock %}

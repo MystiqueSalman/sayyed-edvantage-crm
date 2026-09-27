@@ -38,9 +38,15 @@ def thread_list(slug):
         if not title:
             flash("A title is required.", "danger")
         else:
-            db.session.add(Discussion(course_id=course.id, user_id=current_user.id,
-                                      title=title, body=body))
+            disc = Discussion(course_id=course.id, user_id=current_user.id,
+                              title=title, body=body)
+            db.session.add(disc)
             db.session.commit()
+            # Phase 8: discussion points (students only earn these)
+            if current_user.role == "student":
+                from . import gamification as G
+                G.award_points(current_user.id, "discussion_post",
+                               "discussion", disc.id)
             flash("Discussion started.", "success")
             return redirect(url_for("discuss.thread_list", slug=slug))
     threads = (Discussion.query.filter_by(course_id=course.id)
@@ -59,9 +65,15 @@ def thread_view(discussion_id):
         if not body:
             flash("Reply can't be empty.", "danger")
         else:
-            db.session.add(DiscussionReply(discussion_id=disc.id,
-                                           user_id=current_user.id, body=body))
+            reply = DiscussionReply(discussion_id=disc.id,
+                                    user_id=current_user.id, body=body)
+            db.session.add(reply)
             db.session.commit()
+            # Phase 8: discussion points (students only earn these)
+            if current_user.role == "student":
+                from . import gamification as G
+                G.award_points(current_user.id, "discussion_post",
+                               "reply", reply.id)
             flash("Reply posted.", "success")
             return redirect(url_for("discuss.thread_view",
                                     discussion_id=disc.id))

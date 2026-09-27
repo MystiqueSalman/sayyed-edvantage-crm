@@ -460,6 +460,15 @@ The finished platform should provide:
 - Tests: **62/62 new** + 36/36 Phase 1 + 92/92 Phase 2 + 78/78 Phase 3 + 80/80 Phase 4 + 43/43 chat fixes + 62/62 Phase 5 + 50/50 Phase 6 = **503/503** on fresh migrated DBs.
 - Student UI: 🚀 Career nav (`/career` hub → resume, portfolio, mock interviews, readiness); employer UI: 🏢 Employer Dashboard (`/employer`); admin: `/admin/employers`, `/admin/placement-analytics`, `/admin/career-settings` (readiness weights).
 
+## PHASE 8 DELIVERED (2026-09-28)
+- **Points (§15):** every learning action earns points — login (2), lesson (10), quiz attempt (5) + quiz score bonus (0–20), assignment (10), project submit (15), project evaluated pass (30), discussion post (3)/reply (2), mock interview (10), certificate (50); configurable per-action values in `/admin/gamification` (future awards use new values; history untouched). Append-only `point_transactions` ledger with idempotent award keys, recomputable totals.
+- **Badges (§15):** 14 system badges (First Steps, Quiz Whiz, Sharpshooter, Consistent, Unstoppable, Scholar, Graduate, Course Champion, Project Pro, Polished, Networker, Mentor, Early Bird, Pioneer) + custom admin badges with criteria engine (lessons count, quiz attempts, quiz mastery %, course completion, project passed, resume complete, streak days, points total, discussion posts/replies, mock interviews); optional course scope (lesson/quiz/course-completion/project criteria); auto-awarded from activity hooks; student `/achievements` page + dashboard widget + public portfolio showcase; one-time Pioneer badge + history-based starter-point backfill (idempotent) on first boot.
+- **Streaks (§15):** Asia/Kolkata calendar-day streaks tracked on every learning action; dashboard 🔥 widget with longest streak; badge criteria; reset after a missed day.
+- **Challenges (§15):** time-boxed opt-in challenges (points / lessons / quizzes / streaks criteria) with progress auto-tracked from activity; completion rewards + winners board; faculty/admin manage at `/manage/challenges`; students browse/join at `/challenges`.
+- Student UI: gamification strip on dashboard (points, day streak + best, latest badges, active challenges), `/achievements`, `/challenges`; faculty/admin: `/manage/challenges`; admin: `/admin/gamification`, `/admin/gamification/badges`.
+- Migration `b7e21c94d0a8` (8 new tables); verified: blank-chain `flask db upgrade` → head, Phase 7 → 8 upgrade with legacy data preserved, production-style `create_all()` zero-step deploy.
+- Tests: **46/46 new** + 36/36 Phase 1 + 92/92 Phase 2 + 78/78 Phase 3 + 80/80 Phase 4 + 43/43 chat fixes + 62/62 Phase 5 + 50/50 Phase 6 + 62/62 Phase 7 = **549/549** on fresh migrated DBs (each suite on its own fresh DB).
+
 ## BUILD STATUS (living)
 - [x] Phase 1 — core LMS: roles, courses, lessons, quizzes, assignments, certificates, coupons, Razorpay stub
 - [x] Phase 2 — live Jitsi classes, drip lessons, email automation, discussions, analytics, PWA, reviews, cert verify, progress, announcements, search, wishlist
@@ -468,7 +477,7 @@ The finished platform should provide:
 - [x] Phase 5 — AI learning layer: AI tutor + doubt solver (§6.1–6.3), study planner (§6.7), weak-topic analysis (§6.6 light)
 - [x] Phase 6 — Assessments pro: question bank (§5.2), 6 question types (§5.1), timed exams + negative marking + attempt limits + score policy (§5.3), exam analytics (§5.4), projects (§5.5), certificate score policy (§5.6)
 - [x] Phase 7 — Career & placements complete: resume builder (§27.2), portfolio (§27.3), interview prep (§27.4), readiness score (§27.6), employer portal (§13.3), placement analytics (§13.6)
-- [ ] Phase 8 — Gamification & engagement: badges, points, streaks, leaderboards, challenges (§15), bookmarks & notes (§2.4)
+- [x] Phase 8 — Gamification & engagement: points (§15), badges (§15), streaks (§15), challenges (§15)
 - [ ] Phase 9 — Faculty & operations: attendance (§4.3), calendar (§4.6), batch management (§18.4), audit logs (§18.6), granular permissions (§18.3), invoices + finance dashboard (§11.4–11.5)
 - [ ] Phase 10 — Platform hardening: Postgres migration, REST API + webhooks + docs (§25), backups & monitoring (§24), notification center + templates (§12.4–12.5), SEO (§20.6)
 - [ ] Phase 11 — Marketing suite: landing page builder (§20.1), campaigns (§20.2/20.5), affiliates (§20.4), analytics integrations (§20.7)

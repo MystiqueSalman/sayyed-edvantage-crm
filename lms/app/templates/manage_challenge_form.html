@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if challenge else 'New' }} Challenge — Manage{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎯 {{ 'Edit' if challenge else 'New' }} Challenge</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('manage.manage_challenges') }}">← Challenges</a></div>
+<div class="card"><div class="body">
+<form method="post" style="display:grid;gap:10px;max-width:560px">
+  <label>Title<input name="title" required maxlength="160" value="{{ challenge.title if challenge }}"></label>
+  <label>Description<textarea name="description" rows="3">{{ challenge.description if challenge }}</textarea></label>
+  <label>Challenge type
+    <select name="criterion" id="crit">
+      {% for c in criteria %}
+      <option value="{{ c }}" {% if challenge and challenge.criterion == c %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <div id="t-lessons" class="ttarget"><label>Lessons to complete<input type="number" name="count" min="1" value="{{ challenge.target.count if challenge and challenge.criterion == 'lessons' else 5 }}"></label></div>
+  <div id="t-quiz_score" class="ttarget">
+    <label>Quiz
+      <select name="quiz_id">
+        {% for q in quizzes %}<option value="{{ q.id }}" {% if challenge and challenge.target.quiz_id == q.id %}selected{% endif %}>{{ q.title }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>Target score %<input type="number" name="percent" min="1" max="100" value="{{ challenge.target.percent if challenge and challenge.criterion == 'quiz_score' else 80 }}"></label>
+  </div>
+  <div id="t-points" class="ttarget"><label>Points to earn<input type="number" name="points" min="1" value="{{ challenge.target.points if challenge and challenge.criterion == 'points' else 50 }}"></label></div>
+  <label>Course scope (optional)
+    <select name="course_id"><option value="">All courses</option>
+      {% for c in courses %}<option value="{{ c.id }}" {% if challenge and challenge.course_id == c.id %}selected{% endif %}>{{ c.title }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>End date (optional)<input type="date" name="ends_at" value="{{ challenge.ends_at.strftime('%Y-%m-%d') if challenge and challenge.ends_at }}"></label>
+  <label>Reward points<input type="number" name="reward_points" min="0" value="{{ challenge.reward_points if challenge else 50 }}"></label>
+  <div><button class="btn btn-gold" type="submit">{{ 'Save' if challenge else 'Create challenge' }}</button></div>
+</form>
+</div></div>
+<script>
+function showTarget() {
+  var v = document.getElementById('crit').value;
+  document.querySelectorAll('.ttarget').forEach(function (el) {
+    el.style.display = (el.id === 't-' + v) ? '' : 'none';
+  });
+}
+document.getElementById('crit').addEventListener('change', showTarget);
+showTarget();
+</script>
+{% endblock %}

@@ -87,6 +87,7 @@ def create_app():
     from .routes_crm import crm_bp  # noqa: E402  (Phase 4: CRM/admissions)
     from .routes_tutor import tutor_bp  # noqa: E402  (Phase 5: AI tutor/planner)
     from .routes_career import career_bp  # noqa: E402  (Phase 7: career/placements)
+    from .routes_game import game_bp  # noqa: E402  (Phase 8: gamification)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -99,11 +100,26 @@ def create_app():
     app.register_blueprint(crm_bp)
     app.register_blueprint(tutor_bp)
     app.register_blueprint(career_bp)
+    app.register_blueprint(game_bp)
 
     with app.app_context():
         if os.environ.get("LMS_SKIP_CREATE_ALL") != "1":
             db.create_all()  # ensures tables exist (Alembic migrations for upgrades)
         _ensure_schema_patches(app)
+        # Phase 8: gamification defaults + one-time backfill (guarded).
+        # Skipped when the gamification tables don't exist yet (e.g. while
+        # `flask db upgrade` is still running the Phase 8 migration).
+        from . import gamification as _G  # noqa: E402
+        try:
+            from sqlalchemy import inspect as _insp  # noqa: E402
+            if "point_settings" in _insp(db.engine).get_table_names():
+                _G.ensure_gamification_defaults()
+                try:
+                    _G.run_backfill()
+                except Exception:
+                    db.session.rollback()
+        except Exception:
+            db.session.rollback()
 
     _start_reminder_scheduler(app)
 

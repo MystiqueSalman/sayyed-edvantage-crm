@@ -32,6 +32,10 @@ def login():
         user = User.query.filter_by(email=email).first()
         if user and user.is_active and user.check_password(password):
             login_user(user)
+            # Phase 8: daily login points (once per Asia/Kolkata day)
+            from . import gamification as G
+            G.award_points(user.id, "daily_login", "day",
+                           G.kolkata_today().isoformat())
             flash(f"Welcome back, {user.name}!", "success")
             nxt = request.args.get("next")
             return redirect(nxt or _landing_for(user))

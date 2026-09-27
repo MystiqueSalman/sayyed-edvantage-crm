@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ ch.title }} — Challenge{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎯 {{ ch.title }}</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('game.challenge_list') }}">← All challenges</a></div>
+
+<div class="card" style="margin-bottom:16px"><div class="body">
+  <p>{{ ch.description or ch.target_label }}</p>
+  <div style="color:var(--muted);font-size:.9rem">🎯 {{ ch.target_label }} · ⭐ {{ ch.reward_points }} bonus points
+  {% if ch.ends_at %}· ends {{ ch.ends_at.strftime('%d %b %Y') }}{% endif %}{% if ch.course %} · {{ ch.course.title }}{% endif %}</div>
+  {% if mine %}
+    {% if mine.completed %}
+      <p style="margin-top:10px"><span class="tag green">🏆 Challenge complete — reward earned!</span></p>
+    {% else %}
+      <div style="background:#222;border-radius:8px;height:14px;overflow:hidden;margin:10px 0">
+        <div style="height:100%;width:{{ mine.progress }}%;background:linear-gradient(90deg,var(--gold),#f3d47c)"></div>
+      </div>
+      <p style="color:var(--muted)">Your progress: {{ mine.progress|round(1) }}%</p>
+    {% endif %}
+  {% elif ch.is_live %}
+    <form method="post" action="{{ url_for('game.challenge_join', challenge_id=ch.id) }}" style="margin-top:10px">
+      <button class="btn btn-gold" type="submit">Join this challenge 🎯</button>
+    </form>
+  {% else %}
+    <p style="color:var(--muted);margin-top:10px">This challenge has ended.</p>
+  {% endif %}
+</div></div>
+
+{% if winners %}
+<div class="section-title"><h3>🏆 Winners</h3><div class="line"></div></div>
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+  {% for e in winners %}
+  <div class="card"><div class="body" style="text-align:center">
+    <div style="font-size:1.8rem">🏆</div><b>{{ e.user.name }}</b>
+    <div style="color:var(--muted);font-size:.8rem">{{ e.completed_at.strftime('%d %b') if e.completed_at }}</div>
+  </div></div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="section-title"><h3>Participants ({{ participants|length }})</h3><div class="line"></div></div>
+{% for e in participants %}
+<div class="card" style="margin-bottom:8px"><div class="body">
+  <b>{{ e.user.name }}</b>
+  {% if e.completed %}<span class="tag green" style="margin-left:8px">🏆 done</span>{% endif %}
+  <div style="background:#222;border-radius:8px;height:8px;overflow:hidden;margin:6px 0">
+    <div style="height:100%;width:{{ e.progress }}%;background:linear-gradient(90deg,var(--blue),#6cc3ff)"></div>
+  </div>
+  <small style="color:var(--muted)">{{ e.progress|round(1) }}%</small>
+</div></div>
+{% else %}
+<div class="card"><div class="body" style="color:var(--muted)">No participants yet — be the first to join!</div></div>
+{% endfor %}
+{% endblock %}

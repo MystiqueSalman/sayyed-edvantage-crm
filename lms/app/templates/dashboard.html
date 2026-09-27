@@ -5,6 +5,31 @@
   <a class="btn btn-ghost btn-sm" href="{{ url_for('main.catalog') }}">+ Enroll in more</a>
   <a class="btn btn-ghost btn-sm" href="{{ url_for('student.wishlist') }}">❤ Wishlist</a></div>
 
+{# Phase 8: gamification strip #}
+<div class="card" style="margin-bottom:18px"><div class="body">
+  <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center">
+    <div style="text-align:center"><div style="font-size:1.5rem">⭐</div>
+      <b style="color:var(--gold)">{{ game_profile.points_total or 0 }}</b><br>
+      <small style="color:var(--muted)">points</small></div>
+    <div style="text-align:center"><div style="font-size:1.5rem">🔥</div>
+      <b style="color:#ff8c42">{{ game_profile.current_streak or 0 }}</b><br>
+      <small style="color:var(--muted)">day streak (best {{ game_profile.longest_streak or 0 }})</small></div>
+    <div style="flex:1;min-width:200px">
+      <small style="color:var(--muted)">Latest badges</small><br>
+      {% if recent_badges %}
+        {% for ub in recent_badges %}<span title="{{ ub.badge.description }}" style="font-size:1.5rem;margin-right:6px">{{ ub.badge.icon }}</span>{% endfor %}
+      {% else %}<small style="color:var(--muted)">none yet</small>{% endif %}
+    </div>
+    <div style="flex:1;min-width:200px">
+      <small style="color:var(--muted)">Active challenges</small><br>
+      {% if my_challenges %}
+        {% for e in my_challenges %}<div><a href="{{ url_for('game.challenge_detail', challenge_id=e.challenge.id) }}">{{ e.challenge.title }}</a> <small style="color:var(--muted)">{{ e.progress|round(0) }}%</small></div>{% endfor %}
+      {% else %}<small style="color:var(--muted)">none — <a href="{{ url_for('game.challenge_list') }}">join one</a></small>{% endif %}
+    </div>
+    <a class="btn btn-gold btn-sm" href="{{ url_for('game.achievements') }}">🏆 Achievements</a>
+  </div>
+</div></div>
+
 {% if live_sessions %}
 <div class="section-title"><h2>🔴 Upcoming Live Classes</h2><div class="line"></div></div>
 {% for s in live_sessions %}

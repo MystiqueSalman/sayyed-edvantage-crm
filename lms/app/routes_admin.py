@@ -369,3 +369,129 @@ def ai_settings():
     courses = Course.query.order_by(Course.title).all()
     return render_template("admin_ai_settings.html", settings=settings,
                            courses=courses)
+
+
+# ------------------------------------------------- Phase 8: gamification
+@admin_bp.route("/gamification", methods=["GET", "POST"])
+@admin_required
+def gamification():
+    """Point values per activity + bonus rates + one-time backfill (§15.2)."""
+    from . import gamification as G
+    from .models import GamificationSetting, PointSetting
+    G.ensure_gamification_defaults()
+    if request.method == "POST":
+        if request.form.get("run_backfill"):
+            stats = G.run_backfill(force=True)
+            flash(f"Backfill complete: {stats.get('users', 0)} students, "
+                  f"{stats.get('transactions', 0)} point records, "
+                  f"{stats.get('badges', 0)} badges.", "success")
+            return redirect(url_for("admin.gamification"))
+        for action in list(G.POINT_DEFAULTS):
+            row = PointSetting.query.filter_by(action=action).first()
+            if not row:
+                continue
+            try:
+                row.points = max(0, int(request.form.get(
+                    f"points_{action}", row.points) or 0))
+            except ValueError:
+                pass
+        for setting_action, default in (
+                (G.QUIZ_BONUS_RATE_SETTING, 0.2),
+                (G.PROJECT_BONUS_RATE_SETTING, 0.3)):
+            row = PointSetting.query.filter_by(action=setting_action).first()
+            if row:
+                try:
+                    rate = float(request.form.get(setting_action, default)
+                                 or default)
+                    row.label = f"rate:{max(0.0, min(2.0, rate))}"
+                except ValueError:
+                    pass
+        db.session.commit()
+        flash("Point values saved — they apply to future awards.", "success")
+        return redirect(url_for("admin.gamification"))
+    settings = PointSetting.query.order_by(PointSetting.action).all()
+    quiz_rate = G.bonus_rate(G.QUIZ_BONUS_RATE_SETTING, 0.2)
+    proj_rate = G.bonus_rate(G.PROJECT_BONUS_RATE_SETTING, 0.3)
+    backfill = GamificationSetting.get()
+    return render_template("admin_gamification.html", settings=settings,
+                           actions=G.POINT_DEFAULTS, quiz_rate=quiz_rate,
+                           proj_rate=proj_rate, backfill_done=backfill.backfill_done)
+
+
+@admin_bp.route("/gamification/badges", methods=["GET", "POST"])
+@admin_required
+def badge_list():
+    """Badge definitions: create + toggle (§15.1)."""
+    from .models import Badge, Course
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        criterion = request.form.get("criterion", "").strip()
+        if not name or not criterion:
+            flash("Name and criterion are required.", "danger")
+        else:
+            try:
+                threshold = float(request.form.get("threshold", 1) or 1)
+            except ValueError:
+                threshold = 1.0
+            course_id = request.form.get("course_id", type=int) or None
+            db.session.add(Badge(
+                name=name[:80], icon=request.form.get("icon", "🏅").strip() or "🏅",
+                description=request.form.get("description", "").strip()[:200],
+                criterion=criterion, threshold=threshold,
+                course_id=course_id))
+            db.session.commit()
+            flash(f"Badge '{name}' created.", "success")
+        return redirect(url_for("admin.badge_list"))
+    badges = Badge.query.order_by(Badge.is_system.desc(), Badge.id).all()
+    courses = Course.query.order_by(Course.title).all()
+    criteria = ["lessons_completed", "quizzes_attempted", "quiz_mastery",
+                "courses_completed", "project_star", "projects_evaluated",
+                "streak_days", "discussion_posts", "interviews_completed",
+                "resume_complete", "points_total"]
+    return render_template("admin_badges.html", badges=badges,
+                           courses=courses, criteria=criteria)
+
+
+@admin_bp.route("/gamification/badges/<int:badge_id>/edit",
+                methods=["GET", "POST"])
+@admin_required
+def badge_edit(badge_id):
+    from .models import Badge, Course
+    badge = Badge.query.get_or_404(badge_id)
+    if request.method == "POST":
+        if badge.is_system and request.form.get("criterion", "").strip() != badge.criterion:
+            flash("System badge criteria can't be changed.", "warning")
+            return redirect(url_for("admin.badge_edit", badge_id=badge.id))
+        badge.name = request.form.get("name", "").strip()[:80] or badge.name
+        badge.icon = request.form.get("icon", "🏅").strip() or "🏅"
+        badge.description = request.form.get("description", "").strip()[:200]
+        if not badge.is_system:
+            badge.criterion = request.form.get("criterion", "").strip() or badge.criterion
+        try:
+            badge.threshold = float(request.form.get("threshold", 1) or 1)
+        except ValueError:
+            pass
+        badge.course_id = request.form.get("course_id", type=int) or None
+        db.session.commit()
+        flash("Badge updated.", "success")
+        return redirect(url_for("admin.badge_list"))
+    courses = Course.query.order_by(Course.title).all()
+    criteria = ["lessons_completed", "quizzes_attempted", "quiz_mastery",
+                "courses_completed", "project_star", "projects_evaluated",
+                "streak_days", "discussion_posts", "interviews_completed",
+                "resume_complete", "points_total"]
+    return render_template("admin_badge_form.html", badge=badge,
+                           courses=courses, criteria=criteria)
+
+
+@admin_bp.route("/gamification/badges/<int:badge_id>/toggle",
+                methods=["POST"])
+@admin_required
+def badge_toggle(badge_id):
+    from .models import Badge
+    badge = Badge.query.get_or_404(badge_id)
+    badge.is_active = not badge.is_active
+    db.session.commit()
+    flash(f"Badge '{badge.name}' "
+          f"{'activated' if badge.is_active else 'deactivated'}.", "success")
+    return redirect(url_for("admin.badge_list"))
