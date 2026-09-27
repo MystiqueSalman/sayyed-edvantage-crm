@@ -1197,6 +1197,36 @@ def _normalize_contact(value: str) -> str:
     return re.sub(r"[\s\-\(\)\.]", "", str(value or "").strip().lower())
 
 
+def _get_lead_from_crm(lead_id: str) -> dict | None:
+    """Fetch a lead by ID from the CRM dashboard (the canonical record).
+
+    The agent's own leads.json is ephemeral (resets on every redeploy),
+    so an enquiry ID quoted by a student must be resolved against the
+    CRM's persistent store. Falls back to None (caller tries local).
+    Never raises.
+    """
+    try:
+        base_url = os.environ.get("SE_CRM_BASE_URL", "").strip().rstrip("/")
+        lead_id = str(lead_id or "").strip().upper()
+        if not base_url or not lead_id:
+            return None
+        crm_user = os.environ.get("SE_CRM_USER", "")
+        crm_password = os.environ.get("SE_CRM_PASSWORD", "")
+        resp = requests.get(
+            base_url + "/api/lead/" + lead_id,
+            auth=(crm_user, crm_password),
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            return None
+        body = resp.json()
+        lead = body.get("lead") if isinstance(body, dict) else None
+        return lead if isinstance(lead, dict) else None
+    except Exception as exc:  # noqa: BLE001 - lookup must never break replies
+        logger.warning("CRM lead lookup failed: %s", exc)
+        return None
+
+
 def _find_existing_lead_from_text(
     conversation_history: str,
     current_message: str,
@@ -1205,16 +1235,20 @@ def _find_existing_lead_from_text(
     Find an existing CRM lead using contact details already present in the
     conversation. Name is used only as a unique fallback.
     """
-    # Explicit CRM lead ID has highest priority.
+    # Explicit CRM lead ID has highest priority. Resolve against the CRM
+    # first (canonical record); the agent's local store is ephemeral and
+    # resets on redeploy, so it cannot be trusted for ID lookups.
     lead_id_match = re.search(r"\b(SE-\d{5})\b", str(current_message or ""), re.IGNORECASE)
     if lead_id_match:
-        explicit_lead = get_lead(lead_id_match.group(1).upper())
+        lead_id = lead_id_match.group(1).upper()
+        explicit_lead = _get_lead_from_crm(lead_id) or get_lead(lead_id)
         if explicit_lead:
             return explicit_lead
 
     lead_id_match = re.search(r"\b(SE-\d{5})\b", str(conversation_history or ""), re.IGNORECASE)
     if lead_id_match:
-        explicit_lead = get_lead(lead_id_match.group(1).upper())
+        lead_id = lead_id_match.group(1).upper()
+        explicit_lead = _get_lead_from_crm(lead_id) or get_lead(lead_id)
         if explicit_lead:
             return explicit_lead
 

@@ -1410,6 +1410,18 @@ class Handler(BaseHTTPRequestHandler):
             )
             return
 
+        if parsed.path.startswith("/api/lead/"):
+            # JSON lookup used by the AI agent service: the agent's own
+            # leads.json is ephemeral (resets on redeploy), so enquiry-ID
+            # lookups must hit the CRM's persistent store.
+            lead_id = parsed.path[len("/api/lead/"):].strip().upper()
+            lead = get_lead(lead_id)
+            if lead:
+                self.send_json({"status": "ok", "lead": lead}, 200)
+            else:
+                self.send_json({"status": "error", "message": "Lead not found"}, 404)
+            return
+
         self.send_html("<h1>404 - Not Found</h1>", 404)
 
     def do_POST(self):
