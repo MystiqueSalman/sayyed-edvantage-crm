@@ -308,12 +308,8 @@ def chat():
             except Exception:
                 pass
         db.session.commit()
-    except Exception as e:
+    except Exception:
         db.session.rollback()
-        # TEMP-DEBUG (2026-09-27): surface lead-capture failures in the reply
-        # so a live test can reveal the production error. REMOVE after fix.
-        reply = (reply + "\n\n[debug] lead-capture failed: "
-                 + f"{type(e).__name__}: {e}")
     return jsonify({"reply": reply, "conversation_id": conv.id})
 
 
