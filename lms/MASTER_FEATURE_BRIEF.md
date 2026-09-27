@@ -490,6 +490,7 @@ The finished platform should provide:
 - **SEO (§20.6):** per-course meta title/description (editable), canonical URLs, Open Graph, JSON-LD `Course` structured data, `/sitemap.xml`, `/robots.txt`; public `/developers` page generated from live routes (auth guide, curl examples, webhook event catalog, changelog).
 - Migration `e10a3f2b8c4d` (7 new tables: `api_keys`, `webhooks`, `webhook_deliveries`, `backups`, `notifications`, `message_templates`, `app_settings` + 2 SEO columns); verified: blank-chain `flask db upgrade` → head on SQLite **and** real Postgres, production-style `create_all()` + schema patches zero-step deploy on both.
 - Tests: **75/75 new** + 617 prior = **692/692** on fresh migrated DBs (each suite on its own fresh DB).
+- Commits: `d1c6fc62c6f8775a55073b66f4b450de1c270813` (Phase 10) + follow-up `4e6be1e78153046693622adcccea5c47752eb358` (fixes `/health` disk check to use the actual database directory — on Railway the DB lives at `/app/data`, not `instance_path`, which had wrongly reported "degraded").
 
 ## BUILD STATUS (living)
 - [x] Phase 1 — core LMS: roles, courses, lessons, quizzes, assignments, certificates, coupons, Razorpay stub
