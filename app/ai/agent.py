@@ -813,7 +813,39 @@ def _has_required_lead_information(lead_data: dict) -> bool:
     )
 
 
-def _push_lead_to_crm(lead: dict):
+def _build_chat_transcript(history: list, max_messages: int = 40,
+                            max_chars: int = 4000) -> str:
+    """Plain-text transcript of the recent conversation for the CRM lead record.
+
+    One line per message: "Visitor: <text>" / "Bot: <text>", covering the
+    last ~20 exchanges (40 messages), capped at ~4000 chars. Best-effort:
+    returns "" when history is empty or malformed, so a missing transcript
+    can never break the lead push.
+    """
+    try:
+        msgs = [m for m in (history or []) if isinstance(m, dict)]
+        msgs = msgs[-max_messages:]
+        lines = []
+        for m in msgs:
+            role = str(m.get("role", "")).lower()
+            who = ("Visitor" if role in ("user", "visitor", "human", "student")
+                   else "Bot")
+            text = " ".join(str(m.get("content", "")).split())
+            if not text:
+                continue
+            lines.append(f"{who}: {text}")
+        transcript = "\n".join(lines)
+        if len(transcript) > max_chars:
+            transcript = transcript[-max_chars:]
+            nl = transcript.find("\n")
+            if nl != -1:
+                transcript = transcript[nl + 1:]
+        return transcript
+    except Exception:  # noqa: BLE001 - transcript is best-effort only
+        return ""
+
+
+def _push_lead_to_crm(lead: dict, chat_transcript: str = ""):
     """Best-effort push of a locally created/updated lead to the CRM dashboard.
 
     The CRM is a separate Railway service with the persistent leads.json
@@ -824,6 +856,8 @@ def _push_lead_to_crm(lead: dict):
     Returns the CRM's lead record (with the CRM-assigned ``lead_id``) on
     success, else None. The caller should quote the CRM's ID back to the
     student so it matches what the dashboard shows.
+
+    ``chat_transcript`` (optional) is attached as-is; omitted when empty.
     """
     try:
         base_url = os.environ.get("SE_CRM_BASE_URL", "").strip().rstrip("/")
@@ -840,6 +874,8 @@ def _push_lead_to_crm(lead: dict):
             "message": str(lead.get("message", "")),
             "source": str(lead.get("source", "") or "AI Agent"),
         }
+        if chat_transcript:
+            payload["chat_transcript"] = chat_transcript
         resp = requests.post(
             base_url + "/api/ingest-lead",
             json=payload,
@@ -864,6 +900,7 @@ def _create_admission_lead(
     lead_data: dict,
     contact_phone: str = "",
     lead_source: str = "AI Agent",
+    chat_transcript: str = "",
 ) -> dict | None:
     """
     Create a lead only when the lead data is sufficiently complete.
@@ -922,7 +959,7 @@ def _create_admission_lead(
     # student: the agent's local counter and the CRM's counter differ, and
     # the dashboard is the source of truth the admissions team works from.
     if isinstance(lead, dict):
-        crm_lead = _push_lead_to_crm(lead)
+        crm_lead = _push_lead_to_crm(lead, chat_transcript=chat_transcript)
         if isinstance(crm_lead, dict) and crm_lead.get("lead_id"):
             lead["lead_id"] = crm_lead["lead_id"]
 
@@ -1815,11 +1852,17 @@ Make the response natural enough to be spoken aloud.
     # 10. CREATE LEAD IF READY
     # ---------------------------------------------
 
+    # Include the chat transcript so the CRM lead record shows the
+    # WhatsApp conversation. Built from memory saved through step 8, so it
+    # covers the full exchange including the latest reply.
+    chat_transcript = _build_chat_transcript(load_memory(session_id))
+
     lead = (
         _create_admission_lead(
             lead_data,
             contact_phone=contact_phone,
             lead_source=lead_source,
+            chat_transcript=chat_transcript,
         )
         if allow_lead_creation
         else None
