@@ -23,6 +23,13 @@ NAME_RE = re.compile(r"(?:my name is|i am|i'm|this is)\s+([A-Za-z][A-Za-z ]{1,40
                      re.IGNORECASE)
 RUPEE_RE = re.compile(r"₹\s?([\d,]+)")
 
+# Approved combo offers (Salman-confirmed 2026-09-27; not LMS course rows,
+# so kept separate from the DB-driven course list).
+COMBO_OFFERS = (
+    ("Data Science + Data Analytics Combo", 80000),
+    ("Linux + DevOps Combo", 60000),
+)
+
 FEE_WORDS = ("fee", "fees", "price", "cost", "charge", "₹", "rs\\b", "inr")
 INTENT_ENROLL = ("enroll", "enrol", "admission", "join", "apply", "register",
                  "sign up", "signup")
@@ -49,7 +56,12 @@ def course_knowledge():
 
 
 def approved_fees():
-    return {c["fee"] for c in course_knowledge()}
+    return {c["fee"] for c in course_knowledge()} | {fee for _, fee in COMBO_OFFERS}
+
+
+def _combo_text():
+    lines = [f"• {name}: ₹{fee:,} + GST" for name, fee in COMBO_OFFERS]
+    return "Combo offers:\n" + "\n".join(lines)
 
 
 def _match_course(text, courses):
@@ -71,6 +83,7 @@ def _has(text, words):
 def _fee_list_text(courses):
     lines = [f"• {c['title']}: ₹{c['fee']:,} + GST" for c in courses]
     return ("Here are our course fees (all + GST):\n" + "\n".join(lines)
+            + "\n\n" + _combo_text()
             + "\n\nUse code WELCOME10 for 10% off on admission!")
 
 
@@ -103,7 +116,17 @@ def rules_reply(message, conversation):
                 "Meanwhile, ask me anything about our courses, fees or "
                 "batches!"), flags
 
-    course = _match_course(low, courses)
+    course = None
+    if "combo" in low:
+        for name, fee in COMBO_OFFERS:
+            words = [w for w in re.split(r"\W+", name.lower()) if len(w) > 2]
+            if sum(1 for w in words if w in low) >= 3:
+                flags["fee_asked"] = True
+                return (f"**{name}** costs **₹{fee:,} + GST**.\n\n"
+                        "Want me to have a counsellor call you? Just share "
+                        "your 10-digit mobile number."), flags
+    if course is None:
+        course = _match_course(low, courses)
     if course and _has(low, FEE_WORDS):
         flags["fee_asked"] = True
         return (f"**{course['title']}** costs **₹{course['fee']:,} + GST**.\n\n"
@@ -209,6 +232,8 @@ def openai_available():
 def _system_prompt(courses):
     fee_lines = "\n".join(f"- {c['title']}: ₹{c['fee']:,} + GST"
                           for c in courses)
+    combo_lines = "\n".join(f"- {name}: ₹{fee:,} + GST (combo offer)"
+                            for name, fee in COMBO_OFFERS)
     return f"""You are the Sayyed EdVantage AI assistant — education counsellor,
 student support executive, admissions assistant and LMS helper for an Indian
 IT training institute. Tagline: "Empowering Students for Success."
@@ -217,6 +242,7 @@ Public founder info (only if asked): founded by Salman Sayyed.
 
 APPROVED COURSE DATA (quote ONLY these fees — never invent others):
 {fee_lines}
+{combo_lines}
 - 10% off with code WELCOME10. Never invent other discounts, EMI, or scholarships.
 - New batches start monthly; October batch admissions are open. Never invent exact batch dates/timings — say the counsellor confirms them.
 - Courses are beginner-friendly; no strict prerequisites.
