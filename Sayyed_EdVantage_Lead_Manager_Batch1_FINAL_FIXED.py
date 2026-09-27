@@ -20,6 +20,8 @@ from app.leads.lead_manager import (
     get_all_leads,
     get_lead,
     update_lead,
+    load_leads,
+    save_leads,
     create_or_update_lead,
     find_duplicate_lead,
     add_counselling_session,
@@ -72,6 +74,88 @@ SOURCES = [
     "School/College",
     "Other",
 ]
+
+
+# ---------------------------------------------------------------------------
+# WhatsApp chat transcript + call log storage
+# ---------------------------------------------------------------------------
+# update_lead() in app.leads.lead_manager only writes an allow-list of fields,
+# so these two extras are persisted via direct load/save of the leads store.
+# Kept in this CRM file so the shared agent-api module stays untouched.
+
+MAX_CHAT_TRANSCRIPT_CHARS = 20000
+
+
+def store_lead_extras(lead_id, **fields):
+    """Write extra lead fields (whatsapp_chat) bypassing update_lead's allow-list."""
+    lead_id = str(lead_id or "").strip()
+    if not lead_id:
+        return None
+    leads = load_leads()
+    lead = leads.get(lead_id)
+    if not isinstance(lead, dict):
+        return None
+    for key, value in fields.items():
+        lead[key] = value
+    lead["updated_at"] = datetime.now().isoformat(timespec="seconds")
+    save_leads(leads)
+    return lead
+
+
+def store_whatsapp_chat(lead_id, transcript):
+    """Save/refresh the WhatsApp chat transcript on a lead (latest wins)."""
+    transcript = str(transcript or "").strip()
+    if not transcript:
+        return None
+    if len(transcript) > MAX_CHAT_TRANSCRIPT_CHARS:
+        transcript = transcript[:MAX_CHAT_TRANSCRIPT_CHARS] + "\n...(truncated)"
+    return store_lead_extras(lead_id, whatsapp_chat=transcript)
+
+
+def add_call_log(lead_id, call_date, duration, summary, counsellor=""):
+    """Append a call-log entry to a lead's 'calls' list."""
+    lead_id = str(lead_id or "").strip()
+    summary = str(summary or "").strip()
+    if not lead_id or not summary:
+        return None
+    leads = load_leads()
+    lead = leads.get(lead_id)
+    if not isinstance(lead, dict):
+        return None
+    calls = lead.get("calls")
+    if not isinstance(calls, list):
+        calls = []
+        lead["calls"] = calls
+    calls.append({
+        "call_date": str(call_date or "").strip(),
+        "duration": str(duration or "").strip(),
+        "summary": summary,
+        "counsellor": str(counsellor or "").strip(),
+        "logged_at": datetime.now().isoformat(timespec="seconds"),
+    })
+    lead["updated_at"] = datetime.now().isoformat(timespec="seconds")
+    save_leads(leads)
+    return lead
+
+
+def whatsapp_chat_html(transcript):
+    """Render a 'Visitor: ...' / 'Bot: ...' transcript as chat bubbles."""
+    lines = [ln.strip() for ln in str(transcript or "").splitlines() if ln.strip()]
+    if not lines:
+        return '<div class="muted">No WhatsApp chat recorded for this lead yet.</div>'
+    parts = []
+    for line in lines:
+        label, sep, text = line.partition(":")
+        who = label.strip().lower()
+        if sep and who in ("visitor", "user", "student", "customer", "lead"):
+            cls, who_label, body = "user", label.strip(), text.strip()
+        elif sep and who in ("bot", "assistant", "agent", "sayyed edvantage", "counsellor"):
+            cls, who_label, body = "bot", label.strip(), text.strip()
+        else:
+            cls, who_label, body = "bot", "", line.strip()
+        who_html = f'<span class="who">{safe(who_label)}</span>' if who_label else ""
+        parts.append(f'<div class="chat-msg {cls}">{who_html}{safe(body) or "&mdash;"}</div>')
+    return '<div class="chatlog">' + "".join(parts) + "</div>"
 
 
 def safe(value) -> str:
@@ -742,6 +826,10 @@ def lead_details_page(lead, message=""):
     # Load counselling and follow-up history BEFORE building the activity timeline.
     counselling_history = get_counselling_history(lead_id_raw)
     followup_history = get_follow_up_history(lead_id_raw)
+    whatsapp_chat = str(lead.get("whatsapp_chat", "") or "")
+    call_log = lead.get("calls")
+    if not isinstance(call_log, list):
+        call_log = []
 
     activity = []
     created = lead.get("created_at")
@@ -797,6 +885,25 @@ def lead_details_page(lead, message=""):
             f"Payment recorded — {safe(payment.get('amount'))} {safe(currency)}",
             event_time,
             str(payment.get("payment_mode", "Payment"))
+        ))
+
+    for call in call_log:
+        if not isinstance(call, dict):
+            continue
+        call_date = str(call.get("call_date", "")).strip()
+        call_summary = str(call.get("summary", "")).strip()
+        call_counsellor = str(call.get("counsellor", "")).strip()
+        activity.append((
+            f"Call logged \u2014 {call_summary[:70]}",
+            call_date or str(call.get("logged_at", "")),
+            f"Counsellor: {call_counsellor}" if call_counsellor else "CRM",
+        ))
+
+    if whatsapp_chat:
+        activity.append((
+            "WhatsApp chat updated",
+            str(lead.get("updated_at", "")),
+            "WhatsApp Bot",
         ))
 
     activity.sort(key=activity_sort_key, reverse=True)
@@ -858,6 +965,26 @@ def lead_details_page(lead, message=""):
         if converted not in (None, "", 0, 0.0, "0", "0.0")
         else "Not set"
     )
+
+    if call_log:
+        call_rows = []
+        for call in reversed(call_log):
+            if not isinstance(call, dict):
+                continue
+            call_rows.append(
+                f'<tr><td>{safe(call.get("call_date")) or "&mdash;"}</td>'
+                f'<td>{safe(call.get("duration")) or "&mdash;"}</td>'
+                f'<td>{safe(call.get("counsellor")) or "&mdash;"}</td>'
+                f'<td>{safe(call.get("summary")) or "&mdash;"}</td>'
+                f'<td>{safe(call.get("logged_at")) or "&mdash;"}</td></tr>'
+            )
+        call_history_html = (
+            '<div class="table-wrap"><table style="width:100%;border-collapse:collapse">'
+            '<thead><tr><th>Date</th><th>Duration</th><th>Counsellor</th><th>Summary</th><th>Logged At</th></tr></thead>'
+            '<tbody>' + "".join(call_rows) + '</tbody></table></div>'
+        )
+    else:
+        call_history_html = '<div class="message">No calls logged yet.</div>'
 
     lead_overview_html = f'''
     <div class="lead-overview">
@@ -1000,6 +1127,13 @@ main{{max-width:1250px;margin:auto;padding:24px 30px}}
 .payment-summary{{margin-top:12px}}
 .message{{background:#f8f9fc;border:1px solid #edf0f4;padding:15px;border-radius:9px;
           margin-top:10px;white-space:pre-wrap;word-break:break-word;min-height:45px}}
+.chatlog{{max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:6px 2px}}
+.chat-msg{{max-width:88%;padding:9px 12px;border-radius:12px;font-size:14px;
+           white-space:pre-wrap;word-break:break-word;line-height:1.45}}
+.chat-msg .who{{display:block;font-size:10px;color:var(--muted);margin-bottom:3px;
+               font-weight:700;text-transform:uppercase;letter-spacing:.4px}}
+.chat-msg.bot{{background:#eef5ff;align-self:flex-start;border:1px solid #d6e7fb}}
+.chat-msg.user{{background:#e9f9ee;align-self:flex-end;border:1px solid #c9e7d2}}
 .timeline{{position:relative;padding-left:24px}}
 .timeline:before{{content:"";position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:#d9e4f0}}
 .timeline-item{{position:relative;padding:0 0 18px 12px}}
@@ -1073,6 +1207,44 @@ button{{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:6
       <div class="message">{safe(lead.get("message")) or "No enquiry message recorded."}</div>
       <h3 style="margin-top:20px">Follow-up Notes</h3>
       <div class="message">{safe(lead.get("follow_up_notes")) or "No follow-up notes recorded."}</div>
+    </section>
+
+    <section class="panel">
+      <h3>WhatsApp Chat</h3>
+      {whatsapp_chat_html(whatsapp_chat)}
+    </section>
+
+    <section class="panel">
+      <h3>Call Log</h3>
+      {call_history_html}
+    </section>
+
+    <section class="panel">
+      <h3>Log a Call</h3>
+      <form method="post" action="/log-call">
+        <input type="hidden" name="lead_id" value="{lead_id}">
+        <div class="edit-grid">
+          <div>
+            <label>Call Date</label>
+            <input type="date" name="call_date" value="{safe(datetime.now().date().isoformat())}">
+          </div>
+          <div>
+            <label>Duration</label>
+            <input name="duration" placeholder="e.g. 12 min">
+          </div>
+          <div>
+            <label>Counsellor</label>
+            <input name="counsellor" value="{safe(lead.get("assigned_counsellor"))}" placeholder="Who made the call">
+          </div>
+          <div class="full">
+            <label>Call Summary / Discussion Notes</label>
+            <textarea name="summary" required placeholder="What was discussed on the call \u2014 questions, objections, next steps"></textarea>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit">Save Call Log</button>
+        </div>
+      </form>
     </section>
 
     <section class="panel">
@@ -1467,6 +1639,12 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json({"ok": False, "error": "could not save lead"}, 500)
                     return
 
+                chat_transcript = str(data.get("chat_transcript", "") or "")
+                if chat_transcript.strip():
+                    stored = store_whatsapp_chat(lead["lead_id"], chat_transcript)
+                    if stored:
+                        lead = stored
+
                 created = existing is None
                 if created:
                     tomorrow = (datetime.now() + timedelta(days=1)).date().isoformat()
@@ -1523,6 +1701,49 @@ class Handler(BaseHTTPRequestHandler):
                     return
 
                 self.redirect("/follow-ups?filter=today&message=Follow-up+saved+successfully")
+            except Exception as exc:
+                self.send_html(
+                    f"<h1>Server error</h1><pre>{safe(exc)}</pre>",
+                    500,
+                )
+            return
+
+        if parsed.path == "/log-call":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                body = self.rfile.read(length).decode("utf-8")
+                data = parse_qs(body)
+
+                lead_id = data.get("lead_id", [""])[0].strip()
+                if not get_lead(lead_id):
+                    self.send_html("<h1>Lead not found</h1>", 404)
+                    return
+
+                call_date = data.get("call_date", [""])[0].strip()
+                summary = data.get("summary", [""])[0].strip()
+                if not summary:
+                    self.send_html(
+                        "<h1>Call summary is required</h1>"
+                        "<p>Please go back and add what was discussed on the call.</p>",
+                        400,
+                    )
+                    return
+                if call_date and not valid_date(call_date):
+                    self.send_html("<h1>Invalid call date</h1><p>Use YYYY-MM-DD.</p>", 400)
+                    return
+
+                saved = add_call_log(
+                    lead_id=lead_id,
+                    call_date=call_date or datetime.now().date().isoformat(),
+                    duration=data.get("duration", [""])[0].strip(),
+                    summary=summary,
+                    counsellor=data.get("counsellor", [""])[0].strip(),
+                )
+                if not saved:
+                    self.send_html("<h1>Unable to save call log</h1>", 500)
+                    return
+
+                self.redirect("/lead?id=" + lead_id + "&message=Call+logged+successfully")
             except Exception as exc:
                 self.send_html(
                     f"<h1>Server error</h1><pre>{safe(exc)}</pre>",
