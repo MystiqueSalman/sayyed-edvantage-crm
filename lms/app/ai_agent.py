@@ -38,6 +38,9 @@ INTENT_SCHEDULE = ("batch", "timing", "schedule", "when", "start", "duration",
 INTENT_ELIGIBILITY = ("eligib", "prerequisite", "requirement", "who can",
                       "beginner", "background", "qualification")
 INTENT_DEMO = ("demo", "trial", "free class", "sample")
+INTENT_MODULES = ("module", "modules", "syllabus", "curriculum", "topics",
+                  "what will i learn", "course content", "what is covered",
+                  "what will be covered", "course outline")
 INTENT_HUMAN = ("human", "call me", "contact me", "counsellor", "counselor",
                 "talk to", "phone number", "number", "whatsapp")
 INTENT_COURSES = ("course", "courses", "offer", "teach", "learn", "training")
@@ -51,7 +54,7 @@ def course_knowledge():
     from .models import Course
     courses = (Course.query.filter_by(is_bonus=False)
                .order_by(Course.title).all())
-    return [{"title": c.title, "fee": c.fee, "slug": c.slug,
+    return [{"id": c.id, "title": c.title, "fee": c.fee, "slug": c.slug,
              "short": c.short_desc or ""} for c in courses]
 
 
@@ -85,6 +88,33 @@ def _fee_list_text(courses):
     return ("Here are our course fees (all + GST):\n" + "\n".join(lines)
             + "\n\n" + _combo_text()
             + "\n\nUse code WELCOME10 for 10% off on admission!")
+
+
+def _module_outline(course_id, per_module=10, max_chars=1800):
+    """Real module/lesson outline for a course, live from the DB.
+
+    Modules and lessons ordered by position; never hardcoded.
+    Returns None when the course has no modules in the DB.
+    """
+    from .models import Lesson, Module
+    modules = (Module.query.filter_by(course_id=course_id)
+               .order_by(Module.position, Module.id).all())
+    if not modules:
+        return None
+    parts = []
+    for mi, m in enumerate(modules, 1):
+        parts.append(f"Module {mi}: {m.title}")
+        lessons = (Lesson.query.filter_by(module_id=m.id)
+                   .order_by(Lesson.position, Lesson.id).all())
+        for li, l in enumerate(lessons[:per_module], 1):
+            parts.append(f"   {mi}.{li} {l.title}")
+        if len(lessons) > per_module:
+            parts.append(f"   …and {len(lessons) - per_module} more lessons")
+    text = "\n".join(parts)
+    if len(text) > max_chars:
+        text = (text[:max_chars].rsplit("\n", 1)[0]
+                + "\n   …(full detailed syllabus is shared by our counsellor)")
+    return text
 
 
 # ---------------------------------------------------------------- rules engine
@@ -138,6 +168,24 @@ def rules_reply(message, conversation):
         return (_fee_list_text(courses)
                 + "\n\nShare your 10-digit mobile number and a counsellor "
                   "will call you with batch details."), flags
+    if _has(low, INTENT_MODULES):
+        # Syllabus / curriculum questions: answer from the REAL DB outline.
+        if course:
+            outline = _module_outline(course["id"])
+            if outline:
+                return (f"**{course['title']}** — course outline 📚\n\n"
+                        f"{outline}\n\n"
+                        "Want the full detailed syllabus + a free demo class? "
+                        "Share your 10-digit mobile number and our counsellor "
+                        "will call you!"), flags
+            return (f"The detailed, up-to-date syllabus for **{course['title']}** "
+                    "is shared by our counsellor.\n\n"
+                    "Share your 10-digit mobile number and we'll send it over!"), flags
+        lines = [f"• {c['title']}" for c in courses]
+        return (f"We offer {len(courses)} career courses:\n" + "\n".join(lines)
+                + "\n\nWhich course's syllabus would you like to see? "
+                  "Also share your 10-digit mobile number so our counsellor "
+                  "can reach you!"), flags
     if "course" in low and _has(low, ("best", "choose", "which one",
                                      "select", "right for me", "suitable",
                                      "recommend")):
@@ -229,11 +277,35 @@ def openai_available():
         return False
 
 
+def _outline_prompt_lines(courses, max_chars=2500):
+    """Compact module-title outlines per course for the OpenAI system prompt.
+
+    Real titles from the DB (never invented); module titles only so the
+    prompt stays small — the rules engine serves full lesson-level outlines.
+    """
+    from .models import Module
+    lines = []
+    for c in courses:
+        mods = (Module.query.filter_by(course_id=c["id"])
+                .order_by(Module.position, Module.id).all())
+        if not mods:
+            continue
+        titles = "; ".join(m.title[:60] for m in mods[:8])
+        if len(mods) > 8:
+            titles += f"; …({len(mods) - 8} more modules)"
+        lines.append(f"- {c['title']}: {titles}")
+    text = "\n".join(lines)
+    if len(text) > max_chars:
+        text = text[:max_chars].rsplit("\n", 1)[0]
+    return text or "(module outlines are maintained by the admin in the LMS)"
+
+
 def _system_prompt(courses):
     fee_lines = "\n".join(f"- {c['title']}: ₹{c['fee']:,} + GST"
                           for c in courses)
     combo_lines = "\n".join(f"- {name}: ₹{fee:,} + GST (combo offer)"
                             for name, fee in COMBO_OFFERS)
+    outline_lines = _outline_prompt_lines(courses)
     return f"""You are the Sayyed EdVantage AI assistant — education counsellor,
 student support executive, admissions assistant and LMS helper for an Indian
 IT training institute. Tagline: "Empowering Students for Success."
@@ -247,8 +319,16 @@ APPROVED COURSE DATA (quote ONLY these fees — never invent others):
 - New batches start monthly; October batch admissions are open. Never invent exact batch dates/timings — say the counsellor confirms them.
 - Courses are beginner-friendly; no strict prerequisites.
 
+APPROVED COURSE OUTLINES (module titles per course, from the live LMS —
+share these when asked about syllabus/curriculum; never invent module names):
+{outline_lines}
+
+BINDING BEHAVIOR:
+- NEVER claim you cannot save, note down, or remember a phone number. When a visitor shares a mobile number, the system captures it automatically — acknowledge the number warmly and say a counsellor will call them soon.
+- NEVER refuse to share module/syllabus information. Share the relevant outline from APPROVED COURSE OUTLINES above. If a course has no outline listed, say the counsellor will share the detailed syllabus and ask for their mobile number.
+
 CORE PRINCIPLE — DO NOT GUESS:
-- Never invent module names, curriculum details, faculty names, batch schedules, or policies. If it is not in your approved data, say: "I don't want to give you incorrect information — let me have our counsellor confirm that for you." Then ask for their mobile number.
+- Never invent module names beyond the outlines above, faculty names, batch schedules, or policies. If it is not in your approved data, say: "I don't want to give you incorrect information — let me have our counsellor confirm that for you." Then ask for their mobile number.
 - When asked "which course is best for me?", do NOT pick blindly. Ask about their education, technical background, career goal and available time first, then explain which options fit and let them decide.
 
 PAYMENT SAFETY (highest priority):

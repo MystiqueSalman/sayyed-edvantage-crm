@@ -118,6 +118,9 @@ function dismissAnnouncement(id) {
 .chat-msg.user{background:linear-gradient(135deg,#d4af37,#9c7a1e); color:#0a1628; align-self:flex-end;
   border-bottom-right-radius:4px; font-weight:500}
 .chat-msg.typing{color:var(--muted); font-style:italic}
+.chat-ts{font-size:.68rem; color:var(--muted); opacity:.7; margin:-6px 4px 2px; max-width:85%}
+.chat-ts.user{align-self:flex-end}
+.chat-ts.bot{align-self:flex-start}
 #chat-form{display:flex; gap:8px; padding:10px; border-top:1px solid rgba(212,175,55,.25)}
 #chat-input{flex:1; margin:0}
 #chat-form button{flex:0 0 auto}
@@ -150,11 +153,26 @@ function dismissAnnouncement(id) {
   function fmt(s) {
     return esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
   }
+  function stamp() {
+    // Browser-local time under each bubble; date added if not today.
+    var d = new Date();
+    var t = d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}).toLowerCase();
+    if (d.toDateString() !== new Date().toDateString()) {
+      t = d.toLocaleDateString([], {day: "numeric", month: "short"}) + ", " + t;
+    }
+    return t;
+  }
   function addMsg(text, who) {
     var d = document.createElement("div");
     d.className = "chat-msg " + who;
     d.innerHTML = fmt(text);
     msgs.appendChild(d);
+    if (who.indexOf("typing") === -1) {
+      var ts = document.createElement("div");
+      ts.className = "chat-ts " + who;
+      ts.textContent = stamp();
+      msgs.appendChild(ts);
+    }
     msgs.scrollTop = msgs.scrollHeight;
     return d;
   }

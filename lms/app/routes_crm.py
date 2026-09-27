@@ -207,10 +207,30 @@ def chat():
     try:
         lead = conv.lead or None
         if flags.get("phone"):
-            lead = create_lead(name=flags.get("name") or "Chat visitor",
-                               phone=flags["phone"], source=Lead.SOURCE_CHAT,
-                               note="Shared number in AI chat.")
-            if not conv.lead_id:
+            phone = flags["phone"]
+            if lead is not None and not (lead.phone or "").strip():
+                # Same visitor, same conversation: attach the number to the
+                # already-linked lead instead of spawning a second lead.
+                other = Lead.query.filter(Lead.phone == phone,
+                                          Lead.id != lead.id).first()
+                if other is not None:
+                    # Number already belongs to another lead — adopt that lead
+                    # so the transcript follows the phone-identified person.
+                    lead.log("system",
+                             f"Visitor shared number {phone}; chat moved to "
+                             f"existing lead #{other.id}.")
+                    conv.lead_id = other.id
+                    lead = other
+                else:
+                    lead.phone = phone
+                    lead.log("system",
+                             f"Visitor shared number {phone} in AI chat.")
+            if lead is None or (lead.phone or "").strip() != phone:
+                lead = create_lead(name=flags.get("name") or "Chat visitor",
+                                   phone=phone, source=Lead.SOURCE_CHAT,
+                                   note="Shared number in AI chat.")
+                # create_lead dedups by phone: adopt whichever lead owns the
+                # number so the transcript stays with the right person.
                 conv.lead_id = lead.id
             if flags.get("name") and lead.name in ("Chat visitor", ""):
                 lead.name = flags["name"]
