@@ -14,12 +14,15 @@
   <div class="panel">
     <h3>Quick Links</h3>
     <p><a class="btn btn-blue btn-sm" href="{{ url_for('admin.courses') }}">📚 Manage Courses</a>
-       <a class="btn btn-blue btn-sm" href="{{ url_for('admin.enrollments') }}">🧾 Enrollments</a></p>
+       <a class="btn btn-blue btn-sm" href="{{ url_for('admin.enrollments') }}">🧾 Enrollments</a>
+       <a class="btn btn-blue btn-sm" href="{{ url_for('growth.admin_jobs') }}">💼 Job Board</a></p>
     {% if current_user.role == 'admin' %}
     <p><a class="btn btn-ghost btn-sm" href="{{ url_for('admin.users') }}">👥 Users</a>
-       <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.coupons') }}">🎟 Coupons</a></p>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.coupons') }}">🎟 Coupons</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('growth.admin_referrals') }}">🎁 Referrals</a></p>
     <p><a class="btn btn-gold btn-sm" href="{{ url_for('admin.analytics') }}">📊 Analytics</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.email_settings') }}">📧 Email Automation</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('growth.whatsapp_settings') }}">💬 WhatsApp Alerts</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.announcements') }}">📢 Announcements</a></p>
     {% else %}
     <p style="color:var(--muted); font-size:.88rem">User management and coupons are admin-only.</p>

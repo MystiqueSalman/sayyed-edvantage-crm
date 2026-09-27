@@ -32,10 +32,12 @@
     <div class="nav-links">
       <a href="{{ url_for('main.catalog') }}">Courses</a>
       <a href="{{ url_for('main.bonus_courses') }}">Free Bonuses</a>
+      <a href="{{ url_for('growth.jobs') }}">Jobs</a>
       {% if current_user.is_authenticated %}
         {% if current_user.role == 'student' %}
           <a href="{{ url_for('student.dashboard') }}">Dashboard</a>
           <a href="{{ url_for('student.wishlist') }}">❤ Wishlist</a>
+          <a href="{{ url_for('growth.my_referrals') }}">🎁 Refer & Earn</a>
         {% elif current_user.role == 'faculty' %}
           <a href="{{ url_for('faculty.dashboard') }}">Dashboard</a>
         {% else %}
@@ -67,7 +69,7 @@
 
 <footer>
   Sayyed EdVantage LMS · Empowering Students for Success · Mumbai, India<br>
-  <span style="font-size:.78rem">Phase 2 — live classes, drip scheduling &amp; community are here.</span>
+  <span style="font-size:.78rem">Phase 3 — referrals, job board &amp; WhatsApp alerts are live.</span>
 </footer>
 <script>
 if ("serviceWorker" in navigator) {

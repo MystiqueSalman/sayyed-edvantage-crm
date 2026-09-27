@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Jobs & Internships — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>💼 Jobs & Internships</h2><div class="line"></div>
+  <span style="color:var(--muted)">{{ jobs|length }} open posting{{ 's' if jobs|length != 1 }}</span></div>
+
+{% for job in jobs %}
+<div class="card" style="margin-bottom:18px">
+  <div class="body">
+    <h3><a href="{{ url_for('growth.job_detail', job_id=job.id) }}">{{ job.title }}</a></h3>
+    <p>
+      <span class="tag gold">{{ job.type }}</span>
+      {% if job.remote %}<span class="tag green">Remote</span>{% endif %}
+      <span style="color:var(--muted)">{{ job.company }}{% if job.location %} · {{ job.location }}{% endif %}</span>
+    </p>
+    <p>{{ job.description[:220] }}{% if job.description|length > 220 %}…{% endif %}</p>
+    <p>
+      <a class="btn btn-blue btn-sm" href="{{ url_for('growth.job_detail', job_id=job.id) }}">View & Apply</a>
+      {% if job.id in applied_ids %}<span class="tag green" style="margin-left:8px">Applied ✓</span>{% endif %}
+      {% if job.deadline %}<small style="color:var(--muted);margin-left:8px">Apply by {{ job.deadline.strftime('%d %b %Y') }}</small>{% endif %}
+    </p>
+  </div>
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No open postings right now — check back soon.</p></div>
+{% endfor %}
+{% endblock %}

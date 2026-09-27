@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Referrals — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎁 Referral Program</h2><div class="line"></div>
+  <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Program Settings</h3>
+    <form method="post">
+      <label>Reward discount % <span style="color:var(--muted);font-weight:400">(auto-coupon for referrer)</span></label>
+      <input type="number" name="reward_percent" value="{{ settings.reward_percent }}" min="1" max="100">
+      <p><label style="display:inline"><input type="checkbox" name="enabled" value="1" {% if settings.enabled %}checked{% endif %} style="width:auto"> Program enabled</label></p>
+      <p><button class="btn btn-gold" type="submit">Save Settings</button></p>
+    </form>
+    <p style="color:var(--muted);font-size:.88rem">When a referred student completes their first paid enrollment, the referrer automatically gets a one-time {{ settings.reward_percent }}% coupon.</p>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">How it works</h3>
+    <ol style="color:var(--muted);font-size:.92rem;line-height:1.7">
+      <li>Every user gets a unique link: <code>/r/&lt;code&gt;</code></li>
+      <li>Clicks are counted once per visitor (IP dedup).</li>
+      <li>Signup via the link attributes the referral.</li>
+      <li>First paid enrollment → referrer gets the reward coupon.</li>
+      <li>Self-referrals and duplicates are blocked automatically.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="panel">
+  <h3 style="margin-top:0">All Referrals</h3>
+  <table>
+    <tr><th>Referrer</th><th>Referred</th><th>Date</th><th>Status</th><th>Reward</th><th></th></tr>
+    {% for r in refs %}
+    <tr>
+      <td>{{ r.referrer.name }}<br><small style="color:var(--muted)">{{ r.code }}</small></td>
+      <td>{{ r.referred.name }}<br><small style="color:var(--muted)">{{ r.referred.email }}</small></td>
+      <td>{{ r.created_at.strftime('%d %b %Y') }}</td>
+      <td>
+        {% if r.status == 'rewarded' %}<span class="tag green">Rewarded</span>
+        {% elif r.status == 'enrolled' %}<span class="tag gold">Enrolled</span>
+        {% elif r.status == 'invalid' %}<span class="tag">Invalid</span>
+        {% else %}<span class="tag">Signed up</span>{% endif %}
+      </td>
+      <td>{% if r.coupon_code %}<code>{{ r.coupon_code }}</code>{% else %}—{% endif %}</td>
+      <td style="white-space:nowrap">
+        {% if r.status != 'invalid' %}
+        <form class="inline-form" method="post" action="{{ url_for('growth.admin_referral_invalidate', ref_id=r.id) }}">
+          <button class="btn btn-danger btn-sm" type="submit">Invalidate</button></form>
+        {% else %}
+        <form class="inline-form" method="post" action="{{ url_for('growth.admin_referral_validate', ref_id=r.id) }}">
+          <button class="btn btn-ghost btn-sm" type="submit">Re-validate</button></form>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}<tr><td colspan="6" style="color:var(--muted)">No referrals yet.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

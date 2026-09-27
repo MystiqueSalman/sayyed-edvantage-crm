@@ -163,6 +163,10 @@ def send_live_reminders(now=None):
                                  Enrollment.STATUS_COMPLETED]),
                             User.is_active.is_(True)).all())
         when = sess.starts_at.strftime("%d %b %Y, %I:%M %p UTC")
+        try:
+            from .whatsapp import send_live_reminder_whatsapp
+        except Exception:
+            send_live_reminder_whatsapp = None
         for stu in students:
             send_email_async(
                 stu.email, f"🔴 Live class in 1 hour: {sess.title}",
@@ -172,4 +176,9 @@ starts at <b>{when}</b> (about an hour from now).</p>
 <p><a href="{sess.join_url}" style="color:#d4af37">Join Live Class →</a></p>
 <p style="color:#9fb3d1;font-size:.85rem">The join button also appears on your
 dashboard 15 minutes before the class begins.</p>"""))
+            if send_live_reminder_whatsapp and stu.phone:
+                try:
+                    send_live_reminder_whatsapp(stu, sess)
+                except Exception:
+                    pass  # WhatsApp must never break reminders
     return len(sessions)

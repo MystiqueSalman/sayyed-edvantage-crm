@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} — Jobs{% endblock %}
+{% block content %}
+<div class="section-title"><h2>{{ job.title }}</h2><div class="line"></div>
+  <a href="{{ url_for('growth.jobs') }}">← All jobs</a></div>
+
+<div class="panel">
+  <p>
+    <span class="tag gold">{{ job.type }}</span>
+    {% if job.remote %}<span class="tag green">Remote</span>{% endif %}
+    {% if not job.is_open() %}<span class="tag">Closed</span>{% endif %}
+  </p>
+  <p><b>{{ job.company }}</b>{% if job.location %} · {{ job.location }}{% endif %}</p>
+  {% if job.skills %}<p style="color:var(--muted)">🧰 Skills: {{ job.skills }}</p>{% endif %}
+  {% if job.deadline %}<p style="color:var(--muted)">📅 Apply by {{ job.deadline.strftime('%d %b %Y') }}</p>{% endif %}
+  <div style="white-space:pre-wrap;margin:18px 0">{{ job.description }}</div>
+
+  {% if job.apply_mode == 'external' %}
+    <p><a class="btn btn-gold" href="{{ job.external_url }}" target="_blank" rel="noopener">Apply on company site →</a></p>
+  {% elif current_user.is_authenticated and current_user.role == 'student' %}
+    {% if existing %}
+      <p><span class="tag green">Application sent ✓</span>
+         <span style="color:var(--muted);margin-left:8px">Status: <b>{{ existing.status }}</b></span></p>
+      <p><a class="btn btn-ghost btn-sm" href="{{ url_for('growth.my_applications') }}">My applications</a></p>
+    {% elif job.is_open() %}
+      <h3>Apply now</h3>
+      <form method="post" action="{{ url_for('growth.job_apply', job_id=job.id) }}">
+        <label>Phone (for interview contact)</label>
+        <input type="tel" name="phone" value="{{ current_user.phone or '' }}" placeholder="98765 43210">
+        <label>Cover note <span style="color:var(--muted);font-weight:400">(optional)</span></label>
+        <textarea name="cover_note" rows="4" placeholder="Why are you a good fit? Mention your course progress, projects, skills…"></textarea>
+        <p><button class="btn btn-gold" type="submit">🚀 Submit Application</button></p>
+      </form>
+    {% else %}
+      <p style="color:var(--muted)">Applications are closed for this posting.</p>
+    {% endif %}
+  {% elif not current_user.is_authenticated %}
+    <p><a class="btn btn-gold" href="{{ url_for('auth.register') }}">Join Free to apply</a></p>
+  {% endif %}
+</div>
+{% endblock %}

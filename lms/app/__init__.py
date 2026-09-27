@@ -83,6 +83,7 @@ def create_app():
     from .routes_admin import admin_bp  # noqa: E402
     from .routes_manage import manage_bp  # noqa: E402
     from .routes_discuss import discuss_bp  # noqa: E402
+    from .routes_growth import growth_bp  # noqa: E402
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -91,6 +92,7 @@ def create_app():
     app.register_blueprint(admin_bp)
     app.register_blueprint(manage_bp)
     app.register_blueprint(discuss_bp)
+    app.register_blueprint(growth_bp)
 
     with app.app_context():
         if os.environ.get("LMS_SKIP_CREATE_ALL") != "1":
@@ -114,6 +116,10 @@ def _ensure_schema_patches(app):
     patches = [
         ("lessons", "available_after_days",
          "ALTER TABLE lessons ADD COLUMN available_after_days INTEGER DEFAULT 0"),
+        ("users", "phone",
+         "ALTER TABLE users ADD COLUMN phone VARCHAR(20) DEFAULT ''"),
+        ("users", "referral_code",
+         "ALTER TABLE users ADD COLUMN referral_code VARCHAR(20)"),
     ]
     try:
         with app.app_context():

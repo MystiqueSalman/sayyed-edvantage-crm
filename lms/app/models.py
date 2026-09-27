@@ -22,6 +22,9 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default=ROLE_STUDENT)
     is_active = db.Column(db.Boolean, default=True)
+    phone = db.Column(db.String(20), default="")  # Phase 3: WhatsApp notifications
+    referral_code = db.Column(db.String(20), unique=True, nullable=True,
+                              index=True)  # Phase 3: my referral code
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     enrollments = db.relationship("Enrollment", backref="user", cascade="all, delete-orphan")
@@ -392,6 +395,141 @@ class EmailSettings(db.Model):
     smtp_pass = db.Column(db.String(255), default="")
     from_email = db.Column(db.String(160), default="")
     from_name = db.Column(db.String(120), default="Sayyed EdVantage LMS")
+    enabled = db.Column(db.Boolean, default=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    @classmethod
+    def get(cls):
+        row = cls.query.get(1)
+        if not row:
+            row = cls(id=1)
+            db.session.add(row)
+            db.session.commit()
+        return row
+
+
+# ---------------------------------------------------------------- Phase 3
+class ReferralSettings(db.Model):
+    """Single-row referral program config (id=1)."""
+    __tablename__ = "referral_settings"
+    id = db.Column(db.Integer, primary_key=True)
+    enabled = db.Column(db.Boolean, default=True)
+    reward_percent = db.Column(db.Integer, default=10)  # discount % on auto-coupon
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    @classmethod
+    def get(cls):
+        row = cls.query.get(1)
+        if not row:
+            row = cls(id=1)
+            db.session.add(row)
+            db.session.commit()
+        return row
+
+
+class ReferralClick(db.Model):
+    """One row per (referral code, visitor IP) — duplicate clicks are deduped."""
+    __tablename__ = "referral_clicks"
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(20), nullable=False, index=True)
+    ip_hash = db.Column(db.String(64), nullable=False)
+    clicked_at = db.Column(db.DateTime, default=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint("code", "ip_hash", name="uq_click"),)
+
+
+class Referral(db.Model):
+    """Referrer -> referred user attribution. One row per referred user."""
+    __tablename__ = "referrals"
+    STATUS_SIGNED_UP = "signed_up"
+    STATUS_ENROLLED = "enrolled"
+    STATUS_REWARDED = "rewarded"
+    STATUS_INVALID = "invalid"
+
+    id = db.Column(db.Integer, primary_key=True)
+    referrer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    referred_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    code = db.Column(db.String(20), nullable=False)
+    status = db.Column(db.String(20), default=STATUS_SIGNED_UP)
+    coupon_code = db.Column(db.String(40), default="")  # reward coupon issued
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    rewarded_at = db.Column(db.DateTime, nullable=True)
+
+    referrer = db.relationship("User", foreign_keys=[referrer_id])
+    referred = db.relationship("User", foreign_keys=[referred_id])
+    __table_args__ = (db.UniqueConstraint("referred_id", name="uq_referred"),)
+
+
+class Job(db.Model):
+    """Job board posting (admin/manager). Employer portal deferred to Phase 7."""
+    __tablename__ = "jobs"
+    TYPE_JOB = "job"
+    TYPE_INTERNSHIP = "internship"
+    TYPE_APPRENTICESHIP = "apprenticeship"
+    TYPES = (TYPE_JOB, TYPE_INTERNSHIP, TYPE_APPRENTICESHIP)
+
+    APPLY_INTERNAL = "internal"
+    APPLY_EXTERNAL = "external"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(160), nullable=False)
+    company = db.Column(db.String(160), nullable=False, default="")
+    type = db.Column(db.String(20), default=TYPE_JOB)
+    location = db.Column(db.String(160), default="")
+    remote = db.Column(db.Boolean, default=False)
+    description = db.Column(db.Text, default="")
+    skills = db.Column(db.String(300), default="")
+    deadline = db.Column(db.Date, nullable=True)
+    active = db.Column(db.Boolean, default=True)
+    apply_mode = db.Column(db.String(20), default=APPLY_INTERNAL)
+    external_url = db.Column(db.String(500), default="")
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    applications = db.relationship("JobApplication", backref="job",
+                                   cascade="all, delete-orphan",
+                                   order_by="JobApplication.applied_at.desc()")
+
+    def is_open(self, today=None):
+        from datetime import date
+        today = today or date.today()
+        if not self.active:
+            return False
+        return self.deadline is None or self.deadline >= today
+
+
+class JobApplication(db.Model):
+    """Student application to a job. Status pipeline."""
+    __tablename__ = "job_applications"
+    STATUS_APPLIED = "applied"
+    STATUS_SHORTLISTED = "shortlisted"
+    STATUS_INTERVIEWED = "interviewed"
+    STATUS_OFFERED = "offered"
+    STATUS_PLACED = "placed"
+    STATUS_REJECTED = "rejected"
+    STATUSES = (STATUS_APPLIED, STATUS_SHORTLISTED, STATUS_INTERVIEWED,
+                STATUS_OFFERED, STATUS_PLACED, STATUS_REJECTED)
+
+    id = db.Column(db.Integer, primary_key=True)
+    job_id = db.Column(db.Integer, db.ForeignKey("jobs.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    cover_note = db.Column(db.Text, default="")
+    status = db.Column(db.String(20), default=STATUS_APPLIED)
+    applied_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    user = db.relationship("User")
+    __table_args__ = (db.UniqueConstraint("job_id", "user_id", name="uq_application"),)
+
+
+class WhatsAppSettings(db.Model):
+    """Single-row WhatsApp Cloud API config (id=1). Ships DISABLED."""
+    __tablename__ = "whatsapp_settings"
+    id = db.Column(db.Integer, primary_key=True)
+    phone_number_id = db.Column(db.String(60), default="")
+    access_token = db.Column(db.String(255), default="")  # never rendered/logged
     enabled = db.Column(db.Boolean, default=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow,
                            onupdate=datetime.utcnow)

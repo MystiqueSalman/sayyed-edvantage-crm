@@ -55,10 +55,20 @@ def register():
         elif User.query.filter_by(email=email).first():
             flash("An account with this email already exists.", "danger")
         else:
-            user = User(name=name, email=email, role=ROLE_STUDENT)
+            user = User(name=name, email=email, role=ROLE_STUDENT,
+                        phone=request.form.get("phone", "").strip()[:20])
             user.set_password(password)
             db.session.add(user)
             db.session.commit()
+            try:
+                from .growth import (REF_COOKIE, attribute_signup,
+                                     get_or_create_referral_code)
+                get_or_create_referral_code(user)  # every user gets a code
+                ref_code = request.cookies.get(REF_COOKIE, "")
+                if ref_code:
+                    attribute_signup(user, ref_code)
+            except Exception:
+                pass  # referrals must never break registration
             login_user(user)
             try:
                 from .emailer import send_welcome_email

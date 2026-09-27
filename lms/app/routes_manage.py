@@ -324,6 +324,11 @@ def submission_grade(submission_id):
             send_graded_email(sub)
         except Exception:
             pass  # email must never break grading
+        try:
+            from .whatsapp import send_graded_whatsapp
+            send_graded_whatsapp(sub)
+        except Exception:
+            pass  # WhatsApp must never break grading
         flash("Submission graded.", "success")
         return redirect(url_for("manage.assignment_submissions",
                                 assignment_id=sub.assignment_id))

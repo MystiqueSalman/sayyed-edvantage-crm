@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Applications — {{ job.title }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📨 Applications — {{ job.title }}</h2><div class="line"></div>
+  <a href="{{ url_for('growth.admin_jobs') }}">← Job board</a></div>
+
+<div class="panel">
+  <p style="color:var(--muted)">{{ job.company }}{% if job.location %} · {{ job.location }}{% endif %} · {{ apps|length }} application{{ 's' if apps|length != 1 }}</p>
+  <table>
+    <tr><th>Student</th><th>Phone</th><th>Cover note</th><th>Applied</th><th>Status</th></tr>
+    {% for a in apps %}
+    <tr>
+      <td><b>{{ a.user.name }}</b><br><small style="color:var(--muted)">{{ a.user.email }}</small></td>
+      <td>{{ a.user.phone or '—' }}</td>
+      <td style="max-width:260px">{{ a.cover_note or '—' }}</td>
+      <td>{{ a.applied_at.strftime('%d %b %Y') }}</td>
+      <td>
+        <form class="inline-form" method="post">
+          <input type="hidden" name="app_id" value="{{ a.id }}">
+          <select name="status" onchange="this.form.submit()" style="width:auto">
+            {% for s in statuses %}
+            <option value="{{ s }}" {% if a.status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </form>
+      </td>
+    </tr>
+    {% else %}<tr><td colspan="5" style="color:var(--muted)">No applications yet.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

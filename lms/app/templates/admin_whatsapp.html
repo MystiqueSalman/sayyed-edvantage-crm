@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}WhatsApp Notifications — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>💬 WhatsApp Notifications</h2><div class="line"></div>
+  <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Cloud API Settings</h3>
+    <form method="post">
+      <label>Phone Number ID</label>
+      <input type="text" name="phone_number_id" value="{{ settings.phone_number_id }}" placeholder="1386967654489881">
+      <label>Access Token <span style="color:var(--muted);font-weight:400">(never shown again once saved)</span></label>
+      <input type="password" name="access_token" value="" autocomplete="new-password" placeholder="{% if token_set %}•••••••• (set — leave blank to keep){% else %}Paste token here{% endif %}">
+      <p><label style="display:inline"><input type="checkbox" name="enabled" value="1" {% if settings.enabled %}checked{% endif %} style="width:auto"> Enabled</label></p>
+      <p><button class="btn btn-gold" type="submit">Save Settings</button></p>
+    </form>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">Send Test Message</h3>
+    <form method="post">
+      <label>Recipient phone (with country code)</label>
+      <input type="tel" name="test_phone" required placeholder="919876543210">
+      <p><button class="btn btn-blue" type="submit" name="send_test" value="1">💬 Send Test WhatsApp</button></p>
+    </form>
+    <h3>Auto-messages sent</h3>
+    <ul style="color:var(--muted);font-size:.92rem;line-height:1.8">
+      <li>✅ Enrollment confirmation</li>
+      <li>🧾 Payment receipt</li>
+      <li>🔴 Live-class reminder (~1 hour before)</li>
+      <li>📝 Assignment graded</li>
+    </ul>
+    <p style="color:var(--muted);font-size:.85rem">Sends are fail-safe: a WhatsApp failure never breaks enrollment, payment or grading. Students without a phone number on file are skipped silently.</p>
+  </div>
+</div>
+{% endblock %}

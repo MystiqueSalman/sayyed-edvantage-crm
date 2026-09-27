@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Refer & Earn — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎁 Refer & Earn</h2><div class="line"></div>
+  <a href="{{ url_for('student.dashboard') }}">← Dashboard</a></div>
+
+{% if not settings.enabled %}
+<div class="flash warning">The referral program is currently paused by the admin. Your link is saved but new rewards are disabled.</div>
+{% endif %}
+
+<div class="panel">
+  <h3 style="margin-top:0">Your referral link</h3>
+  <p style="color:var(--muted)">Share this link — when a friend signs up and completes their first paid enrollment, you earn a <b style="color:var(--gold-lt)">{{ settings.reward_percent }}% discount coupon</b> automatically.</p>
+  <p>
+    <input type="text" id="ref-link" value="{{ link }}" readonly onclick="this.select()"
+           style="font-family:monospace">
+  </p>
+  <p><button class="btn btn-gold" type="button" onclick="copyRef()">📋 Copy Link</button>
+     <span class="tag gold" style="margin-left:8px">Code: {{ code }}</span></p>
+</div>
+
+<div class="stat-grid">
+  <div class="stat"><div class="n">{{ stats.clicks }}</div><div>Link clicks</div></div>
+  <div class="stat"><div class="n">{{ stats.signups }}</div><div>Friends signed up</div></div>
+  <div class="stat"><div class="n">{{ stats.enrollments }}</div><div>Paid enrollments</div></div>
+  <div class="stat"><div class="n">{{ stats.rewards }}</div><div>Rewards earned</div></div>
+</div>
+
+<div class="panel">
+  <h3 style="margin-top:0">My referrals</h3>
+  <table>
+    <tr><th>Friend</th><th>Signed up</th><th>Status</th><th>Reward coupon</th></tr>
+    {% for r in stats.referrals %}
+    <tr>
+      <td>{{ r.referred.name }}<br><small style="color:var(--muted)">{{ r.referred.email }}</small></td>
+      <td>{{ r.created_at.strftime('%d %b %Y') }}</td>
+      <td>
+        {% if r.status == 'rewarded' %}<span class="tag green">Rewarded</span>
+        {% elif r.status == 'enrolled' %}<span class="tag gold">Enrolled</span>
+        {% elif r.status == 'invalid' %}<span class="tag">Invalid</span>
+        {% else %}<span class="tag">Signed up</span>{% endif %}
+      </td>
+      <td>{% if r.coupon_code %}<b style="font-family:monospace">{{ r.coupon_code }}</b>{% else %}—{% endif %}</td>
+    </tr>
+    {% else %}<tr><td colspan="4" style="color:var(--muted)">No referrals yet — share your link to get started!</td></tr>{% endfor %}
+  </table>
+</div>
+
+<script>
+function copyRef() {
+  var el = document.getElementById("ref-link");
+  el.select();
+  try { document.execCommand("copy"); } catch (e) {}
+  if (navigator.clipboard) { navigator.clipboard.writeText(el.value).catch(function(){}); }
+  alert("Referral link copied!");
+}
+</script>
+{% endblock %}

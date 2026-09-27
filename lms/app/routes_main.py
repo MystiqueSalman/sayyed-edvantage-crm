@@ -164,6 +164,13 @@ def enroll(slug):
                 send_enrollment_email(current_user, enrollment)
             except Exception:
                 pass
+            try:
+                from .growth import maybe_reward_referral
+                from .whatsapp import send_enrollment_whatsapp
+                maybe_reward_referral(current_user)
+                send_enrollment_whatsapp(current_user, enrollment)
+            except Exception:
+                pass  # growth/WhatsApp must never break enrollment
             flash("Enrolled successfully — happy learning!", "success")
             return redirect(url_for("student.dashboard"))
         return redirect(url_for("main.checkout", enrollment_id=enrollment.id))
@@ -234,5 +241,14 @@ def payment_confirm(enrollment_id):
         send_enrollment_email(current_user, enrollment)
     except Exception:
         pass
+    try:
+        from .growth import maybe_reward_referral
+        from .whatsapp import (send_enrollment_whatsapp,
+                               send_payment_receipt_whatsapp)
+        maybe_reward_referral(current_user)
+        send_enrollment_whatsapp(current_user, enrollment)
+        send_payment_receipt_whatsapp(current_user, enrollment)
+    except Exception:
+        pass  # growth/WhatsApp must never break payment confirmation
     flash("Payment successful — you are enrolled!", "success")
     return redirect(url_for("student.dashboard"))

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}My Applications — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📨 My Applications</h2><div class="line"></div>
+  <a href="{{ url_for('growth.jobs') }}">Browse jobs</a></div>
+
+<div class="panel">
+  <table>
+    <tr><th>Job</th><th>Company</th><th>Applied</th><th>Status</th></tr>
+    {% for a in apps %}
+    <tr>
+      <td><a href="{{ url_for('growth.job_detail', job_id=a.job.id) }}">{{ a.job.title }}</a></td>
+      <td>{{ a.job.company }}</td>
+      <td>{{ a.applied_at.strftime('%d %b %Y') }}</td>
+      <td>
+        {% if a.status == 'applied' %}<span class="tag">Applied</span>
+        {% elif a.status == 'shortlisted' %}<span class="tag gold">Shortlisted</span>
+        {% elif a.status == 'interviewed' %}<span class="tag gold">Interviewed</span>
+        {% elif a.status == 'offered' %}<span class="tag green">Offered 🎉</span>
+        {% elif a.status == 'placed' %}<span class="tag green">Placed 🎓</span>
+        {% else %}<span class="tag">Rejected</span>{% endif %}
+      </td>
+    </tr>
+    {% else %}<tr><td colspan="4" style="color:var(--muted)">No applications yet — <a href="{{ url_for('growth.jobs') }}">find your opportunity</a>.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}
