@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Sayyed EdVantage LMS{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="{{ url_for('main.index') }}">
+      <span class="mono">SE</span>
+      <span>Sayyed EdVantage<small>EMPOWERING STUDENTS FOR SUCCESS</small></span>
+    </a>
+    <div class="nav-links">
+      <a href="{{ url_for('main.catalog') }}">Courses</a>
+      <a href="{{ url_for('main.bonus_courses') }}">Free Bonuses</a>
+      {% if current_user.is_authenticated %}
+        {% if current_user.role == 'student' %}
+          <a href="{{ url_for('student.dashboard') }}">Dashboard</a>
+        {% elif current_user.role == 'faculty' %}
+          <a href="{{ url_for('faculty.dashboard') }}">Dashboard</a>
+        {% else %}
+          <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+        {% endif %}
+        <span class="role-tag">{{ current_user.role }}</span>
+        <a href="{{ url_for('auth.logout') }}">Logout</a>
+      {% else %}
+        <a href="{{ url_for('auth.login') }}">Login</a>
+        <a href="{{ url_for('auth.register') }}" class="btn btn-gold btn-sm">Join Free</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  {% with msgs = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in msgs %}
+      <div class="flash {{ cat }}">{{ msg }}</div>
+    {% endfor %}
+  {% endwith %}
+</div>
+
+{% block hero %}{% endblock %}
+
+<div class="wrap">
+  {% block content %}{% endblock %}
+</div>
+
+<footer>
+  Sayyed EdVantage LMS · Empowering Students for Success · Mumbai, India<br>
+  <span style="font-size:.78rem">Phase 1 MVP — live classes, drip &amp; community arrive in Phase 2.</span>
+</footer>
+</body>
+</html>

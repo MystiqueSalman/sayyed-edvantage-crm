@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Faculty Dashboard{% endblock %}
+{% block content %}
+<div class="section-title"><h2>Faculty Dashboard</h2><div class="line"></div></div>
+<div class="stat-grid">
+  <div class="stat"><div class="n">{{ courses|length }}</div><div class="l">My courses</div></div>
+  <div class="stat"><div class="n">{{ pending }}</div><div class="l">Submissions awaiting grading</div></div>
+</div>
+<div class="grid">
+  {% for c in courses %}
+  <div class="card">
+    <div class="course-banner" style="height:130px; background-image:url('{{ url_for('static', filename='img/banners/' + c.banner) if c.banner }}')"></div>
+    <div class="body">
+      <h3>{{ c.title }}</h3>
+      <p>{{ c.modules|length }} modules · {{ c.lessons|length }} lessons · {{ c.assignments|length }} assignments</p>
+      <a class="btn btn-blue btn-sm" href="{{ url_for('manage.course_home', course_id=c.id) }}">Manage Content</a>
+    </div>
+  </div>
+  {% else %}
+  <div class="panel"><p style="color:var(--muted)">No courses assigned to you yet — ask the admin to assign you as instructor.</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

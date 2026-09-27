@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Courses — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>Course Catalog</h2><div class="line"></div>
+  <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<div class="panel">
+  <table>
+    <tr><th>Course</th><th>Fee</th><th>Instructor</th><th>Content</th><th></th></tr>
+    {% for c in courses %}
+    <tr>
+      <td><b>{{ c.title }}</b><br><small style="color:var(--muted)">/{{ c.slug }}</small>
+        {% if c.is_bonus %} <span class="badge-free">FREE</span>{% endif %}</td>
+      <td>₹{{ "{:,}".format(c.fee) }}</td>
+      <td>{{ c.instructor.name if c.instructor else '—' }}</td>
+      <td style="color:var(--muted)">{{ c.modules|length }} mod · {{ c.lessons|length }} les · {{ c.assignments|length }} asg</td>
+      <td style="white-space:nowrap">
+        <a class="btn btn-blue btn-sm" href="{{ url_for('manage.course_home', course_id=c.id) }}">Content</a>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.course_edit', course_id=c.id) }}">Edit</a>
+        {% if current_user.role == 'admin' %}
+        <form class="inline-form" method="post" action="{{ url_for('admin.course_delete', course_id=c.id) }}"
+              onsubmit="return confirm('Delete this course and ALL its content?')">
+          <button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% if current_user.role == 'admin' %}
+<div class="panel">
+  <h3 style="margin-top:0">Create New Course</h3>
+  <form method="post">
+    <div class="two-col">
+      <div><label>Title</label><input type="text" name="title" required></div>
+      <div><label>Slug (url-friendly)</label><input type="text" name="slug" required placeholder="my-course"></div>
+      <div><label>Fee (INR)</label><input type="number" name="fee" value="0" min="0"></div>
+      <div><label>Banner image filename</label><input type="text" name="banner" placeholder="my-banner.png"></div>
+    </div>
+    <label>Short description</label><input type="text" name="short_desc">
+    <label>Full description (HTML allowed)</label><textarea name="description" rows="4"></textarea>
+    <label>Instructor</label>
+    <select name="instructor_id"><option value="">— None —</option>
+      {% for f in faculty %}<option value="{{ f.id }}">{{ f.name }} ({{ f.email }})</option>{% endfor %}</select>
+    <p><label style="display:inline"><input type="checkbox" name="is_bonus" value="1" style="width:auto"> Free bonus / value-added course</label></p>
+    <p><button class="btn btn-gold" type="submit">Create Course</button></p>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

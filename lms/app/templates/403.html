@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Access Denied{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:520px; margin:60px auto; text-align:center">
+  <div style="font-size:3rem">🔒</div>
+  <h2>Access Denied</h2>
+  <p style="color:var(--muted)">Your role ({{ current_user.role if current_user.is_authenticated else 'guest' }}) doesn't have permission for this page.</p>
+  <p><a class="btn btn-gold" href="{{ url_for('main.index') }}">Back to Home</a></p>
+</div>
+{% endblock %}

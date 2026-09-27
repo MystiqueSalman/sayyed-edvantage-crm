@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Users — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>User Management</h2><div class="line"></div>
+  <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Create User</h3>
+    <form method="post">
+      <label>Name</label><input type="text" name="name" required>
+      <label>Email</label><input type="email" name="email" required>
+      <label>Password</label><input type="password" name="password" required minlength="6">
+      <label>Role</label>
+      <select name="role">{% for r in roles %}<option value="{{ r }}">{{ r }}</option>{% endfor %}</select>
+      <p><button class="btn btn-gold" type="submit" style="margin-top:12px">Create User</button></p>
+    </form>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">All Users</h3>
+    <table>
+      <tr><th>Name</th><th>Role</th><th>Status</th><th></th></tr>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.name }}<br><small style="color:var(--muted)">{{ u.email }}</small></td>
+        <td><form class="inline-form" method="post" action="{{ url_for('admin.user_role', user_id=u.id) }}">
+            <select name="role" onchange="this.form.submit()" {% if u.id == current_id %}disabled{% endif %}>
+              {% for r in roles %}<option value="{{ r }}" {% if u.role == r %}selected{% endif %}>{{ r }}</option>{% endfor %}
+            </select></form></td>
+        <td>{% if u.is_active %}<span class="tag green">Active</span>{% else %}<span class="tag">Inactive</span>{% endif %}</td>
+        <td>{% if u.id != current_id %}
+          <form class="inline-form" method="post" action="{{ url_for('admin.user_toggle', user_id=u.id) }}">
+            <button class="btn btn-ghost btn-sm" type="submit">{{ 'Deactivate' if u.is_active else 'Activate' }}</button>
+          </form>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

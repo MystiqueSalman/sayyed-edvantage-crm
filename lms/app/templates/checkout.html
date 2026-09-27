@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Checkout — {{ enrollment.course.title }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:560px; margin:30px auto; text-align:center">
+  <h2>Complete Payment</h2>
+  <p style="color:var(--muted)">{{ enrollment.course.title }}</p>
+  <div class="fee" style="font-size:2rem; margin:14px 0">₹{{ "{:,}".format(enrollment.amount_paid) }}</div>
+  {% if order.stub %}
+    <p class="flash info">🧪 Test mode — this is a simulated Razorpay order (<code>{{ order.id }}</code>). No real money moves.</p>
+    <form method="post" action="{{ url_for('main.payment_confirm', enrollment_id=enrollment.id) }}">
+      <button class="btn btn-gold" type="submit" style="width:100%">Pay ₹{{ "{:,}".format(enrollment.amount_paid) }} (Test)</button>
+    </form>
+  {% else %}
+    <p class="flash info">Secure payment via Razorpay (UPI / cards / netbanking).</p>
+    <button id="rzp-btn" class="btn btn-gold" style="width:100%">Pay ₹{{ "{:,}".format(enrollment.amount_paid) }}</button>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+      document.getElementById('rzp-btn').onclick = function(e){
+        var rzp = new Razorpay({
+          key: "{{ key_id }}",
+          amount: "{{ order.amount }}",
+          currency: "INR",
+          name: "Sayyed EdVantage",
+          description: "{{ enrollment.course.title }}",
+          order_id: "{{ order.id }}",
+          handler: function(resp){
+            var f = document.createElement('form');
+            f.method = 'POST';
+            f.action = "{{ url_for('main.payment_confirm', enrollment_id=enrollment.id) }}";
+            [['razorpay_payment_id', resp.razorpay_payment_id],
+             ['razorpay_order_id', resp.razorpay_order_id],
+             ['razorpay_signature', resp.razorpay_signature]].forEach(function(p){
+              var i = document.createElement('input'); i.type='hidden'; i.name=p[0]; i.value=p[1]; f.appendChild(i);
+            });
+            document.body.appendChild(f); f.submit();
+          }
+        });
+        rzp.open(); e.preventDefault();
+      };
+    </script>
+  {% endif %}
+</div>
+{% endblock %}

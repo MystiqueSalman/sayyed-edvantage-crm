@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Quiz Questions — {{ quiz.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('manage.course_home', course_id=course.id) }}">← Manage {{ course.title }}</a></p>
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Add Question</h3>
+    <form method="post">
+      <label>Question</label>
+      <textarea name="text" rows="3" required></textarea>
+      <label>Option A</label><input type="text" name="option_a" required>
+      <label>Option B</label><input type="text" name="option_b" required>
+      <label>Option C</label><input type="text" name="option_c" required>
+      <label>Option D</label><input type="text" name="option_d" required>
+      <label>Correct option</label>
+      <select name="correct">{% for o in ['A','B','C','D'] %}<option>{{ o }}</option>{% endfor %}</select>
+      <p><button class="btn btn-gold" type="submit" style="margin-top:12px">Add Question</button></p>
+    </form>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">{{ quiz.title }} <span style="color:var(--muted)">({{ quiz.questions|length }} questions)</span></h3>
+    {% for q in quiz.questions %}
+    <div class="quiz-q">
+      <p>Q{{ loop.index }}. {{ q.text }} <span class="tag green">Answer: {{ q.correct }}</span></p>
+      <ol type="A" style="color:var(--muted); margin:0">
+        <li>{{ q.option_a }}</li><li>{{ q.option_b }}</li><li>{{ q.option_c }}</li><li>{{ q.option_d }}</li>
+      </ol>
+      <form class="inline-form" method="post" action="{{ url_for('manage.question_delete', question_id=q.id) }}"
+            onsubmit="return confirm('Delete this question?')">
+        <button class="btn btn-danger btn-sm" type="submit" style="margin-top:8px">Delete</button>
+      </form>
+    </div>
+    {% else %}<p style="color:var(--muted)">No questions yet.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}

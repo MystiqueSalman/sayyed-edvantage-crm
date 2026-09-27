@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} — {{ course.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('main.course_detail', slug=course.slug) }}">← {{ course.title }}</a></p>
+<div class="panel">
+  <div><span class="tag">{{ lesson.kind|upper }}</span>
+    {% if done %}<span class="tag green" style="margin-left:8px">Completed ✓</span>{% endif %}</div>
+  <h2 style="margin:.5em 0">{{ lesson.title }}</h2>
+
+  {% if lesson.kind == 'video' and lesson.video_url %}
+    <div class="video-wrap"><iframe src="{{ lesson.video_url }}" allowfullscreen></iframe></div>
+  {% elif lesson.kind == 'video' %}
+    <p class="flash info">🎬 Video lesson — the recording/embed will appear here.</p>
+  {% endif %}
+
+  {% if lesson.kind == 'pdf' and lesson.pdf_file %}
+    <p><a class="btn btn-blue" href="{{ url_for('main.uploaded_file', filename=lesson.pdf_file) }}" target="_blank">📄 Open PDF</a></p>
+  {% elif lesson.kind == 'pdf' %}
+    <p class="flash info">📄 PDF lesson — the file will appear here.</p>
+  {% endif %}
+
+  {% if lesson.body %}
+  <div style="line-height:1.75; font-size:1.03rem">{{ lesson.body|safe }}</div>
+  {% endif %}
+
+  {% if module_quiz %}
+  <p style="margin-top:20px"><a class="btn btn-ghost" href="{{ url_for('student.quiz', quiz_id=module_quiz.id) }}">📝 Take the module quiz: {{ module_quiz.title }}</a></p>
+  {% endif %}
+
+  <div style="display:flex; gap:10px; margin-top:26px; flex-wrap:wrap">
+    {% if prev_lesson %}<a class="btn btn-ghost" href="{{ url_for('student.lesson', lesson_id=prev_lesson.id) }}">← Previous</a>{% endif %}
+    {% if not done %}
+    <form method="post" action="{{ url_for('student.lesson_complete', lesson_id=lesson.id) }}">
+      <button class="btn btn-gold" type="submit">Mark as Complete ✓</button>
+    </form>
+    {% endif %}
+    {% if next_lesson %}<a class="btn btn-blue" href="{{ url_for('student.lesson', lesson_id=next_lesson.id) }}">Next →</a>{% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Edit Course — {{ course.title }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:640px; margin:30px auto">
+  <h2>Edit Course</h2>
+  <form method="post">
+    <label>Title</label><input type="text" name="title" value="{{ course.title }}" required>
+    <label>Short description</label><input type="text" name="short_desc" value="{{ course.short_desc }}">
+    <label>Full description (HTML allowed)</label><textarea name="description" rows="5">{{ course.description }}</textarea>
+    <div class="two-col">
+      <div><label>Fee (INR)</label><input type="number" name="fee" value="{{ course.fee }}" min="0"></div>
+      <div><label>Banner filename</label><input type="text" name="banner" value="{{ course.banner }}"></div>
+    </div>
+    {% if current_user.role == 'admin' %}
+    <label>Instructor</label>
+    <select name="instructor_id"><option value="">— None —</option>
+      {% for f in faculty %}<option value="{{ f.id }}" {% if course.instructor_id == f.id %}selected{% endif %}>{{ f.name }}</option>{% endfor %}</select>
+    {% endif %}
+    <p><label style="display:inline"><input type="checkbox" name="is_bonus" value="1" style="width:auto" {% if course.is_bonus %}checked{% endif %}> Free bonus / value-added course</label></p>
+    <p><button class="btn btn-gold" type="submit">Save Changes</button>
+    <a class="btn btn-ghost" href="{{ url_for('admin.courses') }}" style="margin-left:10px">Cancel</a></p>
+  </form>
+</div>
+{% endblock %}

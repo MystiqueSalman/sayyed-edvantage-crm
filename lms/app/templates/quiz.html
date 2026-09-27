@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Quiz: {{ quiz.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('main.course_detail', slug=course.slug) }}">← {{ course.title }}</a></p>
+<div class="panel">
+  <h2 style="margin-top:0">{{ quiz.title }}</h2>
+  <p style="color:var(--muted)">{{ quiz.questions|length }} questions · pass mark {{ quiz.pass_percent }}% · attempts are tracked</p>
+  {% if attempts %}
+  <p style="color:var(--muted)">Previous attempts:
+    {% for a in attempts %}<span class="tag {% if a.percent >= quiz.pass_percent %}green{% endif %}" style="margin-right:6px">{{ a.score }}/{{ a.total }}</span>{% endfor %}
+  </p>
+  {% endif %}
+  <form method="post">
+    {% for q in quiz.questions %}
+    <div class="quiz-q">
+      <p>Q{{ loop.index }}. {{ q.text }}</p>
+      {% for opt in ['A','B','C','D'] %}
+      <label class="opt"><input type="radio" name="q{{ q.id }}" value="{{ opt }}" required>
+        <b>{{ opt }}.</b> {{ q['option_' + opt|lower] }}</label>
+      {% endfor %}
+    </div>
+    {% endfor %}
+    <button class="btn btn-gold" type="submit">Submit Quiz</button>
+  </form>
+</div>
+{% endblock %}

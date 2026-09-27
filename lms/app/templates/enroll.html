@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Enroll — {{ course.title }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:560px; margin:30px auto">
+  <h2>Enroll: {{ course.title }}</h2>
+  <table>
+    <tr><th>Course fee</th><td class="fee">₹{{ "{:,}".format(course.fee) }}</td></tr>
+    {% if discount %}<tr><th>Coupon {{ coupon.code }} (−{{ coupon.percent_off }}%)</th>
+      <td style="color:var(--success)">− ₹{{ "{:,}".format(discount) }}</td></tr>{% endif %}
+    <tr><th>You pay</th><td class="fee">₹{{ "{:,}".format(final_fee) }} <small>+ GST</small></td></tr>
+  </table>
+  {% if not payments_live %}
+  <p class="flash info">🧪 Test mode: no real money moves. Payments complete instantly.</p>
+  {% endif %}
+  <form method="post" style="margin-top:10px">
+    <label>Coupon code (optional)</label>
+    <div style="display:flex; gap:10px">
+      <input type="text" name="coupon_code" value="{{ coupon.code if coupon }}" placeholder="e.g. WELCOME10" style="text-transform:uppercase">
+      <button class="btn btn-ghost" type="submit" name="apply" value="1">Apply</button>
+    </div>
+  </form>
+  <form method="post" style="margin-top:18px">
+    {% if coupon %}<input type="hidden" name="coupon_code" value="{{ coupon.code }}">{% endif %}
+    <button class="btn btn-gold" type="submit" name="confirm" value="1" style="width:100%">
+      {% if final_fee == 0 %}Enroll Free{% else %}Proceed to Pay ₹{{ "{:,}".format(final_fee) }}{% endif %}
+    </button>
+  </form>
+</div>
+{% endblock %}

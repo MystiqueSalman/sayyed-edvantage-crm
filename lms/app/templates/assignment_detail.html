@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}{{ assignment.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('student.assignments') }}">← My Assignments</a></p>
+<div class="two-col">
+  <div class="panel">
+    <h2 style="margin-top:0">{{ assignment.title }}</h2>
+    <p style="color:var(--muted)">{{ assignment.course.title }} · {{ assignment.max_marks }} marks
+      {% if assignment.due_date %}· due {{ assignment.due_date.strftime('%d %b %Y') }}{% endif %}</p>
+    <div style="line-height:1.7">{{ assignment.description }}</div>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">Your Submission</h3>
+    {% if sub and sub.grade is not none %}
+      <p class="flash success">Graded: <b>{{ sub.grade }} / {{ assignment.max_marks }}</b></p>
+      {% if sub.feedback %}<p><b>Feedback:</b><br>{{ sub.feedback }}</p>{% endif %}
+    {% elif sub %}
+      <p class="flash info">Submitted {{ sub.submitted_at.strftime('%d %b %Y') }} — awaiting review. You may resubmit below.</p>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data">
+      <label>Upload file (pdf, doc, zip, code…)</label>
+      <input type="file" name="file">
+      <label>Or write / paste your work</label>
+      <textarea name="note" placeholder="Links, answers, explanations…">{{ sub.note if sub }}</textarea>
+      <p><button class="btn btn-gold" type="submit" style="margin-top:12px">
+        {% if sub %}Resubmit{% else %}Submit Assignment{% endif %}</button></p>
+    </form>
+  </div>
+</div>
+{% endblock %}

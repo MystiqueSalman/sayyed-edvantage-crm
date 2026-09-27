@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Quiz Result{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:560px; margin:40px auto; text-align:center">
+  <h2>{{ attempt.quiz.title }}</h2>
+  <div class="fee" style="font-size:2.6rem">{{ attempt.score }} / {{ attempt.total }}</div>
+  {% if attempt.percent >= attempt.quiz.pass_percent %}
+    <p class="flash success">🎉 You passed with {{ attempt.percent }}% (needed {{ attempt.quiz.pass_percent }}%)</p>
+  {% else %}
+    <p class="flash warning">You scored {{ attempt.percent }}% — {{ attempt.quiz.pass_percent }}% needed to pass. Try again!</p>
+  {% endif %}
+  <p>
+    <a class="btn btn-ghost" href="{{ url_for('student.quiz', quiz_id=attempt.quiz_id) }}">Retake Quiz</a>
+    <a class="btn btn-blue" href="{{ url_for('main.course_detail', slug=course.slug) }}" style="margin-left:10px">Back to Course</a>
+  </p>
+</div>
+{% endblock %}

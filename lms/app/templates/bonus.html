@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Free Bonus Courses — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>Value-Added Bonus Courses</h2><div class="line"></div></div>
+<p style="color:var(--muted)">Free add-on courses included with your learning journey. Enroll instantly — no payment needed.</p>
+<div class="grid">
+  {% for c in courses %}
+  <div class="card">
+    <div class="course-banner" style="{% if c.banner %}background-image:url('{{ url_for('static', filename='img/banners/' + c.banner) }}'){% endif %}"></div>
+    <div class="body">
+      <div><span class="badge-free">FREE</span></div>
+      <h3>{{ c.title }}</h3>
+      <p>{{ c.short_desc }}</p>
+      <a class="btn btn-blue btn-sm" href="{{ url_for('main.course_detail', slug=c.slug) }}">Enroll Free</a>
+    </div>
+  </div>
+  {% else %}
+  <p style="color:var(--muted)">Bonus courses are being prepared — check back soon.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Enrollments{% endblock %}
+{% block content %}
+<div class="section-title"><h2>Enrollments</h2><div class="line"></div>
+  <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<div class="panel">
+  <table>
+    <tr><th>Date</th><th>Student</th><th>Course</th><th>Paid</th><th>Status</th><th>Coupon</th></tr>
+    {% for e in enrollments %}
+    <tr><td>{{ e.enrolled_at.strftime('%d %b %Y') }}</td>
+        <td>{{ e.user.name }}<br><small style="color:var(--muted)">{{ e.user.email }}</small></td>
+        <td>{{ e.course.title }}</td>
+        <td>{% if e.paid %}₹{{ "{:,}".format(e.amount_paid) }}{% else %}<span class="tag">Unpaid</span>{% endif %}</td>
+        <td><span class="tag {% if e.status=='completed' %}green{% endif %}">{{ e.status }}</span></td>
+        <td>{{ e.coupon_code or '—' }}</td></tr>
+    {% else %}<tr><td colspan="6" style="color:var(--muted)">No enrollments yet.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

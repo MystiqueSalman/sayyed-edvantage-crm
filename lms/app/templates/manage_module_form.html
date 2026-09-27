@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if module else 'New' }} Module — {{ course.title }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:560px; margin:30px auto">
+  <h2>{{ 'Edit' if module else 'New' }} Module <span style="color:var(--muted); font-size:.9rem">· {{ course.title }}</span></h2>
+  <form method="post">
+    <label>Module title</label>
+    <input type="text" name="title" value="{{ module.title if module }}" required autofocus>
+    <p><button class="btn btn-gold" type="submit" style="margin-top:14px">Save Module</button>
+    <a class="btn btn-ghost" href="{{ url_for('manage.course_home', course_id=course.id) }}" style="margin-left:10px">Cancel</a></p>
+  </form>
+</div>
+{% endblock %}

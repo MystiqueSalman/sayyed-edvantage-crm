@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}New Recording — {{ course.title }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:560px; margin:30px auto">
+  <h2>New Recorded Session <span style="color:var(--muted); font-size:.9rem">· {{ course.title }}</span></h2>
+  <form method="post">
+    <label>Title</label>
+    <input type="text" name="title" required autofocus placeholder="Live Class 3: …">
+    <label>Video embed URL</label>
+    <input type="text" name="video_url" placeholder="https://www.youtube.com/embed/…">
+    <div class="two-col">
+      <div><label>Recorded on</label><input type="date" name="recorded_on"></div>
+      <div><label>Duration (minutes)</label><input type="number" name="duration_min" value="60" min="0"></div>
+    </div>
+    <p><button class="btn btn-gold" type="submit" style="margin-top:14px">Add Recording</button>
+    <a class="btn btn-ghost" href="{{ url_for('manage.course_home', course_id=course.id) }}" style="margin-left:10px">Cancel</a></p>
+  </form>
+</div>
+{% endblock %}

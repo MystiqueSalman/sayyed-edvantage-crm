@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Grade Submission{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('manage.assignment_submissions', assignment_id=sub.assignment_id) }}">← Submissions</a></p>
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">{{ sub.assignment.title }}</h3>
+    <p style="color:var(--muted)">{{ sub.user.name }} · {{ sub.user.email }}<br>
+       Submitted {{ sub.submitted_at.strftime('%d %b %Y, %H:%M') }}</p>
+    {% if sub.file_path %}
+    <p><a class="btn btn-blue btn-sm" href="{{ url_for('manage.submission_file', submission_id=sub.id) }}">📎 Download Submission</a></p>
+    {% endif %}
+    {% if sub.note %}<p><b>Student note:</b></p><div style="color:var(--muted)">{{ sub.note }}</div>{% endif %}
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">Grade</h3>
+    <form method="post">
+      <label>Marks (out of {{ sub.assignment.max_marks }})</label>
+      <input type="number" name="grade" step="0.5" min="0" max="{{ sub.assignment.max_marks }}"
+             value="{{ sub.grade if sub.grade is not none }}" required>
+      <label>Feedback for student</label>
+      <textarea name="feedback" rows="5">{{ sub.feedback }}</textarea>
+      <p><button class="btn btn-gold" type="submit" style="margin-top:12px">Save Grade</button></p>
+    </form>
+  </div>
+</div>
+{% endblock %}

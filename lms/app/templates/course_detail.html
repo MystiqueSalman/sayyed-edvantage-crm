@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}{{ course.title }} — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="panel" style="padding:0; overflow:hidden">
+  <div class="course-banner" style="height:230px; background-image:url('{{ url_for('static', filename='img/banners/' + course.banner) if course.banner }}')"></div>
+  <div style="padding:26px">
+    <div>
+      {% if course.is_bonus %}<span class="badge-free">FREE BONUS</span>
+      {% else %}<span class="tag gold">Flagship Course</span>{% endif %}
+    </div>
+    <h1 style="margin:.4em 0">{{ course.title }}</h1>
+    <div>{{ course.description|safe }}</div>
+    <div class="fee" style="margin:12px 0">₹{{ "{:,}".format(course.fee) }} <small>+ GST</small></div>
+    <p>
+      {% if not current_user.is_authenticated %}
+        <a class="btn btn-gold" href="{{ url_for('auth.login', next=url_for('main.enroll', slug=course.slug)) }}">Login to Enroll</a>
+      {% elif enrollment and enrollment.status != 'pending' %}
+        <a class="btn btn-blue" href="{{ url_for('student.dashboard') }}">Go to My Learning</a>
+        {% if enrollment.status == 'completed' %}<span class="tag green" style="margin-left:10px">Completed</span>{% endif %}
+      {% else %}
+        <a class="btn btn-gold" href="{{ url_for('main.enroll', slug=course.slug) }}">
+          {% if course.is_bonus or course.fee == 0 %}Enroll Free{% else %}Enroll Now{% endif %}</a>
+      {% endif %}
+      <a class="btn btn-ghost" href="{{ url_for('main.recordings', slug=course.slug) }}" style="margin-left:10px">Recorded Sessions</a>
+    </p>
+  </div>
+</div>
+
+<div class="section-title"><h2>Curriculum</h2><div class="line"></div></div>
+{% for m in course.modules %}
+<div class="panel">
+  <h3 style="margin-top:0">Module {{ loop.index }}: {{ m.title }}</h3>
+  {% for l in m.lessons %}
+  <div class="lesson-row">
+    <span>{% if l.kind == 'video' %}🎬{% elif l.kind == 'pdf' %}📄{% else %}📖{% endif %}</span>
+    <span>{{ l.title }}</span>
+    <span class="tag" style="margin-left:auto">{{ l.kind|upper }}</span>
+  </div>
+  {% endfor %}
+  {% for q in m.quizzes %}
+  <div class="lesson-row"><span>📝</span><span><b>Quiz:</b> {{ q.title }}</span>
+    <span class="tag" style="margin-left:auto">Pass {{ q.pass_percent }}%</span></div>
+  {% endfor %}
+</div>
+{% endfor %}
+
+{% if course.assignments %}
+<div class="section-title"><h2>Assignments</h2><div class="line"></div></div>
+<div class="panel">
+  {% for a in course.assignments %}
+  <div class="lesson-row"><span>🧪</span><span><b>{{ a.title }}</b>
+    <span style="color:var(--muted)"> — {{ a.max_marks }} marks{% if a.due_date %} · due {{ a.due_date.strftime('%d %b %Y') }}{% endif %}</span></span></div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}My Certificates{% endblock %}
+{% block content %}
+<div class="section-title"><h2>My Certificates</h2><div class="line"></div></div>
+<div class="grid">
+  {% for c in certs %}
+  <div class="card"><div class="body" style="text-align:center; padding:34px 20px">
+    <div style="font-size:2.4rem">🏆</div>
+    <h3>{{ c.course.title }}</h3>
+    <p>Issued {{ c.issued_at.strftime('%d %B %Y') }}<br><code>{{ c.code }}</code></p>
+    <a class="btn btn-gold btn-sm" href="{{ url_for('student.certificate_download', code=c.code) }}">Download PDF</a>
+  </div></div>
+  {% else %}
+  <div class="panel"><p style="color:var(--muted)">Complete all lessons and pass every module quiz in a course to earn your certificate.</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

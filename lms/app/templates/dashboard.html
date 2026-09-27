@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}My Learning — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>My Learning</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('main.catalog') }}">+ Enroll in more</a></div>
+
+{% if enrollments %}
+<div class="grid">
+  {% for e in enrollments %}
+  {% set p = e.progress() %}
+  <div class="card">
+    <div class="course-banner" style="height:130px; background-image:url('{{ url_for('static', filename='img/banners/' + e.course.banner) if e.course.banner }}')"></div>
+    <div class="body">
+      <h3>{{ e.course.title }}</h3>
+      {% if e.status == 'completed' %}<span class="tag green">Completed ✓</span>
+      {% else %}<span class="tag">In progress</span>{% endif %}
+      <div class="progress"><i style="width:{{ p }}%"></i></div>
+      <small style="color:var(--muted)">{{ p }}% complete</small>
+      {% set first = e.course.lessons[0] if e.course.lessons else None %}
+      {% if first and e.status != 'completed' %}
+      <a class="btn btn-blue btn-sm" href="{{ url_for('student.lesson', lesson_id=first.id) }}">Continue Learning</a>
+      {% elif e.status == 'completed' %}
+      <a class="btn btn-gold btn-sm" href="{{ url_for('student.certificates') }}">View Certificate</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">You're not enrolled in any course yet.
+  <a href="{{ url_for('main.catalog') }}">Browse the catalog</a> or grab a
+  <a href="{{ url_for('main.bonus_courses') }}">free bonus course</a>.</p></div>
+{% endif %}
+
+{% if pending %}
+<div class="section-title"><h2>Pending Assignments</h2><div class="line"></div>
+  <a href="{{ url_for('student.assignments') }}">All →</a></div>
+<div class="panel">
+  {% for a in pending %}
+  <div class="lesson-row"><span>🧪</span>
+    <span><b>{{ a.title }}</b> <span style="color:var(--muted)">· {{ a.course.title }}</span></span>
+    <a class="btn btn-ghost btn-sm" style="margin-left:auto" href="{{ url_for('student.assignment_detail', assignment_id=a.id) }}">Submit</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if certs %}
+<div class="section-title"><h2>My Certificates</h2><div class="line"></div>
+  <a href="{{ url_for('student.certificates') }}">All →</a></div>
+<div class="panel">
+  {% for c in certs %}
+  <div class="lesson-row"><span>🏆</span><span><b>{{ c.course.title }}</b>
+    <span style="color:var(--muted)">· {{ c.code }} · {{ c.issued_at.strftime('%d %b %Y') }}</span></span>
+    <a class="btn btn-gold btn-sm" style="margin-left:auto" href="{{ url_for('student.certificate_download', code=c.code) }}">Download PDF</a>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

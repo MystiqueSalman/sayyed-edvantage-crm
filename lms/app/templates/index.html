@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Sayyed EdVantage — Learn Data Science, AI, Python & More{% endblock %}
+{% block hero %}
+<div class="hero">
+  <div class="hero-bg" style="background-image:url('{{ url_for('static', filename='img/banners/hero.png') }}')"></div>
+  <div class="hero-inner">
+    <div class="kicker">Admissions Open · Live Online Classes</div>
+    <h1>Master the Skills That Get You Hired.</h1>
+    <p>Data Science, AI &amp; Generative AI, Python, Data Analytics, Linux, DevOps and Ethical Hacking —
+       taught live by industry mentors, with recordings, quizzes, assignments and certificates.</p>
+    <p>
+      <a class="btn btn-gold" href="{{ url_for('main.catalog') }}">Explore Courses</a>
+      <a class="btn btn-ghost" href="{{ url_for('main.bonus_courses') }}" style="margin-left:10px">Free Bonus Courses</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="section-title"><h2>Flagship Courses</h2><div class="line"></div>
+  <a href="{{ url_for('main.catalog') }}">View all →</a></div>
+<div class="grid">
+  {% for c in courses[:6] %}
+  <div class="card">
+    <div class="course-banner" style="background-image:url('{{ url_for('static', filename='img/banners/' + c.banner) if c.banner }}')"></div>
+    <div class="body">
+      <h3>{{ c.title }}</h3>
+      <p>{{ c.short_desc }}</p>
+      <div class="fee">₹{{ "{:,}".format(c.fee) }} <small>+ GST</small></div>
+      <a class="btn btn-gold btn-sm" href="{{ url_for('main.course_detail', slug=c.slug) }}">View Course</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="section-title"><h2>Why Sayyed EdVantage</h2><div class="line"></div></div>
+<div class="stat-grid">
+  <div class="stat"><div class="n">Live</div><div class="l">Interactive online classes with mentors</div></div>
+  <div class="stat"><div class="n">24×7</div><div class="l">Recorded sessions library</div></div>
+  <div class="stat"><div class="n">100%</div><div class="l">Hands-on assignments &amp; quizzes</div></div>
+  <div class="stat"><div class="n">Free</div><div class="l">Value-added bonus courses</div></div>
+</div>
+{% endblock %}

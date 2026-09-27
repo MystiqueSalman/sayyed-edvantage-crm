@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}My Assignments{% endblock %}
+{% block content %}
+<div class="section-title"><h2>My Assignments</h2><div class="line"></div></div>
+<div class="panel">
+  {% for a in assignments %}
+  {% set s = subs.get(a.id) %}
+  <div class="lesson-row"><span>🧪</span>
+    <span><b>{{ a.title }}</b> <span style="color:var(--muted)">· {{ a.course.title }} · {{ a.max_marks }} marks
+      {% if a.due_date %}· due {{ a.due_date.strftime('%d %b %Y') }}{% endif %}</span></span>
+    {% if s and s.grade is not none %}<span class="tag green" style="margin-left:auto">Graded: {{ s.grade }}/{{ a.max_marks }}</span>
+    {% elif s %}<span class="tag" style="margin-left:auto">Submitted — awaiting review</span>
+    {% else %}<a class="btn btn-gold btn-sm" style="margin-left:auto" href="{{ url_for('student.assignment_detail', assignment_id=a.id) }}">Submit</a>{% endif %}
+  </div>
+  {% else %}
+  <p style="color:var(--muted)">No assignments yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

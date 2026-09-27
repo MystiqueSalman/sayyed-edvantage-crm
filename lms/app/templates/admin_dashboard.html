@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<div class="section-title"><h2>{% if current_user.role == 'manager' %}Manager{% else %}Admin{% endif %} Dashboard</h2><div class="line"></div></div>
+<div class="stat-grid">
+  <div class="stat"><div class="n">{{ stats.users }}</div><div class="l">Users</div></div>
+  <div class="stat"><div class="n">{{ stats.courses }}</div><div class="l">Courses</div></div>
+  <div class="stat"><div class="n">{{ stats.enrollments }}</div><div class="l">Enrollments</div></div>
+  <div class="stat"><div class="n">₹{{ "{:,}".format(stats.revenue) }}</div><div class="l">Revenue (test mode)</div></div>
+  <div class="stat"><div class="n">{{ stats.pending_submissions }}</div><div class="l">Submissions to grade</div></div>
+  <div class="stat"><div class="n">{{ stats.certificates }}</div><div class="l">Certificates issued</div></div>
+</div>
+<div class="two-col">
+  <div class="panel">
+    <h3>Quick Links</h3>
+    <p><a class="btn btn-blue btn-sm" href="{{ url_for('admin.courses') }}">📚 Manage Courses</a>
+       <a class="btn btn-blue btn-sm" href="{{ url_for('admin.enrollments') }}">🧾 Enrollments</a></p>
+    {% if current_user.role == 'admin' %}
+    <p><a class="btn btn-ghost btn-sm" href="{{ url_for('admin.users') }}">👥 Users</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.coupons') }}">🎟 Coupons</a></p>
+    {% else %}
+    <p style="color:var(--muted); font-size:.88rem">User management and coupons are admin-only.</p>
+    {% endif %}
+  </div>
+  <div class="panel">
+    <h3>Recent Enrollments</h3>
+    <table>
+      <tr><th>Student</th><th>Course</th><th>Status</th></tr>
+      {% for e in recent %}
+      <tr><td>{{ e.user.name }}</td><td>{{ e.course.title }}</td>
+          <td><span class="tag {% if e.status=='completed' %}green{% endif %}">{{ e.status }}</span></td></tr>
+      {% else %}<tr><td colspan="3" style="color:var(--muted)">None yet.</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

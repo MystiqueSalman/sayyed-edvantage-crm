@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Manage — {{ course.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('main.course_detail', slug=course.slug) }}">← View course page</a></p>
+<div class="section-title"><h2>Manage: {{ course.title }}</h2><div class="line"></div></div>
+
+<div class="panel">
+  <h3>Modules &amp; Lessons
+    <a class="btn btn-gold btn-sm" style="margin-left:12px" href="{{ url_for('manage.module_new', course_id=course.id) }}">+ Module</a></h3>
+  {% for m in course.modules %}
+  <div style="border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:14px; margin-bottom:14px">
+    <div style="display:flex; align-items:center; gap:10px">
+      <b>Module {{ loop.index }}: {{ m.title }}</b>
+      <span style="margin-left:auto; display:flex; gap:8px">
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('manage.module_edit', module_id=m.id) }}">Edit</a>
+        <a class="btn btn-blue btn-sm" href="{{ url_for('manage.lesson_new', module_id=m.id) }}">+ Lesson</a>
+        <a class="btn btn-blue btn-sm" href="{{ url_for('manage.quiz_new', module_id=m.id) }}">+ Quiz</a>
+        <form class="inline-form" method="post" action="{{ url_for('manage.module_delete', module_id=m.id) }}"
+              onsubmit="return confirm('Delete this module and all its lessons/quizzes?')">
+          <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+        </form>
+      </span>
+    </div>
+    {% for l in m.lessons %}
+    <div class="lesson-row" style="margin-top:8px"><span>{{ l.kind|upper }}</span><span>{{ l.title }}</span>
+      <span style="margin-left:auto; display:flex; gap:8px">
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('manage.lesson_edit', lesson_id=l.id) }}">Edit</a>
+        <form class="inline-form" method="post" action="{{ url_for('manage.lesson_delete', lesson_id=l.id) }}"
+              onsubmit="return confirm('Delete this lesson?')"><button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+      </span></div>
+    {% endfor %}
+    {% for q in m.quizzes %}
+    <div class="lesson-row" style="margin-top:8px"><span>📝 QUIZ</span><span>{{ q.title }} ({{ q.questions|length }} questions)</span>
+      <span style="margin-left:auto; display:flex; gap:8px">
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('manage.quiz_questions', quiz_id=q.id) }}">Questions</a>
+        <form class="inline-form" method="post" action="{{ url_for('manage.quiz_delete', quiz_id=q.id) }}"
+              onsubmit="return confirm('Delete this quiz?')"><button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+      </span></div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p style="color:var(--muted)">No modules yet — add the first one.</p>
+  {% endfor %}
+</div>
+
+<div class="two-col">
+  <div class="panel">
+    <h3>Assignments <a class="btn btn-gold btn-sm" style="margin-left:10px" href="{{ url_for('manage.assignment_new', course_id=course.id) }}">+ New</a></h3>
+    {% for a in course.assignments %}
+    <div class="lesson-row"><span>🧪</span><span>{{ a.title }}</span>
+      <span style="margin-left:auto; display:flex; gap:8px">
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('manage.assignment_submissions', assignment_id=a.id) }}">Submissions</a>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('manage.assignment_edit', assignment_id=a.id) }}">Edit</a>
+        <form class="inline-form" method="post" action="{{ url_for('manage.assignment_delete', assignment_id=a.id) }}"
+              onsubmit="return confirm('Delete this assignment and all submissions?')"><button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+      </span></div>
+    {% else %}<p style="color:var(--muted)">No assignments yet.</p>{% endfor %}
+  </div>
+  <div class="panel">
+    <h3>Recorded Sessions <a class="btn btn-gold btn-sm" style="margin-left:10px" href="{{ url_for('manage.recording_new', course_id=course.id) }}">+ New</a></h3>
+    {% for r in course.recordings %}
+    <div class="lesson-row"><span>🎥</span><span>{{ r.title }}</span>
+      <form class="inline-form" style="margin-left:auto" method="post" action="{{ url_for('manage.recording_delete', recording_id=r.id) }}"
+            onsubmit="return confirm('Delete this recording?')"><button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+    </div>
+    {% else %}<p style="color:var(--muted)">No recordings yet.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}
