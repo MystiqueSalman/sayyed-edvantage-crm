@@ -52,6 +52,30 @@ def _sync_chat_transcript(conv):
     else:
         lead.log("note", body)
 
+def _apply_chat_course(lead, course_id):
+    """Attach the visitor's course interest to a chat lead.
+
+    Sets course_id when the lead has none; updates it (with a timeline note)
+    when the visitor's interest changes while the lead is still early-stage
+    (new/contacted). Never overwrites a course a counsellor set once the lead
+    has progressed past contacted.
+    """
+    if not course_id or lead.course_id == course_id:
+        return
+    course = Course.query.get(course_id)
+    title = course.title if course else f"course #{course_id}"
+    if not lead.course_id:
+        lead.course_id = course_id
+        lead.log("system", f"Interested course: {title} (from AI chat).")
+    elif lead.status in (Lead.STATUS_NEW, Lead.STATUS_CONTACTED):
+        old = Course.query.get(lead.course_id)
+        old_title = old.title if old else f"course #{lead.course_id}"
+        lead.course_id = course_id
+        lead.log("system", f"Interested course updated: {old_title} → {title} "
+                           "(from AI chat).")
+    # Later-stage leads: the counsellor owns the course — chat won't overwrite.
+
+
 ALLOWED_DOC_EXTS = {"pdf", "doc", "docx", "png", "jpg", "jpeg"}
 
 ONBOARDING_ITEMS = [
@@ -226,28 +250,50 @@ def chat():
                     lead.log("system",
                              f"Visitor shared number {phone} in AI chat.")
             if lead is None or (lead.phone or "").strip() != phone:
+                note = "Shared number in AI chat."
+                _course = (Course.query.get(flags["course_id"])
+                           if flags.get("course_id") else None)
+                if _course:
+                    note += f" Interested: {_course.title}."
                 lead = create_lead(name=flags.get("name") or "Chat visitor",
                                    phone=phone, source=Lead.SOURCE_CHAT,
-                                   note="Shared number in AI chat.")
+                                   course_id=flags.get("course_id"),
+                                   note=note)
                 # create_lead dedups by phone: adopt whichever lead owns the
                 # number so the transcript stays with the right person.
                 conv.lead_id = lead.id
-            if flags.get("name") and lead.name in ("Chat visitor", ""):
+            if flags.get("name") and (lead.name or "") in ("Chat visitor", ""):
                 lead.name = flags["name"]
+                lead.log("system", "Visitor name updated to "
+                                   f"{flags['name']} via AI chat.")
+            _apply_chat_course(lead, flags.get("course_id"))
             lead.follow_up_date = date.today()
             lead.log("system", "AI chat flagged HIGH-INTENT (phone shared).")
             lead.score = Lead.SCORE_HOT
-        elif flags.get("name") and lead and lead.name in ("Chat visitor", ""):
+        elif flags.get("name") and lead and (lead.name or "") in ("Chat visitor", ""):
             lead.name = flags["name"]
+            lead.log("system", "Visitor name updated to "
+                               f"{flags['name']} via AI chat.")
         if flags.get("fee_asked"):
             conv.fee_asks = (conv.fee_asks or 0) + 1
         if flags.get("high_intent") or (conv.fee_asks or 0) >= 2:
             if lead is None:
+                note = "High-intent chat visitor (no phone yet)."
+                _course = (Course.query.get(flags["course_id"])
+                           if flags.get("course_id") else None)
+                if _course:
+                    note += f" Interested: {_course.title}."
                 lead = create_lead(name=flags.get("name") or "Chat visitor",
                                    source=Lead.SOURCE_CHAT,
-                                   note="High-intent chat visitor (no phone yet).")
+                                   course_id=flags.get("course_id"),
+                                   note=note)
                 if not conv.lead_id:
                     conv.lead_id = lead.id
+            if flags.get("name") and (lead.name or "") in ("Chat visitor", ""):
+                lead.name = flags["name"]
+                lead.log("system", "Visitor name updated to "
+                                   f"{flags['name']} via AI chat.")
+            _apply_chat_course(lead, flags.get("course_id"))
             lead.log("system", "AI chat flagged HIGH-INTENT.")
             lead.score = Lead.SCORE_HOT
             if not lead.follow_up_date:

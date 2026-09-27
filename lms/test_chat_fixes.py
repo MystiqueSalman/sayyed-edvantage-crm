@@ -41,7 +41,11 @@ with app.app_context():
                 short_desc="DA course")
     py = Course(title="Python Programming", slug="python-programming",
                 fee=35000, short_desc="Python course")  # no modules on purpose
-    db.session.add_all([ds, da, py])
+    lx = Course(title="Linux Administration", slug="linux-administration",
+                fee=25000, short_desc="Linux course")
+    dv = Course(title="DevOps", slug="devops", fee=45000,
+                short_desc="DevOps course")
+    db.session.add_all([ds, da, py, lx, dv])
     db.session.flush()
     m1 = Module(course_id=ds.id, title="Python for Data Science", position=0)
     m2 = Module(course_id=ds.id, title="Statistics Essentials", position=1)
@@ -173,6 +177,112 @@ check("widget: typing indicator has no timestamp",
 check("widget: existing gold/blue bubble styling untouched",
       ".chat-msg.bot{background:#16294d" in html
       and ".chat-msg.user{background:linear-gradient(135deg,#d4af37,#9c7a1e)" in html)
+
+# ================================================================ LEAD ENRICHMENT: course + name capture
+with app.app_context():
+    DA_ID = Course.query.filter_by(slug="data-analytics").first().id
+    PY_ID = Course.query.filter_by(slug="python-programming").first().id
+    DS_ID2 = Course.query.filter_by(slug="data-science").first().id
+    LX_ID = Course.query.filter_by(slug="linux-administration").first().id
+
+# (1) course question -> lead created carrying the course interest
+d = chat("I want data analytics admission")
+cid3 = d["conversation_id"]
+with app.app_context():
+    conv3 = db.session.get(ChatConversation, cid3)
+    l3 = db.session.get(Lead, conv3.lead_id)
+    check("course question creates a lead", l3 is not None)
+    check("lead carries Data Analytics course_id",
+          l3 is not None and l3.course_id == DA_ID,
+          f"course_id={l3.course_id if l3 else None}")
+    check("lead has follow-up date for counsellor",
+          l3 is not None and str(l3.follow_up_date) ==
+          __import__("datetime").date.today().isoformat())
+    check("creation note names the course interest",
+          l3 is not None and any("Interested" in a.text and "Data Analytics" in a.text
+                                 for a in l3.activities))
+
+# (2) name + phone in one message -> fully-detailed lead
+d = chat("Hi, I'm Rahul Sharma, my number is 9876543210")
+cid4 = d["conversation_id"]
+check("phone reply greets by name (no name ask)",
+      "Rahul Sharma" in d["reply"] and "May I have your name" not in d["reply"])
+with app.app_context():
+    conv4 = db.session.get(ChatConversation, cid4)
+    l4 = db.session.get(Lead, conv4.lead_id)
+    check("one-message name+phone: real name stored",
+          l4 is not None and l4.name == "Rahul Sharma",
+          f"name={l4.name if l4 else None}")
+    check("one-message name+phone: phone stored",
+          l4 is not None and l4.phone == "9876543210")
+
+# (3) name arriving in a later message replaces "Chat visitor"
+d = chat("tell me about python")
+cid5 = d["conversation_id"]
+with app.app_context():
+    l5 = db.session.get(Lead, db.session.get(ChatConversation, cid5).lead_id)
+    check("course lead starts as Chat visitor",
+          l5 is not None and l5.name == "Chat visitor")
+chat("my name is Priya", cid5)
+with app.app_context():
+    l5 = db.session.get(Lead, db.session.get(ChatConversation, cid5).lead_id)
+    check("later name updates the placeholder",
+          l5 is not None and l5.name == "Priya",
+          f"name={l5.name if l5 else None}")
+    check("name update logged on timeline",
+          l5 is not None and any("Priya" in a.text for a in l5.activities))
+
+# (4) phone-only reply asks for the name
+d = chat("9988776655")
+check("phone reply asks for name when unknown",
+      "May I have your name as well?" in d["reply"])
+
+# (5) course interest follows the visitor across messages
+d = chat("tell me about python programming")
+cid6 = d["conversation_id"]
+chat("tell me about data science", cid6)
+with app.app_context():
+    l6 = db.session.get(Lead, db.session.get(ChatConversation, cid6).lead_id)
+    check("course interest updated to Data Science",
+          l6 is not None and l6.course_id == DS_ID2,
+          f"course_id={l6.course_id if l6 else None}")
+    check("course change logged on timeline",
+          l6 is not None and any("Interested course updated" in a.text
+                                 for a in l6.activities))
+
+# (6) combo maps to its first component course
+d = chat("linux devops combo fees")
+cid7 = d["conversation_id"]
+with app.app_context():
+    l7 = db.session.get(Lead, db.session.get(ChatConversation, cid7).lead_id)
+    check("combo interest maps to Linux Administration",
+          l7 is not None and l7.course_id == LX_ID,
+          f"course_id={l7.course_id if l7 else None}")
+
+# (7) later-stage leads keep the counsellor's course
+with app.app_context():
+    l8 = Lead(name="Progressed", phone="9722222222", source="chat",
+              course_id=PY_ID, status=Lead.STATUS_QUALIFIED)
+    db.session.add(l8)
+    db.session.commit()
+    L8_ID = l8.id
+d = chat("tell me about data science")
+cid8 = d["conversation_id"]
+with app.app_context():
+    conv8 = db.session.get(ChatConversation, cid8)
+    conv8.lead_id = L8_ID  # simulate counsellor-linked conversation
+    db.session.commit()
+chat("tell me about data science", cid8)
+with app.app_context():
+    l8 = db.session.get(Lead, L8_ID)
+    check("qualified lead keeps counsellor-set course",
+          l8.course_id == PY_ID, f"course_id={l8.course_id}")
+
+# (8) OpenAI prompt binds name capture
+with app.app_context():
+    prompt = _system_prompt(course_knowledge())
+check("system prompt: asks for name with number",
+      "ALWAYS ask for the visitor's NAME" in prompt)
 
 # ================================================================ summary
 fails = [n for n, ok, _ in results if not ok]
