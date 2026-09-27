@@ -18,5 +18,6 @@ RUN mkdir -p /app/data/uploads /app/app/static/img/banners
 
 EXPOSE 5000
 
-# Railway injects $PORT at runtime
-CMD ["sh", "-c", "gunicorn run:app --bind 0.0.0.0:${PORT:-5000} --workers 2 --timeout 120"]
+# Seed demo data on every start (seed.py is idempotent: skips existing rows),
+# then serve. Railway injects $PORT at runtime.
+CMD ["sh", "-c", "python seed.py && gunicorn run:app --bind 0.0.0.0:${PORT:-5000} --workers 2 --timeout 120"]
