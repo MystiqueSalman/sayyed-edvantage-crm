@@ -29,6 +29,29 @@ crm_required = role_required("admin", "manager", ROLE_COUNSELLOR)
 batch_manage = role_required("admin", "manager")
 student_only = role_required("student")
 
+
+def _sync_chat_transcript(conv):
+    """Keep one tidy 'website chat transcript' entry on the lead timeline.
+
+    Called on every chat message once the conversation is linked to a lead;
+    refreshes the single entry instead of spamming the timeline.
+    """
+    lead = Lead.query.get(conv.lead_id)
+    if not lead:
+        return
+    header = f"Website chat ({conv.id[:8]}) — transcript:"
+    msgs = (ChatMessage.query.filter_by(conversation_id=conv.id)
+            .order_by(ChatMessage.id).all()[-40:])
+    lines = [f"{'Visitor' if m.role == 'user' else 'AI Assistant'}: {m.text}"
+             for m in msgs]
+    body = (header + "\n" + "\n".join(lines))[:6000]
+    existing = next((a for a in lead.activities
+                     if a.text.startswith(header)), None)
+    if existing:
+        existing.text = body
+    else:
+        lead.log("note", body)
+
 ALLOWED_DOC_EXTS = {"pdf", "doc", "docx", "png", "jpg", "jpeg"}
 
 ONBOARDING_ITEMS = [
@@ -211,6 +234,13 @@ def chat():
                 lead.follow_up_date = date.today()
         if lead:
             refresh_score(lead)
+        # Sync the website-chat transcript onto the lead timeline
+        # (one entry per conversation, refreshed each message).
+        if conv.lead_id:
+            try:
+                _sync_chat_transcript(conv)
+            except Exception:
+                pass
         db.session.commit()
     except Exception:
         db.session.rollback()

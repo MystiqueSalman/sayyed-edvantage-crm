@@ -99,6 +99,8 @@ check("chat created CRM lead", lead is not None)
 if lead:
     check("chat lead hot + follow-up today", lead_hot, f"{lead.score}/{lead.follow_up_date}")
     check("chat lead timeline has high-intent note", lead_timeline)
+    check("chat transcript synced to lead timeline",
+          any(a.text.startswith("Website chat") for a in lead.activities))
 
 # guardrail: fees quoted are only approved ones
 import re
@@ -110,6 +112,8 @@ with app.app_context():
             for raw in re.findall(r"₹\s?([\d,]+)", m.text):
                 amounts.add(int(raw.replace(",", "")))
     approved = {c.fee for c in Course.query.filter_by(is_bonus=False).all()}
+    from app.ai_agent import COMBO_OFFERS
+    approved |= {fee for _, fee in COMBO_OFFERS}
 check("chat never invents fees", amounts <= approved, str(sorted(amounts)))
 
 # graceful degradation: no key configured here -> rules engine still answers
