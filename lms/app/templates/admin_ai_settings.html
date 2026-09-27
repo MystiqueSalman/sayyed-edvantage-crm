@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}AI Settings — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🤖 AI Settings</h2><div class="line"></div>
+  <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<div class="panel" style="max-width:760px">
+  <form method="post">
+    <h3 style="margin-top:0">Admissions chatbot (public website)</h3>
+    <p><label style="display:inline"><input type="checkbox" name="enabled" value="1" {% if settings.enabled %}checked{% endif %} style="width:auto"> Enabled</label></p>
+    <label>OpenAI model</label>
+    <input type="text" name="model" value="{{ settings.model or 'gpt-4o-mini' }}" style="max-width:320px">
+    <h3>AI Tutor (enrolled students)</h3>
+    <p><label style="display:inline"><input type="checkbox" name="tutor_enabled" value="1" {% if settings.tutor_enabled %}checked{% endif %} style="width:auto"> Tutor enabled</label></p>
+    <label>Questions per student per day</label>
+    <input type="number" name="tutor_daily_limit" value="{{ settings.tutor_daily_limit or 30 }}" min="1" max="200" style="max-width:160px">
+    <h3>Per-course tutor toggle</h3>
+    <p style="color:var(--muted); font-size:.9rem">Uncheck a course to disable the AI Tutor for it (e.g. while content is being written).</p>
+    {% for c in courses %}
+    <p style="margin:6px 0"><label style="display:inline">
+      <input type="checkbox" name="tutor_course_{{ c.id }}" value="1" {% if c.ai_tutor_enabled %}checked{% endif %} style="width:auto">
+      {{ c.title }}</label></p>
+    {% endfor %}
+    <p><button class="btn btn-gold" type="submit" style="margin-top:12px">Save AI Settings</button></p>
+  </form>
+  <p style="color:var(--muted); font-size:.85rem">The tutor answers only from each course's real lessons, cites them, and never invents fees, batches or discounts. Coupon/batch claims in the admissions bot always come from live database records.</p>
+</div>
+{% endblock %}

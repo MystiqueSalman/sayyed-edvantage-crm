@@ -96,11 +96,46 @@ def _has(text, words):
     return any(w in text for w in words)
 
 
+def _live_coupon_line():
+    """Phase 5 correctness: quote ONLY live coupons (active, in date window,
+    uses remaining). Returns "" when no live offer exists — never invent one."""
+    try:
+        from .models import Coupon
+        live = [c for c in Coupon.query.filter_by(active=True).all()
+                if c.is_live()]
+        if not live:
+            return ""
+        best = max(live, key=lambda c: c.percent_off)
+        return (f"\n\nUse code {best.code} for {best.percent_off}% off "
+                f"on admission!")
+    except Exception:
+        return ""
+
+
+def _upcoming_batches_line(limit=3):
+    """Phase 5 correctness: name ONLY real upcoming batches from the DB."""
+    try:
+        from datetime import date
+        from .models import Batch
+        batches = (Batch.query
+                   .filter(Batch.start_date.isnot(None),
+                           Batch.start_date >= date.today())
+                   .order_by(Batch.start_date).limit(limit).all())
+        if not batches:
+            return ""
+        bits = [f"{b.name} ({b.course.title if b.course else 'course'}), "
+                f"starting {b.start_date.strftime('%d %b %Y')}"
+                for b in batches]
+        return "Upcoming batches: " + "; ".join(bits) + "."
+    except Exception:
+        return ""
+
+
 def _fee_list_text(courses):
     lines = [f"• {c['title']}: ₹{c['fee']:,} + GST" for c in courses]
     return ("Here are our course fees (all + GST):\n" + "\n".join(lines)
             + "\n\n" + _combo_text()
-            + "\n\nUse code WELCOME10 for 10% off on admission!")
+            + _live_coupon_line())
 
 
 def _module_outline(course_id, per_module=10, max_chars=1800):
@@ -237,10 +272,19 @@ def rules_reply(message, conversation):
                 f"WhatsApp DEMO to {CONTACT_PHONE} or share your name and "
                 "10-digit mobile number here and we'll schedule yours."), flags
     if _has(low, INTENT_SCHEDULE):
-        return ("New batches start every month — the **October batch** "
-                "admissions are open now. 🗓️\n\n"
-                "Exact batch timings are confirmed at admission based on the "
-                "course and trainer availability.\n\n"
+        # Phase 5 correctness: only real upcoming batches from the DB —
+        # never invent months like "October batch".
+        batch_line = _upcoming_batches_line()
+        if batch_line:
+            body = (f"{batch_line} 🗓️\n\n"
+                    "Exact batch timings are confirmed at admission based on "
+                    "the course and trainer availability.")
+        else:
+            body = ("New batches start regularly through the year. 🗓️\n\n"
+                    "Our counsellor will share the upcoming batch schedule "
+                    "for your course — I don't want to give you dates that "
+                    "aren't confirmed.")
+        return (body + "\n\n"
                 f"Call/WhatsApp {CONTACT_PHONE} or share your number here "
                 "and a counsellor will share the schedule."), flags
     if _has(low, INTENT_ELIGIBILITY):
@@ -330,6 +374,13 @@ def _system_prompt(courses):
     combo_lines = "\n".join(f"- {name}: ₹{fee:,} + GST (combo offer)"
                             for name, fee in COMBO_OFFERS)
     outline_lines = _outline_prompt_lines(courses)
+    # Phase 5 correctness: coupons/batches come from LIVE DB records only.
+    coupon_line = _live_coupon_line().strip() or (
+        "No live discount code right now — say the counsellor will share "
+        "current offers. NEVER invent a coupon code.")
+    batch_line = _upcoming_batches_line() or (
+        "No upcoming batch dates in the system — say batches start regularly "
+        "and the counsellor confirms exact dates. NEVER invent a batch month.")
     return f"""You are the Sayyed EdVantage AI assistant — education counsellor,
 student support executive, admissions assistant and LMS helper for an Indian
 IT training institute. Tagline: "Empowering Students for Success."
@@ -339,8 +390,8 @@ Public founder info (only if asked): founded by Salman Sayyed.
 APPROVED COURSE DATA (quote ONLY these fees — never invent others):
 {fee_lines}
 {combo_lines}
-- 10% off with code WELCOME10. Never invent other discounts, EMI, or scholarships.
-- New batches start monthly; October batch admissions are open. Never invent exact batch dates/timings — say the counsellor confirms them.
+- LIVE OFFERS: {coupon_line} Never invent other discounts, EMI, or scholarships.
+- LIVE BATCHES: {batch_line} Never invent exact batch dates/timings beyond the above.
 - Courses are beginner-friendly; no strict prerequisites.
 
 APPROVED COURSE OUTLINES (module titles per course, from the live LMS —

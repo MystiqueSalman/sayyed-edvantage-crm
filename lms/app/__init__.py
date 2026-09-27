@@ -85,6 +85,7 @@ def create_app():
     from .routes_discuss import discuss_bp  # noqa: E402
     from .routes_growth import growth_bp  # noqa: E402
     from .routes_crm import crm_bp  # noqa: E402  (Phase 4: CRM/admissions)
+    from .routes_tutor import tutor_bp  # noqa: E402  (Phase 5: AI tutor/planner)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -95,6 +96,7 @@ def create_app():
     app.register_blueprint(discuss_bp)
     app.register_blueprint(growth_bp)
     app.register_blueprint(crm_bp)
+    app.register_blueprint(tutor_bp)
 
     with app.app_context():
         if os.environ.get("LMS_SKIP_CREATE_ALL") != "1":
@@ -122,6 +124,19 @@ def _ensure_schema_patches(app):
          "ALTER TABLE users ADD COLUMN phone VARCHAR(20) DEFAULT ''"),
         ("users", "referral_code",
          "ALTER TABLE users ADD COLUMN referral_code VARCHAR(20)"),
+        # Phase 5 — AI learning layer
+        ("questions", "lesson_id",
+         "ALTER TABLE questions ADD COLUMN lesson_id INTEGER REFERENCES lessons(id)"),
+        ("coupons", "valid_from",
+         "ALTER TABLE coupons ADD COLUMN valid_from DATE"),
+        ("coupons", "valid_until",
+         "ALTER TABLE coupons ADD COLUMN valid_until DATE"),
+        ("ai_settings", "tutor_enabled",
+         "ALTER TABLE ai_settings ADD COLUMN tutor_enabled BOOLEAN DEFAULT TRUE"),
+        ("ai_settings", "tutor_daily_limit",
+         "ALTER TABLE ai_settings ADD COLUMN tutor_daily_limit INTEGER DEFAULT 30"),
+        ("courses", "ai_tutor_enabled",
+         "ALTER TABLE courses ADD COLUMN ai_tutor_enabled BOOLEAN DEFAULT TRUE"),
     ]
     try:
         with app.app_context():

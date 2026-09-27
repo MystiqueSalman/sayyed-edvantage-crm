@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Study Planner — {{ course.title }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🗓 Study Planner</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('student.dashboard') }}">← Dashboard</a></div>
+
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Build my plan</h3>
+    <form method="post" action="{{ url_for('tutor.planner_generate') }}">
+      <input type="hidden" name="course_id" value="{{ course.id }}">
+      <label>Course</label>
+      <select name="course_id_display" disabled><option>{{ course.title }}</option></select>
+      <p style="color:var(--muted); font-size:.85rem">Switch course:
+        {% for c in courses %}<a href="{{ url_for('tutor.planner', course_id=c.id) }}">{{ c.title }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>
+      <label>Target finish date</label>
+      <input type="date" name="target_date" required min="{{ today.strftime('%Y-%m-%d') }}"
+             value="{{ plan.target_date.strftime('%Y-%m-%d') if plan else '' }}">
+      <label>Hours available per day</label>
+      <input type="number" name="hours_per_day" min="0.5" max="12" step="0.5"
+             value="{{ plan.hours_per_day if plan else 1 }}" required>
+      <p><button class="btn btn-gold" type="submit" style="margin-top:12px">
+        {% if plan %}🔄 Regenerate plan{% else %}✨ Generate plan{% endif %}</button></p>
+      <p style="color:var(--muted); font-size:.85rem">Plans follow your module order, skip completed lessons, and respect drip unlocks (~30 min per lesson).</p>
+    </form>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">{{ course.title }} — schedule</h3>
+    {% if plan and items_by_date %}
+      {% for day in items_by_date|sort %}
+      <div style="margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--card-brd)">
+        <b>{{ day.strftime('%a, %d %b %Y') }}</b>
+        {% if day == today %}<span class="tag green">TODAY</span>{% endif %}
+        <ul style="margin:8px 0 0; padding-left:18px">
+          {% for it in items_by_date[day] %}
+          <li style="{% if it.done %}text-decoration:line-through; color:var(--muted){% endif %}">
+            <a href="{{ url_for('student.lesson', lesson_id=it.lesson_id) }}">{{ it.lesson.title }}</a>
+            <form class="inline-form" method="post" action="{{ url_for('tutor.planner_item_toggle', item_id=it.id) }}" style="display:inline">
+              <button class="btn btn-ghost btn-sm" type="submit">{% if it.done %}↩ Undo{% else %}✓ Done{% endif %}</button>
+            </form>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endfor %}
+      <p style="color:var(--muted); font-size:.85rem">Target: {{ plan.target_date.strftime('%d %b %Y') }} · {{ plan.hours_per_day }} hr/day</p>
+    {% else %}
+      <p style="color:var(--muted)">No plan yet — set your target date and daily hours, then generate one.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

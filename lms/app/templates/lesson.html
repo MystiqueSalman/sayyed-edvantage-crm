@@ -46,6 +46,12 @@
     {% endif %}
     {% if next_lesson %}<a class="btn btn-blue" href="{{ url_for('student.lesson', lesson_id=next_lesson.id) }}">Next →</a>{% endif %}
   </div>
+  <div class="panel" style="margin-top:18px; border-left:3px solid var(--gold)">
+    <b>🤖 Stuck on "{{ lesson.title }}"?</b>
+    <span style="color:var(--muted)">Ask the AI Tutor — it answers from this course's lessons.</span><br>
+    <a class="btn btn-gold btn-sm" style="margin-top:8px"
+       href="{{ url_for('tutor.tutor_home', course_id=course.id, lesson_id=lesson.id) }}">Ask AI Tutor 🤖</a>
+  </div>
 </div>
 {% endif %}
 {% endblock %}

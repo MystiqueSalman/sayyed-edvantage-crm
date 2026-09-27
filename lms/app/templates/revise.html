@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Topics to Revise — {{ course.title }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📝 Topics to Revise</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('student.dashboard') }}">← Dashboard</a></div>
+<p>
+  {% for c in courses %}
+  <a class="btn {% if c.id == course.id %}btn-gold{% else %}btn-ghost{% endif %} btn-sm"
+     href="{{ url_for('tutor.revise', course_id=c.id) }}">{{ c.title }}</a>
+  {% endfor %}
+</p>
+<div class="panel">
+  {% if weak %}
+  <p style="color:var(--muted)">Based on your latest quiz attempts — click a topic to revise the lesson, or ask the tutor directly.</p>
+  <table>
+    <tr><th>Topic</th><th>Module</th><th>Missed</th><th></th></tr>
+    {% for w in weak %}
+    <tr>
+      <td><b>{{ w.title }}</b></td>
+      <td style="color:var(--muted)">{{ w.module }}</td>
+      <td>{{ w.misses }} question{{ 's' if w.misses != 1 }}</td>
+      <td style="white-space:nowrap">
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('student.lesson', lesson_id=w.lesson_id) }}">📖 Revise lesson</a>
+        <a class="btn btn-blue btn-sm" href="{{ url_for('tutor.tutor_home', course_id=course.id) }}?q={{ ('Explain ' + w.title + ' with an example')|urlencode }}">🤖 Ask tutor</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p style="color:var(--muted)">🎉 No weak topics detected — your quiz answers look strong. Keep it up!</p>
+  <p><a class="btn btn-ghost btn-sm" href="{{ url_for('tutor.tutor_home', course_id=course.id) }}">🤖 Ask the AI Tutor anything</a></p>
+  {% endif %}
+</div>
+{% endblock %}

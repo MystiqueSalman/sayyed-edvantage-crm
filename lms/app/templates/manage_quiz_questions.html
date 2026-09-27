@@ -14,6 +14,11 @@
       <label>Option D</label><input type="text" name="option_d" required>
       <label>Correct option</label>
       <select name="correct">{% for o in ['A','B','C','D'] %}<option>{{ o }}</option>{% endfor %}</select>
+      <label>Tests lesson (optional — powers weak-topic analysis)</label>
+      <select name="lesson_id">
+        <option value="">— no specific lesson —</option>
+        {% for l in lessons %}<option value="{{ l.id }}">{{ l.module.title }} → {{ l.title }}</option>{% endfor %}
+      </select>
       <p><button class="btn btn-gold" type="submit" style="margin-top:12px">Add Question</button></p>
     </form>
   </div>
@@ -21,7 +26,8 @@
     <h3 style="margin-top:0">{{ quiz.title }} <span style="color:var(--muted)">({{ quiz.questions|length }} questions)</span></h3>
     {% for q in quiz.questions %}
     <div class="quiz-q">
-      <p>Q{{ loop.index }}. {{ q.text }} <span class="tag green">Answer: {{ q.correct }}</span></p>
+      <p>Q{{ loop.index }}. {{ q.text }} <span class="tag green">Answer: {{ q.correct }}</span>
+        {% if q.lesson_id and q.lesson %}<span class="tag" title="Tagged lesson">📘 {{ q.lesson.title }}</span>{% endif %}</p>
       <ol type="A" style="color:var(--muted); margin:0">
         <li>{{ q.option_a }}</li><li>{{ q.option_b }}</li><li>{{ q.option_c }}</li><li>{{ q.option_d }}</li>
       </ol>

@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}AI Tutor — {{ course.title }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🤖 AI Tutor</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('student.dashboard') }}">← Dashboard</a></div>
+
+<div class="two-col">
+  <div>
+    <div class="panel">
+      <form method="get" action="{{ url_for('tutor.tutor_home') }}" class="inline-form" style="margin-bottom:12px">
+        <label style="display:inline">Course</label>
+        <select name="course_id" onchange="this.form.submit()" style="width:auto">
+          {% for c in courses %}
+          <option value="{{ c.id }}" {% if c.id == course.id %}selected{% endif %}>{{ c.title }}</option>
+          {% endfor %}
+        </select>
+      </form>
+      <p style="color:var(--muted); font-size:.9rem; margin-top:0">
+        Ask academic questions about <b>{{ course.title }}</b> — I answer from your actual
+        course lessons and cite them. I can't help with fees, batches or placements (ask our counsellor for those).
+      </p>
+      {% if focus_lesson %}
+      <p><span class="tag">📌 Lesson: {{ focus_lesson.title }}</span></p>
+      {% endif %}
+      <div id="tutor-chat" style="max-height:420px; overflow-y:auto; border:1px solid var(--card-brd); border-radius:10px; padding:12px; margin-bottom:12px">
+        {% for ex in history %}
+        <div style="margin-bottom:12px">
+          <div style="background:var(--gold); color:#1a1a1a; border-radius:10px; padding:8px 12px; display:inline-block; max-width:90%"><b>You:</b> {{ ex.question }}</div>
+        </div>
+        <div style="margin-bottom:16px">
+          <div style="background:var(--card-bg); border:1px solid var(--card-brd); border-radius:10px; padding:8px 12px;">
+            <b>🤖 Tutor:</b> {{ ex.answer|safe }}<br>
+            <small style="color:var(--muted)">{{ ex.created_at.strftime('%d %b, %I:%M %p') }}</small>
+          </div>
+        </div>
+        {% else %}
+        <p style="color:var(--muted)">No questions yet — ask your first one below! Try: "Explain {{ course.lessons[0].title if course.lessons else 'the first topic' }}".</p>
+        {% endfor %}
+        <div id="tutor-typing" style="display:none; color:var(--muted)">🤖 Tutor is thinking…</div>
+      </div>
+      <form id="tutor-form">
+        <div style="display:flex; gap:8px">
+          <input type="text" id="tutor-q" placeholder="Ask about {{ course.title }}…" maxlength="2000"
+                 value="{{ prefill|e }}" style="flex:1" autocomplete="off">
+          <button class="btn btn-gold" type="submit">Ask</button>
+        </div>
+      </form>
+      <p style="color:var(--muted); font-size:.82rem; margin-top:8px">
+        {{ used_today }}/{{ daily_limit }} questions used today.
+      </p>
+    </div>
+  </div>
+  <div>
+    <div class="panel">
+      <h3 style="margin-top:0">🧠 What I remember</h3>
+      {% if mem.completed_lessons %}
+      <p><b>Completed:</b> {{ mem.completed_lessons|join(', ') }}</p>
+      {% endif %}
+      {% if mem.weak_topics %}
+      <p><b>Topics to revise:</b> {{ mem.weak_topics|map(attribute='title')|join(', ') }}</p>
+      {% endif %}
+      {% if mem.recent_questions %}
+      <p><b>Recent questions:</b></p>
+      <ul style="color:var(--muted); font-size:.9rem; margin-top:0">
+        {% for q in mem.recent_questions %}<li>{{ q }}</li>{% endfor %}
+      </ul>
+      {% endif %}
+      {% if mem.summary %}<p style="color:var(--muted); font-size:.85rem"><b>Notes:</b> {{ mem.summary }}</p>{% endif %}
+      {% if not mem.completed_lessons and not mem.weak_topics and not mem.recent_questions %}
+      <p style="color:var(--muted)">Nothing yet — your learning memory builds as you study.</p>
+      {% endif %}
+      <form method="post" action="{{ url_for('tutor.tutor_memory_clear') }}"
+            onsubmit="return confirm('Clear your AI tutor memory and Q&A history for {{ course.title }}?')">
+        <input type="hidden" name="course_id" value="{{ course.id }}">
+        <button class="btn btn-ghost btn-sm" type="submit">🗑 Clear my AI memory</button>
+      </form>
+      <p style="margin-top:14px">
+        <a class="btn btn-blue btn-sm" href="{{ url_for('tutor.revise', course_id=course.id) }}">📝 Topics to revise</a>
+        <a class="btn btn-ghost btn-sm" href="{{ url_for('tutor.planner', course_id=course.id) }}">🗓 Study planner</a>
+      </p>
+    </div>
+    {% if weak %}
+    <div class="panel">
+      <h3 style="margin-top:0">⚠️ Weak spots from quizzes</h3>
+      <ul style="margin:0; padding-left:18px">
+        {% for w in weak[:5] %}
+        <li>{{ w.title }} <span style="color:var(--muted)">({{ w.misses }} missed)</span>
+          <a href="{{ url_for('tutor.tutor_home', course_id=course.id) }}?q={{ ('Explain ' + w.title)|urlencode }}">Ask tutor →</a></li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function () {
+  var form = document.getElementById("tutor-form"),
+      input = document.getElementById("tutor-q"),
+      chat = document.getElementById("tutor-chat"),
+      typing = document.getElementById("tutor-typing"),
+      courseId = {{ course.id }};
+  function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var q = input.value.trim();
+    if (!q) return;
+    chat.insertAdjacentHTML("beforeend",
+      '<div style="margin-bottom:12px"><div style="background:var(--gold); color:#1a1a1a; border-radius:10px; padding:8px 12px; display:inline-block; max-width:90%"><b>You:</b> ' + esc(q) + "</div></div>");
+    input.value = "";
+    typing.style.display = "block";
+    chat.scrollTop = chat.scrollHeight;
+    fetch("{{ url_for('tutor.tutor_ask') }}", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({course_id: courseId, question: q})
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      typing.style.display = "none";
+      var html;
+      if (d.error === "limit") {
+        html = "You've used today's " + d.limit + " questions. Come back tomorrow, or revise your <a href=\"{{ url_for('tutor.revise', course_id=course.id) }}\">weak topics</a> meanwhile! 🙂";
+      } else if (d.error) {
+        html = "Sorry, the tutor isn't available right now (" + esc(d.error) + ").";
+      } else {
+        html = esc(d.answer).replace(/\n/g, "<br>");
+      }
+      chat.insertAdjacentHTML("beforeend",
+        '<div style="margin-bottom:16px"><div style="background:var(--card-bg); border:1px solid var(--card-brd); border-radius:10px; padding:8px 12px;"><b>🤖 Tutor:</b> ' + html + "</div></div>");
+      chat.scrollTop = chat.scrollHeight;
+    }).catch(function () {
+      typing.style.display = "none";
+      chat.insertAdjacentHTML("beforeend", "<p style='color:var(--muted)'>Network error — please try again.</p>");
+    });
+  });
+})();
+</script>
+{% endblock %}

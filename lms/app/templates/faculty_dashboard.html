@@ -14,6 +14,7 @@
       <h3>{{ c.title }}</h3>
       <p>{{ c.modules|length }} modules · {{ c.lessons|length }} lessons · {{ c.assignments|length }} assignments</p>
       <a class="btn btn-blue btn-sm" href="{{ url_for('manage.course_home', course_id=c.id) }}">Manage Content</a>
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('faculty.weak_topics', course_id=c.id) }}">📊 Weak Topics</a>
     </div>
   </div>
   {% else %}

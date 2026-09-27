@@ -11,8 +11,8 @@ from werkzeug.utils import secure_filename
 from . import db
 from .decorators import role_required
 from .models import (Announcement, Assignment, Certificate, Course, Enrollment, Lesson,
-                     LessonProgress, LiveSession, Module, Quiz, QuizAttempt, Review,
-                     Submission, Wishlist)
+                     LessonProgress, LiveSession, Module, Quiz, QuizAnswer,
+                     QuizAttempt, Review, Submission, Wishlist)
 from .pdfcert import certificate_path, generate_certificate_pdf
 from .routes_crm import _onboarding_for  # Phase 4: onboarding checklist
 
@@ -86,9 +86,20 @@ def dashboard():
                          .filter(LiveSession.course_id.in_(course_ids),
                                  LiveSession.starts_at >= now - timedelta(hours=3))
                          .order_by(LiveSession.starts_at).limit(6).all())
+    # Phase 5: weak topics + today's study plan (AI learning layer)
+    from .ai_tutor import todays_plan_items, weak_topics_for_student
+    weak_topics = []
+    for e in enrollments[:4]:
+        for t in weak_topics_for_student(current_user.id, e.course_id)[:3]:
+            t["course"] = e.course
+            weak_topics.append(t)
+        if len(weak_topics) >= 6:
+            break
+    plan_items = todays_plan_items(current_user.id)
     return render_template("dashboard.html", enrollments=enrollments,
                            pending=pending, certs=certs, live_sessions=live_sessions,
-                           now=now, onboarding=_onboarding_for(current_user))
+                           now=now, onboarding=_onboarding_for(current_user),
+                           weak_topics=weak_topics, plan_items=plan_items)
 
 
 @student_bp.route("/lesson/<int:lesson_id>")
@@ -157,12 +168,20 @@ def quiz(quiz_id):
         abort(403)
     if request.method == "POST":
         score, total = 0, len(quiz.questions)
-        for q in quiz.questions:
-            if request.form.get(f"q{q.id}", "").upper() == q.correct:
-                score += 1
         attempt = QuizAttempt(quiz_id=quiz.id, user_id=current_user.id,
-                              score=score, total=total)
+                              score=0, total=total)
         db.session.add(attempt)
+        db.session.flush()  # attempt.id needed for per-question answers
+        for q in quiz.questions:
+            chosen = request.form.get(f"q{q.id}", "").upper()
+            ok = chosen == q.correct
+            if ok:
+                score += 1
+            # Phase 5: per-question results power weak-topic analysis
+            db.session.add(QuizAnswer(attempt_id=attempt.id,
+                                      question_id=q.id, chosen=chosen,
+                                      is_correct=ok))
+        attempt.score = score
         db.session.commit()
         cert = check_and_issue_certificate(current_user.id, course.id)
         if cert:

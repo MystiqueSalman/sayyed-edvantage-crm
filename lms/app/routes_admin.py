@@ -341,3 +341,31 @@ def api_signups_30d():
         labels.append(day.strftime("%d %b"))
         data.append(n)
     return jsonify({"labels": labels, "data": data})
+
+
+# ------------------------------------------------- Phase 5: AI settings
+@admin_bp.route("/ai-settings", methods=["GET", "POST"])
+@admin_required
+def ai_settings():
+    """AI sales agent + AI tutor configuration (single-row AISettings)."""
+    from .models import AISettings, Course
+    settings = AISettings.get()
+    if request.method == "POST":
+        settings.enabled = bool(request.form.get("enabled"))
+        settings.model = request.form.get("model", "gpt-4o-mini").strip() or "gpt-4o-mini"
+        settings.tutor_enabled = bool(request.form.get("tutor_enabled"))
+        try:
+            settings.tutor_daily_limit = max(
+                1, min(200, int(request.form.get("tutor_daily_limit", 30) or 30)))
+        except ValueError:
+            settings.tutor_daily_limit = 30
+        # per-course tutor toggles: checkbox present => enabled
+        for course in Course.query.all():
+            course.ai_tutor_enabled = bool(
+                request.form.get(f"tutor_course_{course.id}"))
+        db.session.commit()
+        flash("AI settings saved.", "success")
+        return redirect(url_for("admin.ai_settings"))
+    courses = Course.query.order_by(Course.title).all()
+    return render_template("admin_ai_settings.html", settings=settings,
+                           courses=courses)

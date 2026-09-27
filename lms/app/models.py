@@ -67,6 +67,7 @@ class Course(db.Model):
     banner = db.Column(db.String(160), default="")  # filename under static/img/banners
     theme = db.Column(db.String(40), default="blue")  # accent theme key
     instructor_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    ai_tutor_enabled = db.Column(db.Boolean, default=True)  # Phase 5: per-course tutor toggle
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     instructor = db.relationship("User", foreign_keys=[instructor_id])
@@ -199,6 +200,11 @@ class Question(db.Model):
     option_d = db.Column(db.String(300), default="")
     correct = db.Column(db.String(1), default="A")  # A|B|C|D
     position = db.Column(db.Integer, default=0)
+    # Optional tag linking the question to the lesson it tests, so the AI
+    # tutor / weak-topic analysis can point students back to the material.
+    lesson_id = db.Column(db.Integer, db.ForeignKey("lessons.id"), nullable=True)
+
+    lesson = db.relationship("Lesson")
 
 
 class QuizAttempt(db.Model):
@@ -256,7 +262,23 @@ class Coupon(db.Model):
     active = db.Column(db.Boolean, default=True)
     max_uses = db.Column(db.Integer, nullable=True)
     used_count = db.Column(db.Integer, default=0)
+    valid_from = db.Column(db.Date, nullable=True)   # Phase 5: live offer window
+    valid_until = db.Column(db.Date, nullable=True)  # Phase 5: live offer window
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def is_live(self):
+        """A coupon the AI may actually quote: active, in date window, uses left."""
+        from datetime import date
+        if not self.active:
+            return False
+        today = date.today()
+        if self.valid_from and self.valid_from > today:
+            return False
+        if self.valid_until and self.valid_until < today:
+            return False
+        if self.max_uses and self.used_count >= self.max_uses:
+            return False
+        return True
 
     def discount_for(self, fee):
         if not self.active:
@@ -751,11 +773,13 @@ class ChatMessage(db.Model):
 
 
 class AISettings(db.Model):
-    """Single-row AI sales-agent config (id=1)."""
+    """Single-row AI config (id=1): sales agent + Phase 5 AI tutor."""
     __tablename__ = "ai_settings"
     id = db.Column(db.Integer, primary_key=True)
     enabled = db.Column(db.Boolean, default=True)
     model = db.Column(db.String(60), default="gpt-4o-mini")
+    tutor_enabled = db.Column(db.Boolean, default=True)   # Phase 5: AI tutor on/off
+    tutor_daily_limit = db.Column(db.Integer, default=30)  # Phase 5: Qs per student/day
     updated_at = db.Column(db.DateTime, default=datetime.utcnow,
                            onupdate=datetime.utcnow)
 
@@ -767,3 +791,88 @@ class AISettings(db.Model):
             db.session.add(row)
             db.session.commit()
         return row
+
+
+# ============================================================ Phase 5: AI learning layer
+
+class AITutorExchange(db.Model):
+    """Q&A history between an enrolled student and the AI tutor (per course).
+
+    The tutor reads recent exchanges for conversational continuity
+    ("you asked about X earlier").
+    """
+    __tablename__ = "ai_tutor_exchanges"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    question = db.Column(db.Text, nullable=False)
+    answer = db.Column(db.Text, nullable=False, default="")
+    cited_lesson_ids = db.Column(db.Text, default="[]")  # JSON list of lesson ids
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class AILearningMemory(db.Model):
+    """Per-student-per-course learning memory for the AI tutor.
+
+    Weak topics are derived from quiz answers; preferences/summary give the
+    tutor continuity. The student can view and clear this at any time.
+    """
+    __tablename__ = "ai_learning_memory"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    weak_topics = db.Column(db.Text, default="[]")   # JSON: [{lesson_id, misses}]
+    preferences = db.Column(db.Text, default="{}")   # JSON dict
+    summary = db.Column(db.Text, default="")         # rolling tutor notes
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+    __table_args__ = (db.UniqueConstraint("user_id", "course_id",
+                                          name="uq_ai_memory"),)
+
+
+class QuizAnswer(db.Model):
+    """Per-question result inside a quiz attempt (powers weak-topic analysis)."""
+    __tablename__ = "quiz_answers"
+    id = db.Column(db.Integer, primary_key=True)
+    attempt_id = db.Column(db.Integer, db.ForeignKey("quiz_attempts.id"),
+                           nullable=False)
+    question_id = db.Column(db.Integer, db.ForeignKey("questions.id"),
+                            nullable=False)
+    chosen = db.Column(db.String(1), default="")  # A|B|C|D ("" = skipped)
+    is_correct = db.Column(db.Boolean, default=False)
+
+    attempt = db.relationship("QuizAttempt", backref=db.backref(
+        "answers", cascade="all, delete-orphan"))
+    question = db.relationship("Question")
+
+
+class StudyPlan(db.Model):
+    """A dated study plan for one student + course (regenerable)."""
+    __tablename__ = "study_plans"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    target_date = db.Column(db.Date, nullable=False)
+    hours_per_day = db.Column(db.Float, default=1.0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    course = db.relationship("Course")
+    items = db.relationship("StudyPlanItem", backref="plan",
+                            cascade="all, delete-orphan",
+                            order_by="StudyPlanItem.planned_date")
+    __table_args__ = (db.UniqueConstraint("user_id", "course_id",
+                                          name="uq_study_plan"),)
+
+
+class StudyPlanItem(db.Model):
+    """One planned lesson on one date."""
+    __tablename__ = "study_plan_items"
+    id = db.Column(db.Integer, primary_key=True)
+    plan_id = db.Column(db.Integer, db.ForeignKey("study_plans.id"),
+                        nullable=False)
+    lesson_id = db.Column(db.Integer, db.ForeignKey("lessons.id"),
+                          nullable=False)
+    planned_date = db.Column(db.Date, nullable=False)
+    done = db.Column(db.Boolean, default=False)
+
+    lesson = db.relationship("Lesson")

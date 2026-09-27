@@ -69,6 +69,41 @@ document.querySelectorAll("[data-onboard-key]").forEach(function (box) {
 </script>
 {% endif %}
 
+{# Phase 5 — AI learning layer widgets #}
+{% if plan_items or weak_topics %}
+<div class="two-col" style="margin-top:6px">
+  {% if plan_items %}
+  <div class="panel">
+    <h3 style="margin-top:0">🗓 Today's Study Plan</h3>
+    <ul style="margin:0; padding-left:18px">
+      {% for it in plan_items %}
+      <li style="{% if it.done %}text-decoration:line-through; color:var(--muted){% endif %}">
+        <a href="{{ url_for('student.lesson', lesson_id=it.lesson_id) }}">{{ it.lesson.title }}</a>
+        <span style="color:var(--muted)">· {{ it.plan.course.title }}</span>
+        <form class="inline-form" method="post" action="{{ url_for('tutor.planner_item_toggle', item_id=it.id) }}" style="display:inline">
+          <button class="btn btn-ghost btn-sm" type="submit">{% if it.done %}↩{% else %}✓{% endif %}</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    <p style="margin-bottom:0"><a class="btn btn-ghost btn-sm" href="{{ url_for('tutor.planner') }}">Open planner →</a></p>
+  </div>
+  {% endif %}
+  {% if weak_topics %}
+  <div class="panel">
+    <h3 style="margin-top:0">📝 Topics to Revise</h3>
+    <ul style="margin:0; padding-left:18px">
+      {% for w in weak_topics[:5] %}
+      <li>{{ w.title }} <span style="color:var(--muted)">· {{ w.course.title }}</span>
+        <a href="{{ url_for('tutor.tutor_home', course_id=w.course.id) }}?q={{ ('Explain ' + w.title)|urlencode }}">Ask tutor →</a></li>
+      {% endfor %}
+    </ul>
+    <p style="margin-bottom:0"><a class="btn btn-ghost btn-sm" href="{{ url_for('tutor.revise') }}">All weak topics →</a></p>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
 {% if enrollments %}
 <div class="grid">
   {% for e in enrollments %}

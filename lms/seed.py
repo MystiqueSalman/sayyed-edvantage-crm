@@ -446,11 +446,13 @@ with app.app_context():
     db.session.commit()
 
     # ---- announcement ----
-    ann = Announcement.query.filter_by(title="Admissions open — October batch").first()
+    ann = Announcement.query.filter(
+        Announcement.title.in_(["Admissions open — new batches",
+                                "Admissions open — October batch"])).first()
     if not ann:
         db.session.add(Announcement(
-            title="Admissions open — October batch",
-            body="New batches for all 7 courses start soon. Enroll now and use code WELCOME10 for 10% off!",
+            title="Admissions open — new batches",
+            body="New batches for all 7 courses start soon. Contact our counsellor for the upcoming schedule and current offers!",
             active=True))
     db.session.commit()
 

@@ -208,16 +208,21 @@ def quiz_questions(quiz_id):
         else:
             pos = (db.session.query(db.func.max(Question.position))
                    .filter_by(quiz_id=quiz.id).scalar() or 0) + 1
+            lesson_id = request.form.get("lesson_id", type=int) or None
+            # validate the tagged lesson belongs to this course
+            if lesson_id and lesson_id not in {l.id for l in course.lessons}:
+                lesson_id = None
             db.session.add(Question(
                 quiz_id=quiz.id, text=text,
                 option_a=request.form.get("option_a", ""),
                 option_b=request.form.get("option_b", ""),
                 option_c=request.form.get("option_c", ""),
                 option_d=request.form.get("option_d", ""),
-                correct=correct, position=pos))
+                correct=correct, position=pos, lesson_id=lesson_id))
             db.session.commit()
             flash("Question added.", "success")
-    return render_template("manage_quiz_questions.html", course=course, quiz=quiz)
+    return render_template("manage_quiz_questions.html", course=course, quiz=quiz,
+                           lessons=course.lessons)
 
 
 @manage_bp.route("/question/<int:question_id>/delete", methods=["POST"])
