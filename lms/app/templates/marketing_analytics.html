@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Analytics Integrations — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📊 Analytics Integrations</h2><div class="line"></div>
+  <a href="{{ url_for('marketing.hub') }}">← Marketing</a></div>
+<div class="panel" style="max-width:640px">
+  <p style="color:var(--muted)">These scripts load on <b>public pages only</b> (never on admin/manage pages), and only when an ID is set.</p>
+  <form method="post">
+    {% for key, label in keys %}
+    <label>{{ label }}</label>
+    {% if "snippet" in key %}
+    <textarea name="{{ key }}" rows="4" placeholder="&lt;script&gt;…&lt;/script&gt;">{{ values[key] }}</textarea>
+    {% else %}
+    <input name="{{ key }}" value="{{ values[key] }}" placeholder="— not set —">
+    {% endif %}
+    {% endfor %}
+    <p><button class="btn btn-gold" type="submit">Save</button></p>
+  </form>
+</div>
+{% endblock %}

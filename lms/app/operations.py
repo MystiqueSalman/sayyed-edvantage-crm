@@ -179,7 +179,7 @@ PERMISSION_MODULES = [
     "invoices", "refunds", "finance", "audit_logs", "permissions",
     "jobs", "employers", "leads", "applications", "referrals",
     "gamification", "challenges", "career", "certificates", "reports",
-    "calendar", "settings",
+    "calendar", "marketing", "settings",
 ]
 
 # (module, action) pairs denied per role; everything else follows the grant.

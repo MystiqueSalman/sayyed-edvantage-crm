@@ -4,7 +4,8 @@ cd ~/workspace/lms || exit 1
 RESULTS=/tmp/lms_all_suites_results.txt
 : > "$RESULTS"
 for suite in test_flows test_phase2 test_phase3 test_phase4 test_chat_fixes \
-             test_phase5 test_phase6 test_phase7 test_phase8 test_phase9; do
+             test_phase5 test_phase6 test_phase7 test_phase8 test_phase9 \
+             test_phase10 test_phase11; do
   echo "##### $suite" | tee -a "$RESULTS"
   ./run_suite.sh "$suite" > "/tmp/run_${suite}.out" 2>&1
   RC=$?

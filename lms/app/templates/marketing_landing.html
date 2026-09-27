@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }}{% endblock %}
+{% block content %}
+<div class="landing">
+{% for b in page.blocks or [] %}
+  {% if b.type == "hero" %}
+  <div class="panel" style="text-align:center; padding:3rem 1.5rem">
+    <h1 style="color:var(--gold); margin-top:0">{{ b.heading }}</h1>
+    <p style="max-width:640px; margin:0 auto 1.2rem">{{ b.text }}</p>
+    {% if b.button_text %}<a class="btn btn-gold" href="{{ b.button_link or '#lead-form' }}">{{ b.button_text }}</a>{% endif %}
+  </div>
+  {% elif b.type == "course_cards" %}
+  <div class="section-title"><h2>{{ b.heading or "Courses" }}</h2><div class="line"></div></div>
+  <div class="cards">
+    {% for cid in b.course_ids or [] %}
+      {% set c = courses.get(cid) %}
+      {% if c %}
+      <div class="panel"><h3 style="margin-top:0">{{ c.title }}</h3>
+        <p style="color:var(--muted)">{{ c.tagline or "" }}</p>
+        <p><b style="color:var(--gold)">₹{{ "{:,}".format(c.fee) }}</b> + GST</p>
+        <a class="btn btn-blue btn-sm" href="{{ url_for('main.course_detail', slug=c.slug) }}">View Course</a></div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% elif b.type == "testimonials" %}
+  <div class="section-title"><h2>{{ b.heading or "Testimonials" }}</h2><div class="line"></div></div>
+  <div class="cards">
+    {% for t in b["items"] or [] %}
+    <div class="panel"><p>"{{ t.text or t.a }}"</p><p style="color:var(--gold)">— {{ t.name or t.q }}</p></div>
+    {% endfor %}
+  </div>
+  {% elif b.type == "faq" %}
+  <div class="section-title"><h2>{{ b.heading or "FAQs" }}</h2><div class="line"></div></div>
+  {% for t in b["items"] or [] %}
+  <div class="panel"><b>{{ t.q or t.name }}</b><p>{{ t.a or t.text }}</p></div>
+  {% endfor %}
+  {% elif b.type == "countdown" %}
+  <div class="panel" style="text-align:center; border-color:var(--gold)">
+    <h3 style="margin-top:0; color:var(--gold)">{{ b.heading or "Offer ends in" }}</h3>
+    {% if b.ends_at %}<p class="code-pill" data-countdown="{{ b.ends_at }}">⏳ {{ b.ends_at }}</p>{% endif %}
+    <p style="color:var(--muted)">{{ b.text }}</p>
+  </div>
+  {% elif b.type == "cta" %}
+  <div class="panel" id="lead-form" style="max-width:520px; margin:2rem auto">
+    <h3 style="margin-top:0; color:var(--gold)">{{ b.heading or "Get a callback" }}</h3>
+    <p style="color:var(--muted)">{{ b.text }}</p>
+    <form method="post" action="{{ url_for('marketing.landing_lead', slug=page.slug) }}">
+      {% if camp_id %}<input type="hidden" name="campaign_id" value="{{ camp_id }}">{% endif %}
+      <label>Your name</label><input name="name" required>
+      <label>Phone</label><input name="phone" required pattern="[0-9+ ]{8,15}">
+      <label>Email (optional)</label><input name="email" type="email">
+      <label>Interested course</label>
+      <select name="course_id"><option value="">—</option>
+        {% for c in courses.values() %}<option value="{{ c.id }}">{{ c.title }}</option>{% endfor %}
+      </select>
+      <p><button class="btn btn-gold" type="submit">{{ b.button_text or "Request Callback" }}</button></p>
+    </form>
+  </div>
+  {% endif %}
+{% endfor %}
+</div>
+<script>
+(function(){var el=document.querySelector("[data-countdown]");if(!el)return;
+var end=new Date(el.getAttribute("data-countdown")).getTime();
+if(isNaN(end))return;function tick(){var d=end-Date.now();
+if(d<0){el.textContent="Offer ended";return;}
+var h=Math.floor(d/36e5),m=Math.floor(d%36e5/6e4),s=Math.floor(d%6e4/1e3);
+el.textContent="⏳ "+h+"h "+m+"m "+s+"s";setTimeout(tick,1000);}tick();})();
+</script>
+{% endblock %}

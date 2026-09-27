@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if camp else "New" }} Campaign — Marketing{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎯 {{ "Edit" if camp else "New" }} Campaign</h2><div class="line"></div>
+  <a href="{{ url_for('marketing.campaign_list') }}">← Campaigns</a></div>
+<div class="panel" style="max-width:560px">
+<form method="post">
+  <label>Name</label><input name="name" value="{{ camp.name if camp }}" required>
+  <label>Channel</label>
+  <select name="channel">{% for ch in channels %}<option value="{{ ch }}" {% if camp and camp.channel==ch %}selected{% endif %}>{{ ch }}</option>{% endfor %}</select>
+  <label>Landing page</label>
+  <select name="landing_page_id"><option value="">— none —</option>
+    {% for p in pages %}<option value="{{ p.id }}" {% if camp and camp.landing_page_id==p.id %}selected{% endif %}>{{ p.title }} (/p/{{ p.slug }})</option>{% endfor %}</select>
+  <label>Coupon</label>
+  <select name="coupon_id"><option value="">— none —</option>
+    {% for cp in coupons %}<option value="{{ cp.id }}" {% if camp and camp.coupon_id==cp.id %}selected{% endif %}>{{ cp.code }} ({{ cp.percent_off }}% off)</option>{% endfor %}</select>
+  <label>Start date</label><input type="date" name="start_date" value="{{ camp.start_date if camp and camp.start_date }}">
+  <label>End date</label><input type="date" name="end_date" value="{{ camp.end_date if camp and camp.end_date }}">
+  <label>Budget (₹, optional)</label><input type="number" name="budget" value="{{ camp.budget if camp and camp.budget }}" min="0">
+  <p><label style="display:inline"><input type="checkbox" name="active" value="1" style="width:auto" {% if not camp or camp.active %}checked{% endif %}> Active</label></p>
+  <p><button class="btn btn-gold" type="submit">Save</button></p>
+</form>
+</div>
+{% endblock %}

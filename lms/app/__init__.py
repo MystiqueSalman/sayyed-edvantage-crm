@@ -80,8 +80,22 @@ def create_app():
                 notif_unread = _H.unread_count(_cu.id)
         except Exception:
             notif_unread = 0
+        # Phase 11: analytics IDs (§20.7) — public pages only, cheap PK lookups
+        ga4_id = gtm_id = meta_pixel_id = head_snippet = ""
+        try:
+            from flask import request as _rq  # noqa: E402
+            from .models import AppSetting as _AS  # noqa: E402
+            if not _rq.path.startswith(("/admin", "/manage", "/api/")):
+                ga4_id = _AS.get("analytics.ga4_id", "")
+                gtm_id = _AS.get("analytics.gtm_id", "")
+                meta_pixel_id = _AS.get("analytics.meta_pixel_id", "")
+                head_snippet = _AS.get("analytics.head_snippet", "")
+        except Exception:
+            pass
         return {"now": datetime.utcnow(), "payments_live": app.config["PAYMENTS_LIVE"],
-                "announcement": announcement, "notif_unread": notif_unread}
+                "announcement": announcement, "notif_unread": notif_unread,
+                "ga4_id": ga4_id, "gtm_id": gtm_id,
+                "meta_pixel_id": meta_pixel_id, "head_snippet": head_snippet}
 
     @app.errorhandler(403)
     def forbidden(_e):
@@ -107,6 +121,7 @@ def create_app():
     from .routes_ops import ops_bp  # noqa: E402  (Phase 9: faculty & operations)
     from .routes_hardening import hardening_bp, notify_bp  # noqa: E402  (Phase 10)
     from .api_v1 import api_v1_bp  # noqa: E402  (Phase 10: REST API)
+    from .routes_marketing import marketing_bp  # noqa: E402  (Phase 11)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -124,6 +139,7 @@ def create_app():
     app.register_blueprint(hardening_bp)
     app.register_blueprint(notify_bp)
     app.register_blueprint(api_v1_bp)
+    app.register_blueprint(marketing_bp)
 
     # Phase 10: file logging (monitoring page tails this file) + request stats.
     _setup_file_logging(app)
@@ -264,6 +280,17 @@ def _ensure_schema_patches(app):
          "ALTER TABLE courses ADD COLUMN meta_title VARCHAR(160) DEFAULT ''"),
         ("courses", "meta_description",
          "ALTER TABLE courses ADD COLUMN meta_description VARCHAR(300) DEFAULT ''"),
+        # Phase 11 — marketing attribution columns
+        ("leads", "campaign_id",
+         "ALTER TABLE leads ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id)"),
+        ("leads", "affiliate_id",
+         "ALTER TABLE leads ADD COLUMN affiliate_id INTEGER REFERENCES affiliates(id)"),
+        ("enrollments", "source",
+         "ALTER TABLE enrollments ADD COLUMN source VARCHAR(20) DEFAULT ''"),
+        ("enrollments", "campaign_id",
+         "ALTER TABLE enrollments ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id)"),
+        ("enrollments", "affiliate_id",
+         "ALTER TABLE enrollments ADD COLUMN affiliate_id INTEGER REFERENCES affiliates(id)"),
     ]
     try:
         with app.app_context():

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Your Referrals — Sayyed EdVantage{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🤝 Hello, {{ aff.name }}!</h2><div class="line"></div></div>
+<div class="cards">
+  <div class="panel"><h3 style="margin-top:0; color:var(--gold)">{{ stats.clicks }}</h3><p style="color:var(--muted)">Link clicks</p></div>
+  <div class="panel"><h3 style="margin-top:0; color:var(--gold)">{{ stats.enrollments }}</h3><p style="color:var(--muted)">Paid enrollments</p></div>
+  <div class="panel"><h3 style="margin-top:0; color:var(--gold)">₹{{ "{:,.2f}".format(stats.earned) }}</h3><p style="color:var(--muted)">Total earned</p></div>
+  <div class="panel"><h3 style="margin-top:0; color:var(--gold)">₹{{ "{:,.2f}".format(stats.paid) }}</h3><p style="color:var(--muted)">Paid to you</p></div>
+</div>
+<div class="panel">
+  <p><b>Your referral link:</b></p>
+  <p><span class="code-pill">{{ link }}</span></p>
+  <p style="color:var(--muted)">Share this link — when someone enrolls and pays, your commission is tracked here automatically.</p>
+</div>
+<div class="panel"><h3 style="margin-top:0">Payouts</h3>
+<table><tr><th>Amount</th><th>Status</th><th>Paid on</th></tr>
+{% for p in payouts %}<tr><td>₹{{ "{:,.2f}".format(p.amount) }}</td><td>{{ p.status }}</td>
+<td>{{ p.paid_at.strftime("%d %b %Y") if p.paid_at else "—" }}</td></tr>
+{% else %}<tr><td colspan="3" style="color:var(--muted)">No payouts yet.</td></tr>{% endfor %}</table></div>
+{% endblock %}

@@ -532,6 +532,17 @@ def application_approve(app_id):
                                  paid=False, amount_paid=0)
             db.session.add(new_enr)
             db.session.flush()
+            # Phase 11: carry the application's lead attribution onto the
+            # enrollment so campaign/affiliate ROI stays real.
+            try:
+                _lead = Lead.query.filter_by(phone=app_obj.phone).first()
+                if _lead:
+                    new_enr.source = _lead.source or ""
+                    new_enr.campaign_id = _lead.campaign_id
+                    new_enr.affiliate_id = _lead.affiliate_id
+                    db.session.flush()
+            except Exception:
+                pass
     app_obj.status = Application.STATUS_APPROVED
     app_obj.created_user_id = user.id
     app_obj.reviewed_by = current_user.id

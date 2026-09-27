@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Affiliates — Marketing{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🤝 Affiliates</h2><div class="line"></div>
+  <a href="{{ url_for('marketing.hub') }}">← Marketing</a></div>
+<p><a class="btn btn-gold btn-sm" href="{{ url_for('marketing.affiliate_new') }}">+ New Affiliate</a></p>
+<table><tr><th>Name</th><th>Code</th><th>Commission</th><th>Clicks</th><th>Earned</th><th>Pending</th><th>Status</th><th></th></tr>
+{% for a in affs %}
+{% set s = a.stats() %}
+<tr><td><b>{{ a.name }}</b><br><small style="color:var(--muted)">{{ a.contact }}</small></td>
+  <td><span class="code-pill">{{ a.code }}</span></td>
+  <td>{{ "₹{:,.0f}".format(a.commission_value) if a.commission_type=="flat" else "{}%".format(a.commission_value) }}</td>
+  <td>{{ s.clicks }}</td><td>₹{{ "{:,.2f}".format(s.earned) }}</td><td>₹{{ "{:,.2f}".format(s.pending) }}</td>
+  <td>{{ "✅ Active" if a.active else "⏸ Off" }}</td>
+  <td><a class="btn btn-blue btn-sm" href="{{ url_for('marketing.affiliate_detail', aff_id=a.id) }}">Open</a></td></tr>
+{% else %}<tr><td colspan="8" style="color:var(--muted)">No affiliates yet.</td></tr>
+{% endfor %}</table>
+{% endblock %}

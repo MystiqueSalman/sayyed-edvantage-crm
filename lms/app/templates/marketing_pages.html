@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Landing Pages — Marketing{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🖥 Landing Pages</h2><div class="line"></div>
+  <a href="{{ url_for('marketing.hub') }}">← Marketing</a></div>
+<p><a class="btn btn-gold btn-sm" href="{{ url_for('marketing.page_new') }}">+ New Landing Page</a></p>
+<table><tr><th>Title</th><th>URL</th><th>Status</th><th>Views</th><th></th></tr>
+{% for p in pages %}
+<tr><td>{{ p.title }}</td>
+  <td><span class="code-pill">/p/{{ p.slug }}</span></td>
+  <td>{{ "✅ Published" if p.is_published else "📝 Draft" }}</td>
+  <td>{{ p.views or 0 }}</td>
+  <td><a class="btn btn-blue btn-sm" href="{{ url_for('marketing.page_edit', page_id=p.id) }}">Edit</a>
+  {% if p.is_published %}<a class="btn btn-ghost btn-sm" href="{{ url_for('marketing.landing_page', slug=p.slug) }}" target="_blank">View</a>{% endif %}</td></tr>
+{% else %}<tr><td colspan="5" style="color:var(--muted)">No landing pages yet.</td></tr>
+{% endfor %}</table>
+{% endblock %}

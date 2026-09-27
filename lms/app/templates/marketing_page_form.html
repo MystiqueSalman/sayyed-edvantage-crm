@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}New Landing Page — Marketing{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🖥 New Landing Page</h2><div class="line"></div>
+  <a href="{{ url_for('marketing.page_list') }}">← Pages</a></div>
+<div class="panel" style="max-width:560px">
+<form method="post">
+  <label>Title</label><input name="title" value="{{ title }}" required>
+  <label>URL slug <small style="color:var(--muted)">(page will live at /p/&lt;slug&gt;)</small></label>
+  <input name="slug" value="{{ slug }}" placeholder="free-demo-week">
+  <label>Status</label>
+  <select name="status"><option value="draft">Draft</option><option value="published">Published</option></select>
+  <p><button class="btn btn-gold" type="submit">Create with Starter Blocks</button></p>
+</form>
+</div>
+{% endblock %}

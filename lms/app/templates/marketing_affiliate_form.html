@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ "Edit" if aff else "New" }} Affiliate — Marketing{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🤝 {{ "Edit" if aff else "New" }} Affiliate</h2><div class="line"></div>
+  <a href="{{ url_for('marketing.affiliate_list') }}">← Affiliates</a></div>
+<div class="panel" style="max-width:560px">
+<form method="post">
+  <label>Name</label><input name="name" value="{{ aff.name if aff }}" required>
+  <label>Contact (phone or email)</label><input name="contact" value="{{ aff.contact if aff }}">
+  {% if not aff %}<label>Referral code (optional — auto-generated if blank)</label>
+  <input name="code" placeholder="e.g. RAHUL01" style="text-transform:uppercase">{% endif %}
+  <label>Commission type</label>
+  <select name="commission_type">
+    <option value="flat" {% if aff and aff.commission_type=="flat" %}selected{% endif %}>Flat ₹ per paid enrollment</option>
+    <option value="percent" {% if aff and aff.commission_type=="percent" %}selected{% endif %}>% of amount paid</option>
+  </select>
+  <label>Commission value</label><input type="number" step="0.01" min="0" name="commission_value" value="{{ aff.commission_value if aff else 500 }}" required>
+  <p><label style="display:inline"><input type="checkbox" name="active" value="1" style="width:auto" {% if not aff or aff.active %}checked{% endif %}> Active</label></p>
+  <p><button class="btn btn-gold" type="submit">Save</button></p>
+</form>
+</div>
+{% endblock %}

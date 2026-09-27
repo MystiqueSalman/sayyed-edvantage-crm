@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Edit Page — Marketing{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🖥 Edit: {{ page.title }}</h2><div class="line"></div>
+  <a href="{{ url_for('marketing.page_list') }}">← Pages</a></div>
+<div class="two-col">
+<div class="panel">
+  <h3 style="margin-top:0">Page Settings</h3>
+  <form method="post">
+    <label>Title</label><input name="title" value="{{ page.title }}" required>
+    <label>URL slug</label><input name="slug" value="{{ page.slug }}">
+    <label>Status</label>
+    <select name="status">
+      <option value="draft" {% if page.status=="draft" %}selected{% endif %}>Draft</option>
+      <option value="published" {% if page.status=="published" %}selected{% endif %}>Published</option>
+    </select>
+    <p><button class="btn btn-blue btn-sm" type="submit">Save</button>
+    {% if page.is_published %}<a class="btn btn-ghost btn-sm" href="{{ url_for('marketing.landing_page', slug=page.slug) }}" target="_blank">View live page</a>{% endif %}</p>
+  </form>
+  <h3>Blocks ({{ (page.blocks or [])|length }})</h3>
+  <table><tr><th>#</th><th>Type</th><th>Heading</th><th></th></tr>
+  {% for b in page.blocks or [] %}
+  <tr><td>{{ loop.index }}</td><td><span class="code-pill">{{ b.type }}</span></td>
+    <td>{{ b.heading or "—" }}</td>
+    <td><form method="post" action="{{ url_for('marketing.block_delete', page_id=page.id, idx=loop.index0) }}" onsubmit="return confirm('Remove this block?')">
+      <button class="btn btn-ghost btn-sm" type="submit">✕</button></form></td></tr>
+  {% endfor %}</table>
+</div>
+<div class="panel">
+  <h3 style="margin-top:0">+ Add Block</h3>
+  <form method="post" action="{{ url_for('marketing.block_add', page_id=page.id) }}">
+    <label>Block type</label>
+    <select name="type">
+      {% for t in block_types %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+    </select>
+    <label>Heading</label><input name="heading">
+    <label>Text</label><textarea name="text" rows="3"></textarea>
+    <label>Button text</label><input name="button_text">
+    <label>Button link</label><input name="button_link" placeholder="/p/slug or https://…">
+    <p style="color:var(--muted); font-size:.82rem"><b>course_cards:</b> tick courses below ·
+    <b>testimonials/faq:</b> fill item fields · <b>countdown:</b> set ends-at (YYYY-MM-DD HH:MM)</p>
+    <label>Courses (for course_cards)</label>
+    {% for c in courses %}<label style="display:inline"><input type="checkbox" name="course_ids" value="{{ c.id }}" style="width:auto"> {{ c.title }}</label><br>{% endfor %}
+    <label>Testimonial name / FAQ question</label><input name="item_name"><input name="item_q" placeholder="FAQ question">
+    <label>Testimonial text / FAQ answer</label><textarea name="item_text" rows="2"></textarea><textarea name="item_a" rows="2" placeholder="FAQ answer"></textarea>
+    <label>Countdown ends at</label><input name="ends_at" placeholder="2026-10-15 23:59">
+    <p><button class="btn btn-gold btn-sm" type="submit">Add Block</button></p>
+  </form>
+</div>
+</div>
+{% endblock %}

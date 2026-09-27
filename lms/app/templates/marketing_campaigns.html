@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Campaigns — Marketing{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎯 Campaigns</h2><div class="line"></div>
+  <a href="{{ url_for('marketing.hub') }}">← Marketing</a></div>
+<p><a class="btn btn-gold btn-sm" href="{{ url_for('marketing.campaign_new') }}">+ New Campaign</a></p>
+<table><tr><th>Name</th><th>Channel</th><th>Landing Page</th><th>Budget</th><th>Status</th><th></th></tr>
+{% for c in campaigns %}
+{% set s = c.stats() %}
+<tr><td><b>{{ c.name }}</b><br><small style="color:var(--muted)">👁 {{ s.views }} · 🧲 {{ s.leads }} · 🎓 {{ s.enrollments }}</small></td>
+  <td><span class="code-pill">{{ c.channel }}</span></td>
+  <td>{{ c.landing_page.title if c.landing_page else "—" }}</td>
+  <td>{{ "₹{:,}".format(c.budget) if c.budget else "—" }}</td>
+  <td>{{ "✅ Active" if c.active else "⏸ Paused" }}</td>
+  <td><a class="btn btn-blue btn-sm" href="{{ url_for('marketing.campaign_detail', campaign_id=c.id) }}">Dashboard</a></td></tr>
+{% else %}<tr><td colspan="6" style="color:var(--muted)">No campaigns yet.</td></tr>
+{% endfor %}</table>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Email Campaigns — Marketing{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📧 Email Campaigns</h2><div class="line"></div>
+  <a href="{{ url_for('marketing.hub') }}">← Marketing</a></div>
+{% if not gate_ok %}
+<div class="panel" style="border-color:var(--warn)"><p>⚠️ Email is <b>not configured</b> — campaigns stay disabled until SMTP is enabled in
+<a href="{{ url_for('admin.email_settings') }}">📧 Email Automation</a>. Sending is blocked by the SMTP gate.</p></div>
+{% endif %}
+<p><a class="btn btn-gold btn-sm" href="{{ url_for('marketing.email_campaign_new') }}">+ New Email Blast</a></p>
+<table><tr><th>Name</th><th>Template</th><th>Segment</th><th>Status</th><th>Sent</th><th></th></tr>
+{% for c in items %}
+<tr><td><b>{{ c.name }}</b></td>
+  <td>{{ c.template.name if c.template else "—" }}</td>
+  <td><span class="code-pill">{{ (c.segment or {}).get("audience", "leads") }}</span>
+    {% if (c.segment or {}).get("status") %}<span class="code-pill">{{ (c.segment or {}).get("status") }}</span>{% endif %}</td>
+  <td>{{ "✅ Sent" if c.status=="sent" else "📝 Draft" }}</td>
+  <td>{{ c.sent_count or 0 }}</td>
+  <td>{% if c.status != "sent" %}
+    <form method="post" action="{{ url_for('marketing.email_campaign_send', campaign_id=c.id) }}" style="display:inline" onsubmit="return confirm('Send this email blast now?')">
+      <button class="btn btn-blue btn-sm" type="submit" {% if not gate_ok %}disabled title="Enable SMTP first"{% endif %}>Send</button></form>
+    {% endif %}</td></tr>
+{% else %}<tr><td colspan="6" style="color:var(--muted)">No email campaigns yet.</td></tr>
+{% endfor %}</table>
+{% endblock %}

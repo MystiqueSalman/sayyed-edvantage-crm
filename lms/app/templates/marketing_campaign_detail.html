@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ camp.name }} — Campaign{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎯 {{ camp.name }}</h2><div class="line"></div>
+  <a href="{{ url_for('marketing.campaign_list') }}">← Campaigns</a></div>
+<div class="cards">
+  <div class="panel"><h3 style="margin-top:0; color:var(--gold)">👁 {{ stats.views }}</h3><p style="color:var(--muted)">Page views</p></div>
+  <div class="panel"><h3 style="margin-top:0; color:var(--gold)">🧲 {{ stats.leads }}</h3><p style="color:var(--muted)">Leads captured</p></div>
+  <div class="panel"><h3 style="margin-top:0; color:var(--gold)">🎓 {{ stats.enrollments }}</h3><p style="color:var(--muted)">Paid enrollments</p></div>
+  <div class="panel"><h3 style="margin-top:0; color:var(--gold)">{{ "₹{:,.2f}".format(stats.cost_per_lead) if stats.cost_per_lead else "—" }}</h3><p style="color:var(--muted)">Cost per lead</p></div>
+</div>
+<div class="panel">
+  <p><b>Channel:</b> <span class="code-pill">{{ camp.channel }}</span>
+  <b>Landing page:</b> {{ camp.landing_page.title if camp.landing_page else "—" }}
+  <b>Budget:</b> {{ "₹{:,}".format(camp.budget) if camp.budget else "—" }}
+  <b>Coupon:</b> {{ camp.coupon.code if camp.coupon else "—" }}</p>
+  {% if track_url %}<p><b>Tracking link:</b> <span class="code-pill">{{ track_url }}</span>
+  <small style="color:var(--muted)">— share this; views/leads/enrollments attribute automatically.</small></p>{% endif %}
+  <p><a class="btn btn-blue btn-sm" href="{{ url_for('marketing.campaign_edit', campaign_id=camp.id) }}">Edit</a>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('marketing.campaign_export', campaign_id=camp.id) }}">⬇ CSV Export</a></p>
+</div>
+<div class="panel"><h3 style="margin-top:0">Recent Leads ({{ stats.leads }})</h3>
+<table><tr><th>Name</th><th>Phone</th><th>Status</th><th>Created</th></tr>
+{% for l in leads %}<tr><td>{{ l.name }}</td><td>{{ l.phone }}</td><td>{{ l.status_label }}</td><td>{{ l.created_at.strftime("%d %b %Y") if l.created_at }}</td></tr>
+{% else %}<tr><td colspan="4" style="color:var(--muted)">No leads yet.</td></tr>{% endfor %}</table></div>
+{% endblock %}

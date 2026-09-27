@@ -159,8 +159,16 @@ class Enrollment(db.Model):
     razorpay_order_id = db.Column(db.String(80), default="")
     razorpay_payment_id = db.Column(db.String(80), default="")
     enrolled_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Phase 11: attribution (lead.source -> enrollment)
+    source = db.Column(db.String(20), default="")
+    campaign_id = db.Column(db.Integer, db.ForeignKey("campaigns.id"),
+                             nullable=True)
+    affiliate_id = db.Column(db.Integer, db.ForeignKey("affiliates.id"),
+                              nullable=True)
 
     course = db.relationship("Course", backref="enrollments")
+    campaign = db.relationship("Campaign", foreign_keys=[campaign_id])  # Phase 11
+    affiliate = db.relationship("Affiliate", foreign_keys=[affiliate_id])  # Phase 11
     __table_args__ = (db.UniqueConstraint("user_id", "course_id", name="uq_enrollment"),)
 
     def progress(self):
@@ -748,8 +756,12 @@ class Lead(db.Model):
     SOURCE_REFERRAL = "referral"
     SOURCE_CHAT = "chat"
     SOURCE_MANUAL = "manual"
+    SOURCE_LANDING = "landing"      # Phase 11: landing-page form
+    SOURCE_CAMPAIGN = "campaign"    # Phase 11: campaign link (?c=)
+    SOURCE_AFFILIATE = "affiliate"  # Phase 11: affiliate link (/a/)
     SOURCES = (SOURCE_WEBSITE, SOURCE_WHATSAPP, SOURCE_INSTAGRAM,
-               SOURCE_FACEBOOK, SOURCE_REFERRAL, SOURCE_CHAT, SOURCE_MANUAL)
+               SOURCE_FACEBOOK, SOURCE_REFERRAL, SOURCE_CHAT, SOURCE_MANUAL,
+               SOURCE_LANDING, SOURCE_CAMPAIGN, SOURCE_AFFILIATE)
 
     SCORE_HOT = "hot"
     SCORE_WARM = "warm"
@@ -762,6 +774,10 @@ class Lead(db.Model):
     email = db.Column(db.String(160), default="")
     source = db.Column(db.String(20), default=SOURCE_WEBSITE)
     course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=True)
+    campaign_id = db.Column(db.Integer, db.ForeignKey("campaigns.id"),  # Phase 11
+                             nullable=True)
+    affiliate_id = db.Column(db.Integer, db.ForeignKey("affiliates.id"),  # Phase 11
+                              nullable=True)
     status = db.Column(db.String(20), default=STATUS_NEW, index=True)
     score = db.Column(db.String(10), default=SCORE_COLD, index=True)
     assigned_to = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
@@ -775,6 +791,8 @@ class Lead(db.Model):
     course = db.relationship("Course")
     assignee = db.relationship("User", foreign_keys=[assigned_to])
     converted_user = db.relationship("User", foreign_keys=[converted_user_id])
+    campaign = db.relationship("Campaign", foreign_keys=[campaign_id])  # Phase 11
+    affiliate = db.relationship("Affiliate", foreign_keys=[affiliate_id])  # Phase 11
     activities = db.relationship("LeadActivity", backref="lead",
                                  cascade="all, delete-orphan",
                                  order_by="LeadActivity.created_at.desc()")
@@ -1711,3 +1729,173 @@ class AppSetting(db.Model):
         row.value = str(value)
         db.session.commit()
         return row
+
+
+# ============================================================ Phase 11 — Marketing suite
+
+class LandingPage(db.Model):
+    """§20.1: campaign landing pages with block content (JSON)."""
+    __tablename__ = "landing_pages"
+
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(160), nullable=False, default="")
+    status = db.Column(db.String(16), default="draft")  # draft / published
+    blocks = db.Column(db.JSON, default=list)  # [{type, ...}]
+    views = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    @property
+    def is_published(self):
+        return self.status == "published"
+
+    @property
+    def url(self):
+        from flask import url_for
+        return url_for("marketing.landing_page", slug=self.slug, _external=True)
+
+
+class PageView(db.Model):
+    """§20.2: raw page-view events for landing pages (powers campaign views)."""
+    __tablename__ = "page_views"
+
+    id = db.Column(db.Integer, primary_key=True)
+    landing_page_id = db.Column(db.Integer,
+                                db.ForeignKey("landing_pages.id"),
+                                nullable=True, index=True)
+    campaign_id = db.Column(db.Integer, db.ForeignKey("campaigns.id"),
+                             nullable=True, index=True)
+    viewed_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+
+class Campaign(db.Model):
+    """§20.2/20.5: marketing campaigns (WhatsApp/email/Instagram/other)."""
+    __tablename__ = "campaigns"
+
+    CHANNELS = ("whatsapp", "email", "instagram", "facebook", "other")
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(160), nullable=False)
+    channel = db.Column(db.String(20), default="other")
+    landing_page_id = db.Column(db.Integer,
+                                db.ForeignKey("landing_pages.id"),
+                                nullable=True)
+    coupon_id = db.Column(db.Integer, db.ForeignKey("coupons.id"),
+                           nullable=True)
+    start_date = db.Column(db.Date, nullable=True)
+    end_date = db.Column(db.Date, nullable=True)
+    budget = db.Column(db.Integer, nullable=True)  # INR, optional
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    landing_page = db.relationship("LandingPage")
+    coupon = db.relationship("Coupon")
+
+    def stats(self):
+        """Real funnel numbers from live records — never invented."""
+        views = PageView.query.filter_by(campaign_id=self.id).count()
+        leads = Lead.query.filter_by(campaign_id=self.id).count()
+        enrs = (Enrollment.query.filter_by(campaign_id=self.id,
+                                           paid=True).count())
+        cpl = round(self.budget / leads, 2) if self.budget and leads else None
+        return {"views": views, "leads": leads, "enrollments": enrs,
+                "cost_per_lead": cpl}
+
+
+class Affiliate(db.Model):
+    """§20.4: affiliates with referral codes and commission rules."""
+    __tablename__ = "affiliates"
+
+    COMM_FLAT = "flat"
+    COMM_PERCENT = "percent"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    contact = db.Column(db.String(160), default="")  # phone or email
+    code = db.Column(db.String(24), unique=True, nullable=False, index=True)
+    commission_type = db.Column(db.String(10), default=COMM_FLAT)
+    commission_value = db.Column(db.Float, default=0.0)  # ₹ flat or % 
+    active = db.Column(db.Boolean, default=True)
+    token = db.Column(db.String(48), unique=True, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def commission_for(self, amount_paid):
+        """Commission ₹ for one paid enrollment (amount_paid in INR)."""
+        if self.commission_type == self.COMM_PERCENT:
+            return round(amount_paid * (self.commission_value or 0) / 100.0, 2)
+        return round(self.commission_value or 0, 2)
+
+    def stats(self):
+        clicks = AffiliateClick.query.filter_by(affiliate_id=self.id).count()
+        earnings = AffiliateEarning.query.filter_by(
+            affiliate_id=self.id).all()
+        earned = round(sum(e.amount for e in earnings), 2)
+        paid = round(sum(e.amount for e in earnings
+                         if e.status == "paid"), 2)
+        return {"clicks": clicks, "enrollments": len(earnings),
+                "earned": earned, "paid": paid, "pending": round(earned - paid, 2)}
+
+
+class AffiliateClick(db.Model):
+    __tablename__ = "affiliate_clicks"
+
+    id = db.Column(db.Integer, primary_key=True)
+    affiliate_id = db.Column(db.Integer, db.ForeignKey("affiliates.id"),
+                              nullable=False, index=True)
+    clicked_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class AffiliateEarning(db.Model):
+    """One commission row per paid, affiliate-attributed enrollment."""
+    __tablename__ = "affiliate_earnings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    affiliate_id = db.Column(db.Integer, db.ForeignKey("affiliates.id"),
+                              nullable=False, index=True)
+    enrollment_id = db.Column(db.Integer,
+                               db.ForeignKey("enrollments.id"),
+                               nullable=False, unique=True)
+    amount = db.Column(db.Float, default=0.0)
+    status = db.Column(db.String(10), default="pending")  # pending / paid
+    payout_id = db.Column(db.Integer, db.ForeignKey("affiliate_payouts.id"),
+                           nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    enrollment = db.relationship("Enrollment")
+
+
+class AffiliatePayout(db.Model):
+    """§20.4: payout batches; marking paid writes an audit entry."""
+    __tablename__ = "affiliate_payouts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    affiliate_id = db.Column(db.Integer, db.ForeignKey("affiliates.id"),
+                              nullable=False, index=True)
+    amount = db.Column(db.Float, default=0.0)
+    status = db.Column(db.String(10), default="pending")  # pending / paid
+    note = db.Column(db.String(255), default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    paid_at = db.Column(db.DateTime, nullable=True)
+
+    affiliate = db.relationship("Affiliate")
+    earnings = db.relationship("AffiliateEarning", backref="payout")
+
+
+class EmailCampaign(db.Model):
+    """§20.5: segmented email blasts (SMTP gate enforced at send time)."""
+    __tablename__ = "email_campaigns"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(160), nullable=False)
+    template_id = db.Column(db.Integer,
+                             db.ForeignKey("message_templates.id"),
+                             nullable=True)
+    segment = db.Column(db.JSON, default=dict)  # {audience, course_id, status, batch_id}
+    status = db.Column(db.String(16), default="draft")  # draft / sent
+    sent_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at = db.Column(db.DateTime, nullable=True)
+
+    template = db.relationship("MessageTemplate")

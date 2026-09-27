@@ -16,15 +16,34 @@ HIGH_INTENT_KEYWORDS = (
 
 
 def create_lead(name="", phone="", email="", source=Lead.SOURCE_WEBSITE,
-                course_id=None, actor_id=None, note=""):
-    """Create a lead (dedup by phone) and log its creation."""
+                course_id=None, actor_id=None, note="",
+                campaign_id=None, affiliate_id=None):
+    """Create a lead (dedup by phone) and log its creation.
+
+    Phase 11: picks up affiliate/campaign attribution cookies when the
+    caller did not pass explicit attribution.
+    """
     phone = (phone or "").strip()
     lead = None
     if phone:
         lead = Lead.query.filter_by(phone=phone).first()
     if lead is None:
+        if campaign_id is None and affiliate_id is None:
+            try:
+                from .marketing import get_attribution, resolve_affiliate
+                att = get_attribution()
+                aff = resolve_affiliate(att["affiliate_code"])
+                if aff:
+                    affiliate_id = aff.id
+                    source = Lead.SOURCE_AFFILIATE
+                elif att["campaign_id"]:
+                    campaign_id = int(att["campaign_id"])
+                    source = Lead.SOURCE_CAMPAIGN
+            except Exception:
+                pass  # attribution must never break lead creation
         lead = Lead(name=name.strip(), phone=phone, email=(email or "").strip(),
-                    source=source, course_id=course_id)
+                    source=source, course_id=course_id,
+                    campaign_id=campaign_id, affiliate_id=affiliate_id)
         db.session.add(lead)
         db.session.flush()
         lead.log("system", f"Lead created via {source}." +

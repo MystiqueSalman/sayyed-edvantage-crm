@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Marketing — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📣 Marketing Suite</h2><div class="line"></div>
+  <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<div class="cards">
+  <div class="panel"><h3 style="margin-top:0">🖥 Landing Pages</h3>
+    <p class="code-pill">{{ pages }} page(s)</p>
+    <p><a class="btn btn-blue btn-sm" href="{{ url_for('marketing.page_list') }}">Open</a>
+    <a class="btn btn-gold btn-sm" href="{{ url_for('marketing.page_new') }}">+ New Page</a></p></div>
+  <div class="panel"><h3 style="margin-top:0">🎯 Campaigns</h3>
+    <p class="code-pill">{{ campaigns }} campaign(s)</p>
+    <p><a class="btn btn-blue btn-sm" href="{{ url_for('marketing.campaign_list') }}">Open</a>
+    <a class="btn btn-gold btn-sm" href="{{ url_for('marketing.campaign_new') }}">+ New Campaign</a></p></div>
+  <div class="panel"><h3 style="margin-top:0">📧 Email Campaigns</h3>
+    <p class="code-pill">{{ emailc }} campaign(s)</p>
+    <p><a class="btn btn-blue btn-sm" href="{{ url_for('marketing.email_campaign_list') }}">Open</a>
+    <a class="btn btn-gold btn-sm" href="{{ url_for('marketing.email_campaign_new') }}">+ New Blast</a></p></div>
+  <div class="panel"><h3 style="margin-top:0">🤝 Affiliates</h3>
+    <p class="code-pill">{{ affiliates }} active</p>
+    <p><a class="btn btn-blue btn-sm" href="{{ url_for('marketing.affiliate_list') }}">Open</a>
+    <a class="btn btn-gold btn-sm" href="{{ url_for('marketing.affiliate_new') }}">+ New Affiliate</a></p></div>
+  <div class="panel"><h3 style="margin-top:0">📊 Analytics</h3>
+    <p style="color:var(--muted); font-size:.82rem">GA4 · GTM · Meta Pixel · custom head snippet</p>
+    <p><a class="btn btn-blue btn-sm" href="{{ url_for('marketing.analytics_settings') }}">Configure</a></p></div>
+</div>
+{% endblock %}

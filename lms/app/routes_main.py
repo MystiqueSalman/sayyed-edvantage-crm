@@ -176,6 +176,14 @@ def enroll(slug):
                 send_enrollment_whatsapp(current_user, enrollment)
             except Exception:
                 pass  # growth/WhatsApp must never break enrollment
+            try:
+                from .marketing import (attribute_enrollment,
+                                        record_affiliate_earning)
+                attribute_enrollment(enrollment)
+                db.session.commit()
+                record_affiliate_earning(enrollment)
+            except Exception:
+                pass  # attribution must never break enrollment
             flash("Enrolled successfully — happy learning!", "success")
             return redirect(url_for("student.dashboard"))
         return redirect(url_for("main.checkout", enrollment_id=enrollment.id))
@@ -260,6 +268,13 @@ def payment_confirm(enrollment_id):
         send_payment_receipt_whatsapp(current_user, enrollment)
     except Exception:
         pass  # growth/WhatsApp must never break payment confirmation
+    try:
+        from .marketing import attribute_enrollment, record_affiliate_earning
+        attribute_enrollment(enrollment)
+        db.session.commit()
+        record_affiliate_earning(enrollment)
+    except Exception:
+        pass  # attribution must never break payment confirmation
     flash("Payment successful — you are enrolled!", "success")
     return redirect(url_for("student.dashboard"))
 

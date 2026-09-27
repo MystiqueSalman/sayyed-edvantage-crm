@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Thanks!{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:520px; margin:3rem auto; text-align:center">
+  <h2 style="color:var(--gold); margin-top:0">✅ Thanks, {{ lead.name }}!</h2>
+  <p>Our counsellor will call you on <b>{{ lead.phone }}</b> shortly.</p>
+  <p style="color:var(--muted)">Sayyed EdVantage · Empowering Students for Success</p>
+  <p><a class="btn btn-blue" href="{{ url_for('main.catalog') }}">Browse Courses</a></p>
+</div>
+{% endblock %}
