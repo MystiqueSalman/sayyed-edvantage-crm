@@ -12,7 +12,9 @@ ROLE_FACULTY = "faculty"
 ROLE_STUDENT = "student"
 ROLE_MANAGER = "manager"
 ROLE_COUNSELLOR = "counsellor"  # Phase 4: admissions/CRM
-ROLES = (ROLE_ADMIN, ROLE_FACULTY, ROLE_STUDENT, ROLE_MANAGER, ROLE_COUNSELLOR)
+ROLE_EMPLOYER = "employer"  # Phase 7: employer portal (job postings)
+ROLES = (ROLE_ADMIN, ROLE_FACULTY, ROLE_STUDENT, ROLE_MANAGER, ROLE_COUNSELLOR,
+         ROLE_EMPLOYER)
 
 
 class User(UserMixin, db.Model):
@@ -24,6 +26,7 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), nullable=False, default=ROLE_STUDENT)
     is_active = db.Column(db.Boolean, default=True)
     phone = db.Column(db.String(20), default="")  # Phase 3: WhatsApp notifications
+    company = db.Column(db.String(160), default="")  # Phase 7: employer company
     referral_code = db.Column(db.String(20), unique=True, nullable=True,
                               index=True)  # Phase 3: my referral code
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -175,7 +178,7 @@ class Enrollment(db.Model):
         if not projects:
             return None
         subs = {s.project_id: s for s in ProjectSubmission.query.filter_by(
-            student_id=self.user_id).all()}
+            user_id=self.user_id).all()}
         evaluated = [subs[p.id] for p in projects
                      if p.id in subs and subs[p.id].status == "evaluated"]
         avg = (round(sum(s.percent for s in evaluated) / len(evaluated), 1)
@@ -646,7 +649,10 @@ class Job(db.Model):
     apply_mode = db.Column(db.String(20), default=APPLY_INTERNAL)
     external_url = db.Column(db.String(500), default="")
     created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    employer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)  # Phase 7: employer-posted
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    employer = db.relationship("User", foreign_keys=[employer_id])
 
     applications = db.relationship("JobApplication", backref="job",
                                    cascade="all, delete-orphan",
@@ -676,6 +682,7 @@ class JobApplication(db.Model):
     job_id = db.Column(db.Integer, db.ForeignKey("jobs.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     cover_note = db.Column(db.Text, default="")
+    employer_note = db.Column(db.Text, default="")  # Phase 7: private employer notes
     status = db.Column(db.String(20), default=STATUS_APPLIED)
     applied_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow,
@@ -1023,3 +1030,149 @@ class StudyPlanItem(db.Model):
     done = db.Column(db.Boolean, default=False)
 
     lesson = db.relationship("Lesson")
+
+
+# ---------------------------------------------------------------- Phase 7: career & placements
+class Resume(db.Model):
+    """Student resume: editable sections + verified items pulled live.
+
+    Only items backed by real records (enrollments, certificates, evaluated
+    projects) are marked verified. Nothing is ever invented.
+    """
+    __tablename__ = "resumes"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False,
+                       unique=True)
+    headline = db.Column(db.String(160), default="")  # e.g. "Aspiring Data Analyst"
+    summary = db.Column(db.Text, default="")
+    skills_text = db.Column(db.Text, default="")  # self-added, comma-separated
+    experience_json = db.Column(db.Text, default="[]")  # [{title, org, period, details}]
+    education_json = db.Column(db.Text, default="[]")  # [{degree, school, year}]
+    links_json = db.Column(db.Text, default="{}")  # {github, linkedin, website}
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    user = db.relationship("User", backref=db.backref("resume", uselist=False))
+
+    def experience(self):
+        try:
+            import json
+            return json.loads(self.experience_json or "[]")
+        except Exception:
+            return []
+
+    def education(self):
+        try:
+            import json
+            return json.loads(self.education_json or "[]")
+        except Exception:
+            return []
+
+    def links(self):
+        try:
+            import json
+            d = json.loads(self.links_json or "{}")
+            return d if isinstance(d, dict) else {}
+        except Exception:
+            return {}
+
+    def is_complete(self):
+        """Counts toward placement readiness: summary + skills + headline."""
+        return bool((self.summary or "").strip() and
+                    (self.skills_text or "").strip() and
+                    (self.headline or "").strip())
+
+
+class Portfolio(db.Model):
+    """Public shareable portfolio page for a student."""
+    __tablename__ = "portfolios"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False,
+                       unique=True)
+    code = db.Column(db.String(24), unique=True, nullable=False, index=True)
+    is_public = db.Column(db.Boolean, default=False)
+    headline = db.Column(db.String(160), default="")
+    about = db.Column(db.Text, default="")
+    show_resume = db.Column(db.Boolean, default=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    user = db.relationship("User", backref=db.backref("portfolio", uselist=False))
+
+    @staticmethod
+    def new_code():
+        import secrets
+        return secrets.token_urlsafe(12)[:16]
+
+
+class MockInterview(db.Model):
+    """One AI mock-interview session for a student."""
+    __tablename__ = "mock_interviews"
+    STATUS_ACTIVE = "in_progress"
+    STATUS_DONE = "completed"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=True)
+    target_role = db.Column(db.String(160), default="")
+    status = db.Column(db.String(20), default=STATUS_ACTIVE)
+    score = db.Column(db.Float, nullable=True)  # 0-100 overall, set on completion
+    weak_areas = db.Column(db.Text, default="")
+    questions_total = db.Column(db.Integer, default=5)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_at = db.Column(db.DateTime, nullable=True)
+
+    user = db.relationship("User", backref="mock_interviews")
+    course = db.relationship("Course")
+    qas = db.relationship("MockInterviewQA", backref="session",
+                          cascade="all, delete-orphan",
+                          order_by="MockInterviewQA.position")
+
+    def answered_count(self):
+        return sum(1 for q in self.qas if (q.answer or "").strip())
+
+
+class MockInterviewQA(db.Model):
+    """One question/answer/feedback turn inside a mock interview."""
+    __tablename__ = "mock_interview_qas"
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey("mock_interviews.id"),
+                          nullable=False)
+    position = db.Column(db.Integer, default=0)
+    question = db.Column(db.Text, nullable=False)
+    answer = db.Column(db.Text, default="")
+    feedback = db.Column(db.Text, default="")
+    score = db.Column(db.Float, nullable=True)  # 0-10 per answer
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class ReadinessWeights(db.Model):
+    """Single-row (id=1) admin-configurable placement-readiness weights.
+
+    Weights are percentages; they should sum to 100 (normalized if not).
+    """
+    __tablename__ = "readiness_weights"
+    id = db.Column(db.Integer, primary_key=True)
+    w_completion = db.Column(db.Float, default=25.0)
+    w_quiz = db.Column(db.Float, default=20.0)
+    w_projects = db.Column(db.Float, default=15.0)
+    w_resume = db.Column(db.Float, default=10.0)
+    w_interviews = db.Column(db.Float, default=15.0)
+    w_certificates = db.Column(db.Float, default=15.0)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    @classmethod
+    def get(cls):
+        row = db.session.get(cls, 1)
+        if not row:
+            row = cls(id=1)
+            db.session.add(row)
+            db.session.commit()
+        return row
+
+    def as_dict(self):
+        return {"completion": self.w_completion, "quiz": self.w_quiz,
+                "projects": self.w_projects, "resume": self.w_resume,
+                "interviews": self.w_interviews,
+                "certificates": self.w_certificates}

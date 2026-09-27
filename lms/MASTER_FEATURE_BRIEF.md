@@ -448,6 +448,18 @@ The finished platform should provide:
 - Tests: **50/50 new** + 36/36 Phase 1 + 92/92 Phase 2 + 78/78 Phase 3 + 80/80 Phase 4 + 43/43 chat fixes + 62/62 Phase 5 = **441/441** on fresh migrated DBs.
 - Faculty UI: Faculty Dashboard → 🗃 Question Bank (`/manage/question-bank`), 📝 Grading Queue (`/manage/grading`), 🛠 Projects (`/manage/projects`); per-quiz ⚙ Exam settings, 🗃 Add from Bank, 📊 Analytics on the quiz questions page. Student UI: 🛠 Projects nav (`/projects`), exams via lesson pages / quiz links with ⏱ live countdown.
 
+## PHASE 7 DELIVERED (2026-09-28)
+- **Resume builder (§27.2):** student builds an ATS-friendly resume from VERIFIED records only — profile, completed courses, certificates, evaluated projects (each marked ✓ Verified); editable headline/summary/skills/experience/education/links; clean printable PDF export (reportlab, Sayyed EdVantage gold accent). Nothing is ever invented.
+- **Portfolio builder (§27.3):** public shareable page `/portfolio/<code>` (projects, certificates, skills, resume PDF download); public/private toggle + secret-link regeneration; premium dark gold/blue theme.
+- **AI mock interviews (§27.4):** student picks course + target role; interviewer asks 5 role-relevant questions one at a time (OpenAI when available, rules fallback from role-matched question bank + course topics); per-answer 0–10 score + coach feedback; session ends with overall 0–100 score + weak areas; history on Career hub and dashboard.
+- **Placement readiness (§27.6):** 0–100 score from admin-configurable weights (completion, quiz avg, evaluated projects, resume completeness, mock interviews, certificates — normalized); per-criterion breakdown with improvement tips. HARD RULE honored everywhere: copy says "guidance", "not a job guarantee", "placement support" — never a promise.
+- **Employer portal (§13.3):** new `employer` role; public `/employer/signup` creates INACTIVE accounts (login blocked until approved); admin `/admin/employers` approve/reject; employers post/edit/pause their jobs, view applications to their jobs only, move candidates applied → shortlisted → interviewed → offered → placed/rejected with private notes; strict isolation (404 on others' jobs); employer jobs appear on the public job board; existing admin job management untouched.
+- **Placement analytics (§13.6):** admin dashboard — application funnel bar chart, conversion doughnut, offer/placement rates, course-wise outcomes table, employer leaderboard (Chart.js pattern).
+- Also fixed a latent Phase 6 bug: `Enrollment.project_performance()` filtered `ProjectSubmission` by non-existent `student_id` (would 500 the course analytics widget); now uses `user_id`.
+- Migration `30af5d3f1651` (5 new tables + `users.company`, `jobs.employer_id`, `job_applications.employer_note`); verified: blank-chain `flask db upgrade` → head, Phase 6 → 7 upgrade with legacy data, and production-style `create_all()` + `_ensure_schema_patches()` zero-step deploy.
+- Tests: **62/62 new** + 36/36 Phase 1 + 92/92 Phase 2 + 78/78 Phase 3 + 80/80 Phase 4 + 43/43 chat fixes + 62/62 Phase 5 + 50/50 Phase 6 = **503/503** on fresh migrated DBs.
+- Student UI: 🚀 Career nav (`/career` hub → resume, portfolio, mock interviews, readiness); employer UI: 🏢 Employer Dashboard (`/employer`); admin: `/admin/employers`, `/admin/placement-analytics`, `/admin/career-settings` (readiness weights).
+
 ## BUILD STATUS (living)
 - [x] Phase 1 — core LMS: roles, courses, lessons, quizzes, assignments, certificates, coupons, Razorpay stub
 - [x] Phase 2 — live Jitsi classes, drip lessons, email automation, discussions, analytics, PWA, reviews, cert verify, progress, announcements, search, wishlist
@@ -455,7 +467,7 @@ The finished platform should provide:
 - [x] Phase 4 — Admissions & CRM: lead pipeline (§8), application forms + batch allocation + onboarding (§10), AI sales agent (§9), counsellor roles (§1.1)
 - [x] Phase 5 — AI learning layer: AI tutor + doubt solver (§6.1–6.3), study planner (§6.7), weak-topic analysis (§6.6 light)
 - [x] Phase 6 — Assessments pro: question bank (§5.2), 6 question types (§5.1), timed exams + negative marking + attempt limits + score policy (§5.3), exam analytics (§5.4), projects (§5.5), certificate score policy (§5.6)
-- [ ] Phase 7 — Career & placements complete: resume builder (§27.2), portfolio (§27.3), interview prep (§27.4), readiness score (§27.6), employer portal (§13.3), placement analytics (§13.6)
+- [x] Phase 7 — Career & placements complete: resume builder (§27.2), portfolio (§27.3), interview prep (§27.4), readiness score (§27.6), employer portal (§13.3), placement analytics (§13.6)
 - [ ] Phase 8 — Gamification & engagement: badges, points, streaks, leaderboards, challenges (§15), bookmarks & notes (§2.4)
 - [ ] Phase 9 — Faculty & operations: attendance (§4.3), calendar (§4.6), batch management (§18.4), audit logs (§18.6), granular permissions (§18.3), invoices + finance dashboard (§11.4–11.5)
 - [ ] Phase 10 — Platform hardening: Postgres migration, REST API + webhooks + docs (§25), backups & monitoring (§24), notification center + templates (§12.4–12.5), SEO (§20.6)

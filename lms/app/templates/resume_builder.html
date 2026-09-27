@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Resume Builder — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📄 Resume Builder</h2><div class="line"></div>
+  <span style="color:var(--muted)">Built from <b>verified records only</b> — courses, certificates and evaluated projects are pulled live and marked ✓</span></div>
+
+<div class="card" style="margin-bottom:18px"><div class="body">
+<form method="post">
+  <label>Professional headline</label>
+  <input type="text" name="headline" value="{{ sections.resume.headline }}" placeholder="e.g. Aspiring Data Analyst | Python · SQL · ML" maxlength="160">
+  <label>Professional summary</label>
+  <textarea name="summary" rows="4" placeholder="2-4 lines about who you are and what you bring...">{{ sections.resume.summary }}</textarea>
+  <label>Skills (comma-separated, your own additions)</label>
+  <input type="text" name="skills_text" value="{{ sections.resume.skills_text }}" placeholder="Communication, Excel, ...">
+  <p style="color:var(--muted)"><small>Verified skills from your projects: {{ sections.verified_skills|join(', ') or '—' }}</small></p>
+  <label>Experience (JSON list: title, org, period, details)</label>
+  <textarea name="experience_json" rows="4" placeholder='[{"title":"Intern","org":"ABC","period":"2025","details":"..."}]'>{{ exp_json }}</textarea>
+  <label>Education (JSON list: degree, school, year)</label>
+  <textarea name="education_json" rows="3" placeholder='[{"degree":"B.Sc","school":"XYZ College","year":"2024"}]'>{{ edu_json }}</textarea>
+  <label>Links (JSON: github, linkedin, website)</label>
+  <input type="text" name="links_json" value='{{ links_json }}' placeholder='{"github":"https://github.com/you","linkedin":"..."}'>
+  <p><button class="btn btn-gold" type="submit">💾 Save resume</button>
+  <a class="btn btn-blue" href="{{ url_for('career.resume_pdf') }}" style="margin-left:8px">⬇ Download PDF</a></p>
+</form>
+</div></div>
+
+<div class="section-title"><h3>Preview — verified sections</h3><div class="line"></div></div>
+<div class="card"><div class="body">
+  <h3>{{ sections.name }} {% if sections.headline %}<small style="color:var(--muted)">— {{ sections.headline }}</small>{% endif %}</h3>
+  {% if sections.courses %}
+  <h4>📚 Courses</h4>
+  <ul>{% for c in sections.courses %}<li>{{ c.title }} — {{ c.status.title }}, {{ c.progress }}% {% if c.completed %}<span class="tag gold">✓ Verified</span>{% endif %}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if sections.projects %}
+  <h4>🛠 Projects</h4>
+  <ul>{% for p in sections.projects %}<li>{{ p.title }} <span class="tag gold">✓ Verified</span>{% if p.skills %} <small style="color:var(--muted)">({{ p.skills|join(', ') }})</small>{% endif %}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if sections.certificates %}
+  <h4>🏅 Certifications</h4>
+  <ul>{% for c in sections.certificates %}<li>{{ c.course }} <span class="tag gold">✓ Verified</span> <small style="color:var(--muted)">({{ c.code }}, {{ c.issued }})</small></li>{% endfor %}</ul>
+  {% endif %}
+  {% if not sections.courses and not sections.projects and not sections.certificates %}
+  <p style="color:var(--muted)">Complete courses, submit projects and earn certificates — they will appear here automatically with ✓ verification.</p>
+  {% endif %}
+</div></div>
+{% endblock %}

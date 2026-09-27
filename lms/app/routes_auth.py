@@ -15,6 +15,8 @@ def _landing_for(user):
         return url_for("admin.dashboard")
     if user.role == "counsellor":  # Phase 4: counsellors land on the CRM
         return url_for("crm.leads")
+    if user.role == "employer":  # Phase 7: employers land on their portal
+        return url_for("career.employer_dashboard")
     if user.role == "faculty":
         return url_for("faculty.dashboard")
     return url_for("student.dashboard")

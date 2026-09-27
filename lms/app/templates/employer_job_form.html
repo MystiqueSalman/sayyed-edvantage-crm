@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if job else 'Post' }} Job — Employer Portal{% endblock %}
+{% block content %}
+<div class="section-title"><h2>{{ '✏️ Edit job' if job else '📢 Post a job' }}</h2><div class="line"></div></div>
+<div class="card" style="max-width:640px"><div class="body">
+<form method="post">
+  <label>Job title</label>
+  <input type="text" name="title" required value="{{ job.title if job }}" placeholder="Junior Data Analyst">
+  <label>Company</label>
+  <input type="text" name="company" value="{{ job.company if job else default_company }}" placeholder="Company name">
+  <label>Type</label>
+  <select name="type">
+    {% for t in job_types %}<option value="{{ t }}" {% if job and job.type == t %}selected{% endif %}>{{ t.title() }}</option>{% endfor %}
+  </select>
+  <label>Location</label>
+  <input type="text" name="location" value="{{ job.location if job }}" placeholder="Mumbai / Remote">
+  <p><label style="display:inline"><input type="checkbox" name="remote" value="1" style="width:auto" {% if job and job.remote %}checked{% endif %}> Remote</label></p>
+  <label>Description</label>
+  <textarea name="description" rows="5" placeholder="Role responsibilities, requirements...">{{ job.description if job }}</textarea>
+  <label>Skills required (comma-separated)</label>
+  <input type="text" name="skills" value="{{ job.skills if job }}" placeholder="Python, SQL, Excel">
+  <label>Application deadline</label>
+  <input type="date" name="deadline" value="{{ job.deadline.isoformat() if job and job.deadline }}">
+  <label>Apply mode</label>
+  <select name="apply_mode">
+    <option value="internal" {% if job and job.apply_mode == 'internal' %}selected{% endif %}>In-app (candidates apply here)</option>
+    <option value="external" {% if job and job.apply_mode == 'external' %}selected{% endif %}>External link</option>
+  </select>
+  <label>External apply URL (if external)</label>
+  <input type="url" name="external_url" value="{{ job.external_url if job }}" placeholder="https://company.com/careers/123">
+  <p><label style="display:inline"><input type="checkbox" name="active" value="1" style="width:auto" {% if not job or job.active %}checked{% endif %}> Active (visible to students)</label></p>
+  <p><button class="btn btn-gold" type="submit">{{ 'Save changes' if job else 'Post job' }}</button>
+  <a class="btn btn-sm" href="{{ url_for('career.employer_dashboard') }}" style="margin-left:8px">Cancel</a></p>
+</form>
+</div></div>
+{% endblock %}

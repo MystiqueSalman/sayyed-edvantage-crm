@@ -86,6 +86,7 @@ def create_app():
     from .routes_growth import growth_bp  # noqa: E402
     from .routes_crm import crm_bp  # noqa: E402  (Phase 4: CRM/admissions)
     from .routes_tutor import tutor_bp  # noqa: E402  (Phase 5: AI tutor/planner)
+    from .routes_career import career_bp  # noqa: E402  (Phase 7: career/placements)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -97,6 +98,7 @@ def create_app():
     app.register_blueprint(growth_bp)
     app.register_blueprint(crm_bp)
     app.register_blueprint(tutor_bp)
+    app.register_blueprint(career_bp)
 
     with app.app_context():
         if os.environ.get("LMS_SKIP_CREATE_ALL") != "1":
@@ -184,6 +186,13 @@ def _ensure_schema_patches(app):
          "ALTER TABLE quiz_answers ADD COLUMN reviewed_by INTEGER REFERENCES users(id)"),
         ("quiz_answers", "reviewed_at",
          "ALTER TABLE quiz_answers ADD COLUMN reviewed_at DATETIME"),
+        # Phase 7 — career & placements
+        ("users", "company",
+         "ALTER TABLE users ADD COLUMN company VARCHAR(160) DEFAULT ''"),
+        ("jobs", "employer_id",
+         "ALTER TABLE jobs ADD COLUMN employer_id INTEGER REFERENCES users(id)"),
+        ("job_applications", "employer_note",
+         "ALTER TABLE job_applications ADD COLUMN employer_note TEXT DEFAULT ''"),
     ]
     try:
         with app.app_context():

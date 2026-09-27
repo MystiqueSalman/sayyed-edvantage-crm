@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Employer Dashboard — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🏢 {{ current_user.company or 'Employer' }} Dashboard</h2><div class="line"></div>
+  <a class="btn btn-gold btn-sm" href="{{ url_for('career.employer_job_new') }}">+ Post a job</a></div>
+
+{% for job in jobs %}
+<div class="card" style="margin-bottom:14px"><div class="body">
+  <h3>{{ job.title }}
+    <span class="tag {{ 'green' if job.active else '' }}" style="margin-left:8px">{{ 'Active' if job.active else 'Paused' }}</span>
+  </h3>
+  <p style="color:var(--muted)">
+    {{ counts[job.id].total }} application{{ 's' if counts[job.id].total != 1 }} ·
+    {{ counts[job.id].placed }} placed
+    {% if job.deadline %} · Apply by {{ job.deadline.strftime('%d %b %Y') }}{% endif %}
+  </p>
+  <p>
+    <a class="btn btn-blue btn-sm" href="{{ url_for('career.employer_applications', job_id=job.id) }}">View candidates</a>
+    <a class="btn btn-sm" href="{{ url_for('career.employer_job_edit', job_id=job.id) }}" style="margin-left:6px">Edit</a>
+    <form method="post" action="{{ url_for('career.employer_job_toggle', job_id=job.id) }}" style="display:inline;margin-left:6px">
+      <button class="btn btn-sm" type="submit">{{ 'Pause' if job.active else 'Activate' }}</button>
+    </form>
+  </p>
+</div></div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No job postings yet. <a href="{{ url_for('career.employer_job_new') }}">Post your first job</a> to start receiving applications.</p></div>
+{% endfor %}
+{% endblock %}

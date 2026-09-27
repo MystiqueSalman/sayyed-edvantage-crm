@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Candidates — {{ job.title }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>👥 Candidates — {{ job.title }}</h2><div class="line"></div>
+  <a class="btn btn-sm" href="{{ url_for('career.employer_dashboard') }}">← Back to dashboard</a></div>
+
+{% for app in job.applications %}
+<div class="card" style="margin-bottom:14px"><div class="body">
+  <h3>{{ app.user.name }}
+    <span class="tag {{ 'green' if app.status in ('placed','offered') else ('gold' if app.status != 'applied' else '') }}" style="margin-left:8px">{{ app.status }}</span>
+  </h3>
+  <p style="color:var(--muted)"><small>{{ app.user.email }}{% if app.user.phone %} · {{ app.user.phone }}{% endif %} · Applied {{ app.applied_at.strftime('%d %b %Y') }}</small></p>
+  {% if app.cover_note %}<p><b>Cover note:</b> {{ app.cover_note }}</p>{% endif %}
+  {% if app.user.portfolio and app.user.portfolio.is_public %}
+  <p><a href="{{ url_for('career.portfolio_public', code=app.user.portfolio.code) }}" target="_blank">🌐 View portfolio</a></p>
+  {% endif %}
+  <form method="post">
+    <input type="hidden" name="application_id" value="{{ app.id }}">
+    <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;align-items:end">
+      <div>
+        <label>Move to stage</label>
+        <select name="status">
+          {% for s in statuses %}<option value="{{ s }}" {% if app.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Private note (only you see this)</label>
+        <input type="text" name="employer_note" value="{{ app.employer_note }}" placeholder="e.g. Strong SQL, schedule round 2">
+      </div>
+    </div>
+    <p><button class="btn btn-blue btn-sm" type="submit">Update candidate</button></p>
+  </form>
+</div></div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No applications yet for this posting.</p></div>
+{% endfor %}
+{% endblock %}

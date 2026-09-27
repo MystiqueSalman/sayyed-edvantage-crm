@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ owner.name }} — Portfolio — Sayyed EdVantage{% endblock %}
+{% block content %}
+<div class="card" style="margin-bottom:18px;text-align:center"><div class="body" style="padding:36px 24px">
+  <div style="width:72px;height:72px;border-radius:50%;border:2px solid var(--gold);display:inline-flex;align-items:center;justify-content:center;font-size:28px;font-weight:bold;color:var(--gold)">SE</div>
+  <h2 style="margin:12px 0 4px">{{ owner.name }}</h2>
+  {% if portfolio.headline %}<p style="color:var(--muted)">{{ portfolio.headline }}</p>{% endif %}
+  {% if portfolio.about %}<p>{{ portfolio.about }}</p>{% endif %}
+  {% if portfolio.show_resume %}
+  <p><a class="btn btn-gold btn-sm" href="{{ url_for('career.portfolio_resume_pdf', code=portfolio.code) }}">⬇ Download Resume</a></p>
+  {% endif %}
+</div></div>
+
+{% if sections.verified_skills or sections.self_skills %}
+<div class="card" style="margin-bottom:18px"><div class="body">
+  <h3>🛠 Skills</h3>
+  <p>{% for s in sections.verified_skills %}<span class="tag gold" style="margin:2px">{{ s }} ✓</span>{% endfor %}{% for s in sections.self_skills %}<span class="tag" style="margin:2px">{{ s }}</span>{% endfor %}</p>
+</div></div>
+{% endif %}
+
+{% if sections.projects %}
+<div class="card" style="margin-bottom:18px"><div class="body">
+  <h3>🚀 Projects</h3>
+  {% for p in sections.projects %}
+  <div style="margin-bottom:12px">
+    <b>{{ p.title }}</b> <span class="tag gold">✓ Verified</span><br>
+    {% if p.skills %}<small style="color:var(--muted)">{{ p.skills|join(', ') }}</small><br>{% endif %}
+    {% if p.url %}<a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.url }}</a>{% endif %}
+  </div>
+  {% endfor %}
+</div></div>
+{% endif %}
+
+{% if sections.certificates %}
+<div class="card" style="margin-bottom:18px"><div class="body">
+  <h3>🏅 Certifications</h3>
+  <ul>{% for c in sections.certificates %}<li><b>{{ c.course }}</b> <span class="tag gold">✓ Verified</span> <small style="color:var(--muted)">— {{ c.issued }}</small></li>{% endfor %}</ul>
+</div></div>
+{% endif %}
+
+{% if sections.courses %}
+<div class="card"><div class="body">
+  <h3>📚 Courses</h3>
+  <ul>{% for c in sections.courses %}<li>{{ c.title }} — {{ c.status.title }} ({{ c.progress }}%)</li>{% endfor %}</ul>
+</div></div>
+{% endif %}
+
+<p style="text-align:center;color:var(--muted);margin-top:24px"><small>Portfolio hosted by <b>Sayyed EdVantage</b> — Empowering Students for Success</small></p>
+{% endblock %}

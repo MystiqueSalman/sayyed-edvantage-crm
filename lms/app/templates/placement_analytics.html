@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Placement Analytics — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📊 Placement Analytics</h2><div class="line"></div>
+  <span style="color:var(--muted)">{{ total_apps }} total applications · Offer rate {{ offer_rate }}% · Placement rate {{ placement_rate }}%</span></div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:18px">
+  <div class="card"><div class="body">
+    <h3>Application funnel</h3>
+    <canvas id="chFunnel" height="220"></canvas>
+  </div></div>
+  <div class="card"><div class="body">
+    <h3>Conversion</h3>
+    <canvas id="chConv" height="220"></canvas>
+  </div></div>
+</div>
+
+<div class="card" style="margin-bottom:18px"><div class="body">
+  <h3>Course-wise outcomes</h3>
+  <table style="width:100%;border-collapse:collapse">
+    <tr style="color:var(--muted);text-align:left"><th>Course</th><th>Applied</th><th>Placed</th><th>Rate</th></tr>
+    {% for r in course_rows %}
+    <tr style="border-top:1px solid var(--card-brd)">
+      <td>{{ r.course }}</td><td>{{ r.applied }}</td><td>{{ r.placed }}</td>
+      <td>{{ (100 * r.placed / r.applied)|round(1) if r.applied else 0 }}%</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div></div>
+
+<div class="card"><div class="body">
+  <h3>🏆 Employer leaderboard (by placements)</h3>
+  <table style="width:100%;border-collapse:collapse">
+    <tr style="color:var(--muted);text-align:left"><th>Company</th><th>Jobs</th><th>Applications</th><th>Placed</th></tr>
+    {% for e in emp_rows %}
+    <tr style="border-top:1px solid var(--card-brd)">
+      <td>{{ e.company }}</td><td>{{ e.jobs }}</td><td>{{ e.applications }}</td><td><b>{{ e.placed }}</b></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="4" style="color:var(--muted)">No employers yet.</td></tr>
+    {% endfor %}
+  </table>
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+(function () {
+  function bar(id, labels, data) {
+    new Chart(document.getElementById(id), {type: "bar",
+      data: {labels: labels, datasets: [{data: data, backgroundColor: "#d4af37"}]},
+      options: {plugins: {legend: {display: false}}, scales: {y: {beginAtZero: true, ticks: {precision: 0}}}}});
+  }
+  bar("chFunnel", {{ funnel_labels|tojson }}, {{ funnel_values|tojson }});
+  new Chart(document.getElementById("chConv"), {type: "doughnut",
+    data: {labels: ["Placed", "Offered", "Other"],
+      datasets: [{data: [{{ funnel.get('placed', 0) }}, {{ funnel.get('offered', 0) }}, {{ total_apps - funnel.get('placed', 0) - funnel.get('offered', 0) }}],
+      backgroundColor: ["#d4af37", "#2e86ff", "#3a3a3a"]}]}});
+})();
+</script>
+{% endblock %}

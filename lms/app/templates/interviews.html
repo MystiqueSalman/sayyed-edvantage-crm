@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Mock Interviews — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎤 AI Mock Interviews</h2><div class="line"></div>
+  <span style="color:var(--muted)">Practice role-relevant questions, get scored feedback per answer.</span></div>
+
+<div class="card" style="margin-bottom:18px"><div class="body">
+  <h3>Start a new session</h3>
+  <form method="post">
+    <label>Target role</label>
+    <input type="text" name="target_role" required placeholder="e.g. Junior Data Analyst, DevOps Engineer" maxlength="160">
+    <label>Related course (optional)</label>
+    <select name="course_id">
+      <option value="">— General —</option>
+      {% for c in courses %}<option value="{{ c.id }}">{{ c.title }}</option>{% endfor %}
+    </select>
+    <p><button class="btn btn-gold" type="submit">▶ Start interview (5 questions)</button></p>
+  </form>
+</div></div>
+
+<div class="section-title"><h3>Past sessions</h3><div class="line"></div></div>
+{% for s in sessions %}
+<div class="card" style="margin-bottom:10px"><div class="body">
+  <b>{{ s.target_role }}</b>
+  {% if s.course %}<small style="color:var(--muted)"> · {{ s.course.title }}</small>{% endif %}
+  <span class="tag {{ 'green' if s.status == 'completed' else 'gold' }}" style="margin-left:8px">{{ s.status.replace('_',' ') }}</span>
+  {% if s.score is not none %}<span style="color:var(--muted);margin-left:8px">Overall: {{ s.score }}%</span>{% endif %}
+  <small style="color:var(--muted);margin-left:8px">{{ s.created_at.strftime('%d %b %Y') }}</small>
+  <a class="btn btn-sm" style="float:right" href="{{ url_for('career.interview_session', session_id=s.id) }}">{{ 'Review' if s.status == 'completed' else 'Continue' }}</a>
+  <div style="clear:both"></div>
+</div></div>
+{% else %}
+<p style="color:var(--muted)">No sessions yet — start your first mock interview above.</p>
+{% endfor %}
+{% endblock %}

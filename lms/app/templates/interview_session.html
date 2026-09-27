@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Mock Interview — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎤 {{ session.target_role }}</h2><div class="line"></div>
+  <span style="color:var(--muted)">{{ session.answered_count() }}/{{ session.questions_total }} answered
+  {% if session.status == 'completed' %}· <b>Overall: {{ session.score }}%</b>{% endif %}</span></div>
+
+{% if session.status == 'completed' %}
+<div class="card" style="margin-bottom:18px"><div class="body">
+  <h3>📊 Result: {{ session.score }}%</h3>
+  <p><b>Weak areas:</b> {{ session.weak_areas }}</p>
+  <p style="color:var(--muted)"><small>Keep practicing — interview skill grows with repetition. This feedback is guidance, not a job guarantee.</small></p>
+  <p><a class="btn btn-gold btn-sm" href="{{ url_for('career.interviews') }}">Start another session</a></p>
+</div></div>
+{% endif %}
+
+<div id="qa-list">
+{% for qa in session.qas %}
+  <div class="card" style="margin-bottom:12px"><div class="body">
+    <p><b>Q{{ loop.index }}:</b> {{ qa.question }}</p>
+    {% if qa.answer %}
+    <p style="background:var(--card-bg);border:1px solid var(--card-brd);border-radius:8px;padding:8px 12px"><b>You:</b> {{ qa.answer }}</p>
+    <p><span class="tag {{ 'green' if qa.score >= 7 else ('gold' if qa.score >= 4 else '') }}">Score: {{ qa.score }}/10</span></p>
+    <p style="color:var(--muted)"><b>Coach:</b> {{ qa.feedback }}</p>
+    {% elif session.status == 'in_progress' and qa.id == pending.id %}
+    <div id="answer-box">
+      <textarea id="answer" rows="4" placeholder="Type your answer here (2-4 sentences)..."></textarea>
+      <p><button class="btn btn-gold" id="submit-answer">Submit answer</button>
+      <span id="ans-status" style="color:var(--muted);margin-left:8px"></span></p>
+    </div>
+    {% endif %}
+  </div></div>
+{% endfor %}
+</div>
+
+{% if session.status == 'in_progress' %}
+<form method="post" action="{{ url_for('career.interview_finish', session_id=session.id) }}" style="margin-top:8px">
+  <button class="btn btn-sm" type="submit" onclick="return confirm('Finish this interview now? Unanswered questions will be skipped.')">⏹ Finish interview</button>
+</form>
+{% endif %}
+
+{% if session.status == 'in_progress' %}
+<script>
+(function () {
+  var btn = document.getElementById("submit-answer");
+  if (!btn) return;
+  var box = document.getElementById("answer-box"),
+      status = document.getElementById("ans-status");
+  btn.addEventListener("click", function () {
+    var a = document.getElementById("answer").value.trim();
+    if (!a) { status.textContent = "Please type an answer first."; return; }
+    btn.disabled = true;
+    status.textContent = "Scoring your answer…";
+    fetch("{{ url_for('career.interview_answer', session_id=session.id) }}", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({answer: a})
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.error) { status.textContent = "Error: " + d.error; btn.disabled = false; return; }
+      location.reload();
+    }).catch(function () {
+      status.textContent = "Network error — try again.";
+      btn.disabled = false;
+    });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

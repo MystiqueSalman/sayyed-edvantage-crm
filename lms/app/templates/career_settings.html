@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Career Settings — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>⚙️ Career Settings</h2><div class="line"></div>
+  <span style="color:var(--muted)">Weights for the placement-readiness score (percentages; normalized to 100%). The score is always presented as <b>guidance</b>, never a job guarantee.</span></div>
+
+<div class="card" style="max-width:560px"><div class="body">
+<form method="post">
+  <label>Course completion weight</label>
+  <input type="number" name="w_completion" step="0.5" min="0" max="100" value="{{ weights.w_completion }}">
+  <label>Quiz average weight</label>
+  <input type="number" name="w_quiz" step="0.5" min="0" max="100" value="{{ weights.w_quiz }}">
+  <label>Evaluated projects weight</label>
+  <input type="number" name="w_projects" step="0.5" min="0" max="100" value="{{ weights.w_projects }}">
+  <label>Resume completed weight</label>
+  <input type="number" name="w_resume" step="0.5" min="0" max="100" value="{{ weights.w_resume }}">
+  <label>Mock interviews weight</label>
+  <input type="number" name="w_interviews" step="0.5" min="0" max="100" value="{{ weights.w_interviews }}">
+  <label>Certificates earned weight</label>
+  <input type="number" name="w_certificates" step="0.5" min="0" max="100" value="{{ weights.w_certificates }}">
+  <p><button class="btn btn-gold" type="submit">💾 Save weights</button></p>
+</form>
+</div></div>
+{% endblock %}

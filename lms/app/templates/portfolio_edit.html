@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}My Portfolio — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🌐 My Portfolio</h2><div class="line"></div></div>
+
+<div class="card" style="margin-bottom:18px"><div class="body">
+<form method="post">
+  <label>Headline</label>
+  <input type="text" name="headline" value="{{ portfolio.headline }}" placeholder="e.g. Data Science Student & Builder" maxlength="160">
+  <label>About me</label>
+  <textarea name="about" rows="4" placeholder="A few lines about you...">{{ portfolio.about }}</textarea>
+  <p>
+    <label style="display:inline"><input type="checkbox" name="is_public" value="1" style="width:auto" {% if portfolio.is_public %}checked{% endif %}> <b>Public</b> — anyone with the link can view</label>
+  </p>
+  <p>
+    <label style="display:inline"><input type="checkbox" name="show_resume" value="1" style="width:auto" {% if portfolio.show_resume %}checked{% endif %}> Show resume download link on portfolio</label>
+  </p>
+  <p><button class="btn btn-gold" type="submit" name="save" value="1">💾 Save</button>
+  <button class="btn btn-sm" type="submit" name="regen_code" value="1" onclick="return confirm('Generate a new secret link? The old link will stop working.')">🔄 New secret link</button></p>
+</form>
+{% if portfolio.is_public %}
+<p style="margin-top:10px">🔗 Public link: <a href="{{ public_url }}" target="_blank">{{ public_url }}</a></p>
+{% else %}
+<p style="color:var(--muted)">Your portfolio is currently <b>private</b>. Turn on Public above to share it.</p>
+{% endif %}
+</div></div>
+
+<div class="card"><div class="body">
+<h3>What visitors will see</h3>
+<ul>
+  <li>{{ sections.projects|length }} evaluated project{{ 's' if sections.projects|length != 1 }}</li>
+  <li>{{ sections.certificates|length }} certificate{{ 's' if sections.certificates|length != 1 }}</li>
+  <li>{{ sections.verified_skills|length }} verified skill{{ 's' if sections.verified_skills|length != 1 }}</li>
+</ul>
+<p><a class="btn btn-blue btn-sm" href="{{ url_for('career.resume_builder') }}">Edit resume content</a></p>
+</div></div>
+{% endblock %}

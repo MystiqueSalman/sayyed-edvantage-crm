@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Employer Accounts — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🏢 Employer Accounts</h2><div class="line"></div></div>
+
+<div class="section-title"><h3>Pending approval ({{ pending|length }})</h3><div class="line"></div></div>
+{% for u in pending %}
+<div class="card" style="margin-bottom:10px"><div class="body">
+  <b>{{ u.name }}</b> — {{ u.company }}<br>
+  <small style="color:var(--muted)">{{ u.email }}{% if u.phone %} · {{ u.phone }}{% endif %} · Applied {{ u.created_at.strftime('%d %b %Y') }}</small>
+  <p style="margin-top:8px">
+    <form method="post" action="{{ url_for('career.admin_employer_approve', user_id=u.id) }}" style="display:inline">
+      <button class="btn btn-gold btn-sm" type="submit">✓ Approve</button>
+    </form>
+    <form method="post" action="{{ url_for('career.admin_employer_reject', user_id=u.id) }}" style="display:inline;margin-left:6px" onsubmit="return confirm('Reject and remove this employer application?')">
+      <button class="btn btn-sm" type="submit">✕ Reject</button>
+    </form>
+  </p>
+</div></div>
+{% else %}
+<p style="color:var(--muted)">No pending employer applications.</p>
+{% endfor %}
+
+<div class="section-title" style="margin-top:20px"><h3>Active employers ({{ active|length }})</h3><div class="line"></div></div>
+{% for u in active %}
+<div class="card" style="margin-bottom:10px"><div class="body">
+  <b>{{ u.name }}</b> — {{ u.company }} <span class="tag green">active</span><br>
+  <small style="color:var(--muted)">{{ u.email }}</small>
+</div></div>
+{% else %}
+<p style="color:var(--muted)">No active employers yet.</p>
+{% endfor %}
+{% endblock %}

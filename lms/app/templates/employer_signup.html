@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Hire from Sayyed EdVantage — Employer Signup{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🏢 Hire Our Students</h2><div class="line"></div>
+  <span style="color:var(--muted)">Post jobs, review applications and manage candidates. Accounts are activated after review.</span></div>
+
+<div class="card" style="max-width:560px"><div class="body">
+<form method="post">
+  <label>Your name</label>
+  <input type="text" name="name" required placeholder="Priya Sharma">
+  <label>Work email</label>
+  <input type="email" name="email" required placeholder="hr@company.com">
+  <label>Company</label>
+  <input type="text" name="company" required placeholder="Acme Analytics Pvt Ltd">
+  <label>Phone (optional)</label>
+  <input type="text" name="phone" placeholder="+91 ...">
+  <label>Password</label>
+  <input type="password" name="password" required minlength="6" placeholder="Min 6 characters">
+  <p><button class="btn btn-gold" type="submit">Apply for employer account</button></p>
+  <p style="color:var(--muted)"><small>Our team reviews every employer application. You'll be able to log in once approved.</small></p>
+</form>
+</div></div>
+{% endblock %}

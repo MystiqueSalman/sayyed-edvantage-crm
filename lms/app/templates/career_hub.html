@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Career Center — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🚀 Career Center</h2><div class="line"></div></div>
+
+<div class="card" style="margin-bottom:18px">
+  <div class="body">
+    <h3>🎯 Placement Readiness: {{ readiness.score }}%</h3>
+    <div style="background:#222;border-radius:8px;height:14px;overflow:hidden;margin:8px 0">
+      <div style="height:100%;width:{{ readiness.score }}%;background:linear-gradient(90deg,var(--gold),#f3d47c)"></div>
+    </div>
+    <p style="color:var(--muted)"><small>{{ disclaimer }}</small></p>
+    <p><a class="btn btn-blue btn-sm" href="{{ url_for('career.readiness') }}">View full breakdown</a></p>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
+  <div class="card"><div class="body">
+    <h3>📄 Resume Builder</h3>
+    <p style="color:var(--muted)">{{ 'Resume complete ✓' if resume.is_complete() else 'Build your ATS-friendly resume from verified records.' }}</p>
+    <a class="btn btn-gold btn-sm" href="{{ url_for('career.resume_builder') }}">Open builder</a>
+  </div></div>
+  <div class="card"><div class="body">
+    <h3>🌐 Portfolio</h3>
+    <p style="color:var(--muted)">{{ 'Public ✓' if portfolio and portfolio.is_public else 'Share your work with a public portfolio page.' }}</p>
+    <a class="btn btn-gold btn-sm" href="{{ url_for('career.portfolio_edit') }}">Manage portfolio</a>
+  </div></div>
+  <div class="card"><div class="body">
+    <h3>🎤 Mock Interviews</h3>
+    <p style="color:var(--muted)">{{ interviews|length }} session{{ 's' if interviews|length != 1 }} so far. Practice with the AI interviewer.</p>
+    <a class="btn btn-gold btn-sm" href="{{ url_for('career.interviews') }}">Practice now</a>
+  </div></div>
+  <div class="card"><div class="body">
+    <h3>💼 Job Board</h3>
+    <p style="color:var(--muted)">Browse open jobs & internships and track your applications.</p>
+    <a class="btn btn-blue btn-sm" href="{{ url_for('growth.jobs') }}">Browse jobs</a>
+    <a class="btn btn-sm" href="{{ url_for('growth.my_applications') }}" style="margin-left:6px">My applications</a>
+  </div></div>
+</div>
+
+{% if interviews %}
+<div class="section-title" style="margin-top:24px"><h3>Recent mock interviews</h3><div class="line"></div></div>
+{% for s in interviews %}
+<div class="card" style="margin-bottom:10px"><div class="body">
+  <b>{{ s.target_role }}</b>
+  <span class="tag {{ 'green' if s.status == 'completed' else 'gold' }}" style="margin-left:8px">{{ s.status.replace('_',' ') }}</span>
+  {% if s.score is not none %}<span style="color:var(--muted);margin-left:8px">Score: {{ s.score }}%</span>{% endif %}
+  <a class="btn btn-sm" style="float:right" href="{{ url_for('career.interview_session', session_id=s.id) }}">Open</a>
+  <div style="clear:both"></div>
+</div></div>
+{% endfor %}
+{% endif %}
+{% endblock %}

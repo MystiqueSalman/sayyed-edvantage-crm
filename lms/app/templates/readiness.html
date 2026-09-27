@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Placement Readiness — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎯 Placement Readiness</h2><div class="line"></div></div>
+
+<div class="card" style="margin-bottom:18px;text-align:center"><div class="body" style="padding:28px">
+  <div style="font-size:52px;font-weight:bold;color:var(--gold)">{{ readiness.score }}%</div>
+  <p style="color:var(--muted)">Your readiness score</p>
+  <div style="background:#222;border-radius:8px;height:12px;overflow:hidden;max-width:420px;margin:0 auto">
+    <div style="height:100%;width:{{ readiness.score }}%;background:linear-gradient(90deg,var(--gold),#f3d47c)"></div>
+  </div>
+</div></div>
+
+<div class="card" style="margin-bottom:18px"><div class="body">
+  <h3>Breakdown</h3>
+  {% for b in readiness.breakdown %}
+  <div style="margin-bottom:12px">
+    <div style="display:flex;justify-content:space-between">
+      <b>{{ b.label }}</b>
+      <span>{{ b.value }}% <small style="color:var(--muted)">(weight {{ b.weight }}%)</small></span>
+    </div>
+    <div style="background:#222;border-radius:6px;height:8px;overflow:hidden;margin:4px 0">
+      <div style="height:100%;width:{{ b.value }}%;background:var(--blue)"></div>
+    </div>
+    {% if b.value < 70 %}<small style="color:var(--muted)">💡 {{ b.tip }}</small>{% endif %}
+  </div>
+  {% endfor %}
+</div></div>
+
+<div class="panel">
+  <p><b>⚠️ Important:</b> {{ disclaimer }}</p>
+  <p>
+    <a class="btn btn-gold btn-sm" href="{{ url_for('career.resume_builder') }}">Improve resume</a>
+    <a class="btn btn-blue btn-sm" href="{{ url_for('career.interviews') }}" style="margin-left:6px">Practice interviews</a>
+  </p>
+</div>
+{% endblock %}

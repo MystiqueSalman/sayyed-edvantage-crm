@@ -40,8 +40,11 @@
           <a href="{{ url_for('tutor.tutor_home') }}">🤖 AI Tutor</a>
           <a href="{{ url_for('tutor.planner') }}">🗓 Planner</a>
           <a href="{{ url_for('student.projects') }}">🛠 Projects</a>
+          <a href="{{ url_for('career.hub') }}">🚀 Career</a>
           <a href="{{ url_for('student.wishlist') }}">❤ Wishlist</a>
           <a href="{{ url_for('growth.my_referrals') }}">🎁 Refer & Earn</a>
+        {% elif current_user.role == 'employer' %}
+          <a href="{{ url_for('career.employer_dashboard') }}">🏢 Employer Dashboard</a>
         {% elif current_user.role == 'faculty' %}
           <a href="{{ url_for('faculty.dashboard') }}">Dashboard</a>
         {% elif current_user.role == 'counsellor' %}
@@ -54,6 +57,7 @@
       {% else %}
         <a href="{{ url_for('auth.login') }}">Login</a>
         <a href="{{ url_for('auth.register') }}" class="btn btn-gold btn-sm">Join Free</a>
+        <a href="{{ url_for('career.employer_signup') }}">For Employers</a>
       {% endif %}
     </div>
   </div>
