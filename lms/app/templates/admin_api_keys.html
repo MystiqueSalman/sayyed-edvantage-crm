@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}API Keys — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🔑 API Keys <small style="color:var(--muted)">/api/v1</small></h2><div class="line"></div>
+  <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+{% if new_raw_key %}
+<div class="panel" style="border-color:var(--gold)">
+  <h3 style="margin-top:0">⚠️ Copy this key now — it will never be shown again</h3>
+  <p><span class="code-pill">{{ new_raw_key }}</span></p>
+</div>
+{% endif %}
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Issue New Key</h3>
+    <form method="post">
+      <label>Name</label><input type="text" name="name" required placeholder="Mobile app — production">
+      <label>Scopes</label>
+      {% for s in scopes %}<p style="margin:4px 0"><label style="display:inline"><input type="checkbox" name="scopes" value="{{ s }}" style="width:auto"> <span class="scope-tag">{{ s }}</span></label></p>{% endfor %}
+      <label>Rate limit (requests/minute)</label><input type="number" name="rate_limit" value="300" min="1" max="10000">
+      <p><button class="btn btn-gold" type="submit">Issue Key</button></p>
+    </form>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">All Keys</h3>
+    <table>
+      <tr><th>Name</th><th>Prefix</th><th>Scopes</th><th>Limit/min</th><th>Last used</th><th>Status</th><th></th></tr>
+      {% for k in keys %}
+      <tr><td><b>{{ k.name }}</b></td><td><span class="code-pill">{{ k.key_prefix }}…</span></td>
+        <td>{% for s in k.scopes %}<span class="scope-tag">{{ s }}</span>{% endfor %}</td>
+        <td>{{ k.rate_limit_per_min }}</td>
+        <td style="color:var(--muted); font-size:.8rem">{{ k.last_used_at.strftime('%d %b %H:%M') if k.last_used_at else '—' }}</td>
+        <td>{% if k.is_active %}<span class="tag green">Active</span>{% else %}<span class="tag">Revoked</span>{% endif %}</td>
+        <td style="white-space:nowrap">
+          {% if k.is_active %}
+          <form class="inline-form" method="post" action="{{ url_for('hardening.api_key_revoke', key_id=k.id) }}"
+                onsubmit="return confirm('Revoke key {{ k.name }}? Existing integrations will break.')"><button class="btn btn-ghost btn-sm" type="submit">Revoke</button></form>
+          {% endif %}
+          <form class="inline-form" method="post" action="{{ url_for('hardening.api_key_delete', key_id=k.id) }}"
+                onsubmit="return confirm('Delete key {{ k.name }} permanently?')"><button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+        </td></tr>
+      {% else %}<tr><td colspan="7" style="color:var(--muted)">No API keys yet.</td></tr>{% endfor %}
+    </table>
+    <p style="color:var(--muted); font-size:.82rem">Keys are stored as SHA-256 hashes — the raw key cannot be recovered. Authenticate with <span class="code-pill">Authorization: Bearer &lt;key&gt;</span> or <span class="code-pill">X-API-Key: &lt;key&gt;</span>. Full docs: <a href="{{ url_for('main.developers') }}">/developers</a>.</p>
+  </div>
+</div>
+{% endblock %}

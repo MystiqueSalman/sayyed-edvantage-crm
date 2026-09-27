@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Webhook Deliveries — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📋 Deliveries — {{ wh.name }}</h2><div class="line"></div>
+  <a href="{{ url_for('hardening.webhooks') }}">← Webhooks</a></div>
+<div class="panel">
+  <p style="color:var(--muted); font-size:.85rem">Target: <span class="code-pill">{{ wh.url }}</span></p>
+  <table>
+    <tr><th>Time</th><th>Event</th><th>Attempts</th><th>HTTP</th><th>Latency</th><th>Result</th><th>Error</th></tr>
+    {% for d in deliveries %}
+    <tr><td style="font-size:.8rem; color:var(--muted)">{{ d.created_at.strftime('%d %b %H:%M:%S') }}</td>
+      <td><span class="ev-tag">{{ d.event }}</span></td><td>{{ d.attempts }}</td>
+      <td>{{ d.status_code if d.status_code is not none else '—' }}</td>
+      <td>{{ d.latency_ms ~ ' ms' if d.latency_ms is not none else '—' }}</td>
+      <td>{% if d.success %}<span class="tag green">Delivered</span>{% else %}<span class="tag" style="background:rgba(255,107,107,.15); color:#ff8f8f">Failed</span>{% endif %}</td>
+      <td style="font-size:.78rem; color:var(--muted); max-width:280px; word-break:break-all">{{ d.error or '—' }}</td></tr>
+    {% else %}<tr><td colspan="7" style="color:var(--muted)">No deliveries yet.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

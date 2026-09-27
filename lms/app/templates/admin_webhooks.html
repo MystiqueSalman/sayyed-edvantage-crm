@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Webhooks — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🪝 Webhooks</h2><div class="line"></div>
+  <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Register Webhook</h3>
+    <form method="post">
+      <label>Name</label><input type="text" name="name" required placeholder="CRM sync">
+      <label>URL</label><input type="url" name="url" required placeholder="https://example.com/hooks/lms">
+      <label>Events</label>
+      {% for e in events %}<p style="margin:4px 0"><label style="display:inline"><input type="checkbox" name="events" value="{{ e }}" style="width:auto"> <span class="ev-tag">{{ e }}</span></label></p>{% endfor %}
+      <p><button class="btn btn-gold" type="submit">Register</button></p>
+    </form>
+    <p style="color:var(--muted); font-size:.82rem">Payloads are signed with HMAC-SHA256 (<span class="code-pill">X-SE-Signature</span>). Failed deliveries retry 3× with exponential backoff (1s, 2s, 4s). Ask the receiver to regenerate the secret after copying it.</p>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">All Webhooks</h3>
+    <table>
+      <tr><th>Name</th><th>URL</th><th>Events</th><th>Status</th><th></th></tr>
+      {% for w in hooks %}
+      <tr><td><b>{{ w.name }}</b></td><td style="font-size:.8rem; word-break:break-all">{{ w.url }}</td>
+        <td>{% for e in w.events %}<span class="ev-tag">{{ e }}</span>{% endfor %}</td>
+        <td>{% if w.is_active %}<span class="tag green">Active</span>{% else %}<span class="tag">Paused</span>{% endif %}</td>
+        <td style="white-space:nowrap">
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('hardening.webhook_deliveries', wh_id=w.id) }}">📋 Deliveries</a>
+          <form class="inline-form" method="post" action="{{ url_for('hardening.webhook_toggle', wh_id=w.id) }}"><button class="btn btn-ghost btn-sm" type="submit">{{ 'Pause' if w.is_active else 'Resume' }}</button></form>
+          <form class="inline-form" method="post" action="{{ url_for('hardening.webhook_regenerate', wh_id=w.id) }}"
+                onsubmit="return confirm('Regenerate the secret? The receiver must be updated.')"><button class="btn btn-ghost btn-sm" type="submit">🔁 Secret</button></form>
+          <form class="inline-form" method="post" action="{{ url_for('hardening.webhook_delete', wh_id=w.id) }}"
+                onsubmit="return confirm('Delete webhook {{ w.name }}?')"><button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+        </td></tr>
+      {% else %}<tr><td colspan="5" style="color:var(--muted)">No webhooks yet.</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

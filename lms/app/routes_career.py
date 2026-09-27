@@ -386,10 +386,26 @@ def employer_applications(job_id):
         if app.job_id != job.id:
             abort(404)
         new_status = request.form.get("status", "")
+        status_changed = (new_status in JobApplication.STATUSES
+                          and new_status != app.status)
         if new_status in JobApplication.STATUSES:
             app.status = new_status
         app.employer_note = request.form.get("employer_note", "").strip()[:2000]
         db.session.commit()
+        # Phase 10: real event — application status change (§12.4)
+        if status_changed:
+            try:
+                from . import hardening as _H
+                _H.notify(
+                    app.user_id, "application.status",
+                    f"Application update: {job.title}",
+                    f"Your application is now {new_status}.",
+                    link="/career",
+                    context={"user_name": app.user.name if app.user else "",
+                             "job_title": job.title,
+                             "application_status": new_status})
+            except Exception:
+                pass
         flash("Candidate updated.", "success")
         return redirect(url_for("career.employer_applications", job_id=job.id))
     return render_template("employer_applications.html", job=job,

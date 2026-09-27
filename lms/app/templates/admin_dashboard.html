@@ -39,6 +39,12 @@
        <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.audit_logs') }}">🧾 Audit Logs</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.permissions') }}">🔐 Permissions</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.calendar') }}">📅 Calendar</a></p>
+    <p><a class="btn btn-gold btn-sm" href="{{ url_for('hardening.api_keys') }}">🔑 API Keys</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('hardening.webhooks') }}">🪝 Webhooks</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('hardening.backups') }}">💾 Backups</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('hardening.templates') }}">📝 Templates</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('hardening.monitoring') }}">📡 Monitoring</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('main.developers') }}">🛠 Developer Docs</a></p>
     {% else %}
     <p style="color:var(--muted); font-size:.88rem">User management and coupons are admin-only.</p>
     {% endif %}

@@ -17,6 +17,9 @@
       {% for f in faculty %}<option value="{{ f.id }}" {% if course.instructor_id == f.id %}selected{% endif %}>{{ f.name }}</option>{% endfor %}</select>
     {% endif %}
     <p><label style="display:inline"><input type="checkbox" name="is_bonus" value="1" style="width:auto" {% if course.is_bonus %}checked{% endif %}> Free bonus / value-added course</label></p>
+    <h3 style="margin-top:18px">🔍 SEO (§20.6)</h3>
+    <label>Meta title (leave blank to auto-generate)</label><input type="text" name="meta_title" value="{{ course.meta_title }}" maxlength="160">
+    <label>Meta description (leave blank to auto-generate)</label><textarea name="meta_description" rows="3" maxlength="300">{{ course.meta_description }}</textarea>
     <p><button class="btn btn-gold" type="submit">Save Changes</button>
     <a class="btn btn-ghost" href="{{ url_for('admin.courses') }}" style="margin-left:10px">Cancel</a></p>
   </form>

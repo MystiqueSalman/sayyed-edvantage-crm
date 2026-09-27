@@ -520,16 +520,17 @@ def application_approve(app_id):
         db.session.add(user)
         db.session.flush()
     # enrollment per admin choice
+    new_enr = None
     if app_obj.course_id:
         existing = Enrollment.query.filter_by(
             user_id=user.id, course_id=app_obj.course_id).first()
         if not existing:
-            enr = Enrollment(user_id=user.id, course_id=app_obj.course_id,
-                             status=(Enrollment.STATUS_ACTIVE
-                                     if mode == "enrolled"
-                                     else Enrollment.STATUS_PENDING),
-                             paid=False, amount_paid=0)
-            db.session.add(enr)
+            new_enr = Enrollment(user_id=user.id, course_id=app_obj.course_id,
+                                 status=(Enrollment.STATUS_ACTIVE
+                                         if mode == "enrolled"
+                                         else Enrollment.STATUS_PENDING),
+                                 paid=False, amount_paid=0)
+            db.session.add(new_enr)
             db.session.flush()
     app_obj.status = Application.STATUS_APPROVED
     app_obj.created_user_id = user.id
@@ -545,6 +546,13 @@ def application_approve(app_id):
     except Exception:
         pass
     db.session.commit()
+    # Phase 10: real event — enrollment created via admission (§25.2, §12.4)
+    if new_enr is not None:
+        try:
+            from . import hardening as _H
+            _H.emit_enrollment(user, new_enr)
+        except Exception:
+            pass
     try:
         from .emailer import send_welcome_email
         send_welcome_email(user)

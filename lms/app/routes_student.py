@@ -13,8 +13,8 @@ from .decorators import role_required
 from .models import (Announcement, Assignment, Certificate, Challenge,
                      ChallengeEnrollment, Course, Enrollment, Lesson,
                      LessonProgress, LiveSession, Module, Project, ProjectSubmission,
-                     Quiz, QuizAnswer, QuizAttempt, Review, Submission, UserBadge,
-                     Wishlist)
+                     Quiz, QuizAnswer, QuizAttempt, Review, Submission, User,
+                     UserBadge, Wishlist)
 from .pdfcert import certificate_path, generate_certificate_pdf
 from .routes_crm import _onboarding_for  # Phase 4: onboarding checklist
 from . import gamification as G  # Phase 8: points/badges/streaks/challenges
@@ -87,6 +87,27 @@ def check_and_issue_certificate(user_id, course_id):
     if enr:
         enr.status = Enrollment.STATUS_COMPLETED
     db.session.commit()
+    # Phase 10: real events — certificate issued + course completed (§25.2, §12.4)
+    try:
+        from . import hardening as _H
+        user = db.session.get(User, user_id)
+        ctx = {"user_name": user.name if user else "",
+               "course_title": course.title, "code": cert.code}
+        _H.notify(user_id, "certificate.issued",
+                  f"Certificate ready for {course.title} 🏅",
+                  f"Congratulations! Your certificate ({cert.code}) is ready.",
+                  link="/certificates", context=ctx)
+        _H.dispatch_webhook("certificate.issued", {
+            "certificate_code": cert.code, "user_id": user_id,
+            "user_name": user.name if user else "",
+            "course_id": course_id, "course_title": course.title})
+        _H.dispatch_webhook("course.completed", {
+            "user_id": user_id,
+            "user_name": user.name if user else "",
+            "course_id": course_id, "course_title": course.title,
+            "enrollment_id": enr.id if enr else None})
+    except Exception:
+        pass
     return cert
 
 
@@ -278,6 +299,19 @@ def quiz(quiz_id):
                 is_correct=g.is_correct, marks_awarded=g.marks_awarded,
                 needs_review=g.needs_review))
         db.session.commit()
+        # Phase 10: real event — quiz submitted (§25.2)
+        try:
+            from . import hardening as _H
+            _H.dispatch_webhook("quiz.submitted", {
+                "attempt_id": attempt.id, "quiz_id": quiz.id,
+                "quiz_title": quiz.title,
+                "course_id": course.id, "course_title": course.title,
+                "user_id": current_user.id, "user_name": current_user.name,
+                "score": attempt.score, "total": attempt.total,
+                "percent": attempt.percent,
+                "pending_review": bool(pending)})
+        except Exception:
+            pass
         # Phase 8: quiz points (base + score-scaled bonus) + streak/badges
         _pts, new_badges = G.award_points(
             current_user.id, "quiz_attempt", "attempt", attempt.id)

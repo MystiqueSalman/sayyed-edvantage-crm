@@ -23,6 +23,11 @@ AUDIT_ACTIONS = (
     "refund.request", "refund.approve", "refund.reject",
     "permissions.update",
     "course.delete", "quiz.delete", "live.delete",
+    # Phase 10 — platform hardening
+    "apikey.create", "apikey.revoke", "apikey.delete",
+    "webhook.create", "webhook.toggle", "webhook.delete",
+    "backup.create", "backup.restore", "backup.delete",
+    "template.create", "template.toggle", "template.delete",
 )
 
 
@@ -131,12 +136,21 @@ def enroll_in_batch(batch, user):
         return False, f"Batch is full (capacity {batch.capacity})."
     db.session.add(BatchMember(batch_id=batch.id, user_id=user.id))
     # Batch membership implies course access: ensure an enrollment exists.
+    new_enr = None
     enr = Enrollment.query.filter_by(
         user_id=user.id, course_id=batch.course_id).first()
     if not enr:
-        db.session.add(Enrollment(user_id=user.id, course_id=batch.course_id,
-                                  status="active"))
+        new_enr = Enrollment(user_id=user.id, course_id=batch.course_id,
+                             status="active")
+        db.session.add(new_enr)
     db.session.commit()
+    if new_enr is not None:
+        # Phase 10: real event — enrollment created via batch (§25.2, §12.4)
+        try:
+            from . import hardening as _H
+            _H.emit_enrollment(user, new_enr)
+        except Exception:
+            pass
     return True, f"{user.name} added to {batch.name}."
 
 

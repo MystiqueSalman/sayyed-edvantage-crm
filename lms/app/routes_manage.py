@@ -569,6 +569,21 @@ def grade_answer(answer_id):
         if cert:
             flash("All answers graded — certificate issued.", "success")
     db.session.commit()
+    # Phase 10: real event — quiz/assignment graded (§12.4)
+    try:
+        from . import hardening as _H
+        quiz = ans.question.quiz
+        _H.notify(
+            attempt.user_id, "quiz.graded",
+            f"{quiz.title} graded: {attempt.score}/{attempt.total}",
+            "Your descriptive answers were graded.",
+            link=f"/quiz/result/{attempt.id}",
+            context={"user_name": attempt.user.name if attempt.user else "",
+                     "quiz_title": quiz.title,
+                     "score": f"{attempt.score}/{attempt.total}",
+                     "percent": str(attempt.percent)})
+    except Exception:
+        pass
     flash("Answer graded.", "success")
     return redirect(url_for("manage.grading_queue"))
 
@@ -753,6 +768,18 @@ def submission_grade(submission_id):
         sub.feedback = request.form.get("feedback", "")
         sub.graded_at = datetime.utcnow()
         db.session.commit()
+        # Phase 10: real event — assignment graded (§12.4)
+        try:
+            from . import hardening as _H
+            _H.notify(
+                sub.user_id, "assignment.graded",
+                f"Assignment graded: {grade}",
+                f"Your submission for {sub.assignment.title} was graded.",
+                link=f"/assignments/{sub.assignment_id}",
+                context={"user_name": sub.user.name if sub.user else "",
+                         "score": str(grade)})
+        except Exception:
+            pass
         try:
             from .emailer import send_graded_email
             send_graded_email(sub)

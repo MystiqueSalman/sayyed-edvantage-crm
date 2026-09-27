@@ -261,8 +261,9 @@ def _criterion_met(user_id, badge, profile):
     return False
 
 
-def check_badges(user_id):
+def check_badges(user_id, _notify=True):
     """Award every badge whose criteria are now met. Returns new badges."""
+    from . import hardening as _H  # noqa: E402  (lazy: avoid import cycle)
     profile = get_profile(user_id)
     earned_ids = {ub.badge_id for ub in
                   UserBadge.query.filter_by(user_id=user_id).all()}
@@ -279,6 +280,22 @@ def check_badges(user_id):
             new_badges.append(badge)
     if new_badges:
         db.session.flush()
+        if _notify:
+            # Phase 10 §12.4: badge-earned notification (real event).
+            user = db.session.get(User, user_id)
+            for badge in new_badges:
+                try:
+                    _H.notify(
+                        user_id, "badge.earned",
+                        f"Badge unlocked: {badge.name} 🏆",
+                        f"Well done {user.name if user else ''}! You earned "
+                        f"the {badge.name} badge.",
+                        link="/achievements",
+                        context={"user_name": user.name if user else "",
+                                 "badge_name": badge.name},
+                        _commit=False)
+                except Exception:
+                    pass
     return new_badges
 
 
@@ -350,6 +367,7 @@ def update_challenges(user_id):
     Returns the newly completed ChallengeEnrollment objects (rewards are
     awarded with a per-enrollment idempotency key).
     """
+    from . import hardening as _H  # noqa: E402  (lazy: avoid import cycle)
     now = datetime.utcnow()
     completed = []
     enrollments = (ChallengeEnrollment.query.filter_by(user_id=user_id,
@@ -373,6 +391,22 @@ def update_challenges(user_id):
                          counts_for_streak=False, _commit=False)
     if enrollments or completed:
         db.session.flush()
+    if completed:
+        # Phase 10 §12.4: challenge-won notification (real event).
+        user = db.session.get(User, user_id)
+        for enr in completed:
+            try:
+                _H.notify(
+                    user_id, "challenge.won",
+                    f"Challenge complete: {enr.challenge.title} 🏁",
+                    f"Amazing {user.name if user else ''}! You completed "
+                    f"{enr.challenge.title}.",
+                    link="/challenges",
+                    context={"user_name": user.name if user else "",
+                             "challenge_title": enr.challenge.title},
+                    _commit=False)
+            except Exception:
+                pass
     return completed
 
 
@@ -477,7 +511,7 @@ def run_backfill(force=False):
                 user_id=u.id, badge_id=pioneer.id).first():
             db.session.add(UserBadge(user_id=u.id, badge_id=pioneer.id))
             stats["badges"] += 1
-        for b in check_badges(u.id):
+        for b in check_badges(u.id, _notify=False):
             stats["badges"] += 1
         db.session.commit()
     settings.backfill_done = True

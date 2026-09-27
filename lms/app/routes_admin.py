@@ -143,6 +143,10 @@ def course_edit(course_id):
             pass
         course.is_bonus = bool(request.form.get("is_bonus"))
         course.banner = request.form.get("banner", "")
+        # Phase 10 §20.6: SEO fields
+        course.meta_title = request.form.get("meta_title", "").strip()[:160]
+        course.meta_description = request.form.get(
+            "meta_description", "").strip()[:300]
         if current_user.is_admin():  # only admin reassigns instructors
             course.instructor_id = int(request.form.get("instructor_id") or 0) or None
         db.session.commit()

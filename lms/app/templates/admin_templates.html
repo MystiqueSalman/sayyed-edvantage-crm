@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Message Templates — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📝 Message Templates</h2><div class="line"></div>
+  <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">New Template</h3>
+    <form method="post">
+      <label>Name</label><input type="text" name="name" required placeholder="Enrollment confirmation">
+      <label>Event key</label>
+      <select name="event_key"><option value="">— manual only —</option>
+        {% for e in events %}<option value="{{ e }}">{{ e }}</option>{% endfor %}</select>
+      <label>Channel</label>
+      <select name="channel">{% for c in channels %}<option value="{{ c }}">{{ c }}</option>{% endfor %}</select>
+      <label>Subject / title</label><input type="text" name="subject" placeholder="Hello {{ '{{user_name}}' }}">
+      <label>Body (use {{ '{{variable}}' }} placeholders)</label><textarea name="body" rows="5" placeholder="Hi {{ '{{user_name}}' }}, welcome to {{ '{{course_title}}' }}!"></textarea>
+      <p><button class="btn btn-gold" type="submit">Create Template</button></p>
+    </form>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">All Templates</h3>
+    <table>
+      <tr><th>Name</th><th>Event</th><th>Channel</th><th>Used</th><th>Status</th><th></th></tr>
+      {% for t in rows %}
+      <tr><td><b>{{ t.name }}</b></td><td><span class="ev-tag">{{ t.event_key or '—' }}</span></td>
+        <td>{{ t.channel }}</td><td>{{ t.use_count }}</td>
+        <td>{% if t.is_active %}<span class="tag green">Active</span>{% else %}<span class="tag">Off</span>{% endif %}</td>
+        <td style="white-space:nowrap">
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('hardening.template_edit', tpl_id=t.id) }}">✏️ Edit / Preview</a>
+          <form class="inline-form" method="post" action="{{ url_for('hardening.template_toggle', tpl_id=t.id) }}"><button class="btn btn-ghost btn-sm" type="submit">{{ 'Deactivate' if t.is_active else 'Activate' }}</button></form>
+          <form class="inline-form" method="post" action="{{ url_for('hardening.template_delete', tpl_id=t.id) }}"
+                onsubmit="return confirm('Delete template {{ t.name }}? Templates used before are deactivated instead.')"><button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+        </td></tr>
+      {% else %}<tr><td colspan="6" style="color:var(--muted)">No templates yet.</td></tr>{% endfor %}
+    </table>
+    <p style="color:var(--muted); font-size:.82rem">Templates with <span class="code-pill">{{ '{{variables}}' }}</span> render against a safe allow-list; unknown variables become empty strings. Templates already used are never hard-deleted — they are deactivated instead.</p>
+  </div>
+</div>
+{% endblock %}

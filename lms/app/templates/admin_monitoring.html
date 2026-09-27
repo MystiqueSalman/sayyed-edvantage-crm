@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Monitoring — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📡 Monitoring</h2><div class="line"></div>
+  <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<div class="kv-grid">
+  <div class="kv"><div class="k">Health</div><div class="v">{% if health_ok %}✅ Healthy{% else %}⚠️ Degraded{% endif %}</div></div>
+  <div class="kv"><div class="k">Uptime</div><div class="v">{{ (stats.uptime_seconds // 3600) }}h {{ ((stats.uptime_seconds % 3600) // 60) }}m</div></div>
+  <div class="kv"><div class="k">Requests (this worker)</div><div class="v">{{ stats.requests }}</div></div>
+  <div class="kv"><div class="k">Server errors (5xx)</div><div class="v">{{ stats.errors }}</div></div>
+  <div class="kv"><div class="k">Database</div><div class="v" style="font-size:1rem">{% if checks.db.ok %}✅ {{ checks.db.dialect }}{% else %}❌ {{ checks.db.error }}{% endif %}</div></div>
+  <div class="kv"><div class="k">Disk free</div><div class="v" style="font-size:1rem">{% if checks.disk.ok %}✅ {{ checks.disk.free_mb }} MB{% else %}❌ {{ checks.disk.free_mb }} MB{% endif %}</div></div>
+</div>
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Top Endpoints</h3>
+    <table>
+      <tr><th>Endpoint</th><th>Hits</th></tr>
+      {% for ep, n in stats.by_endpoint.items() %}
+      <tr><td style="font-size:.82rem; word-break:break-all"><span class="code-pill">{{ ep }}</span></td><td>{{ n }}</td></tr>
+      {% else %}<tr><td colspan="2" style="color:var(--muted)">No requests recorded yet.</td></tr>{% endfor %}
+    </table>
+    <h3>Recent Errors</h3>
+    <table>
+      <tr><th>Time</th><th>Request</th><th>Status</th></tr>
+      {% for e in stats.recent_errors %}
+      <tr><td style="font-size:.78rem; color:var(--muted)">{{ e.at }}</td><td style="font-size:.8rem">{{ e.request }}</td><td>{{ e.status }}</td></tr>
+      {% else %}<tr><td colspan="3" style="color:var(--muted)">No errors recorded. 🎉</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">Application Log <small style="color:var(--muted)">(last 120 lines)</small></h3>
+    <div class="log-box">{% for line in log_lines %}{{ line }}
+{% else %}No log output yet.{% endfor %}</div>
+    <p style="color:var(--muted); font-size:.82rem">Full <span class="code-pill">/health</span> JSON: <a href="{{ url_for('main.health') }}">/health</a></p>
+  </div>
+</div>
+{% endblock %}

@@ -20,6 +20,12 @@ def _database_uri(app):
     if url:
         if url.startswith("postgres://"):  # SQLAlchemy 2.x needs postgresql://
             url = url.replace("postgres://", "postgresql://", 1)
+        # Pin the psycopg2 dialect: SQLAlchemy 2.x maps bare
+        # "postgresql://" to the psycopg (v3) driver, but this project
+        # ships psycopg2-binary (see requirements.txt).
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://",
+                              "postgresql+psycopg2://", 1)
         return url
     sqlite_path = os.environ.get("SQLITE_PATH", "").strip()
     if not sqlite_path:
@@ -65,8 +71,17 @@ def create_app():
         announcement = (Announcement.query.filter_by(active=True)
                         .filter(Announcement.batch_id.is_(None))
                         .order_by(Announcement.created_at.desc()).first())
+        # Phase 10: unread notification count for the navbar bell (§12.4)
+        notif_unread = 0
+        try:
+            from flask_login import current_user as _cu  # noqa: E402
+            from . import hardening as _H  # noqa: E402
+            if _cu.is_authenticated:
+                notif_unread = _H.unread_count(_cu.id)
+        except Exception:
+            notif_unread = 0
         return {"now": datetime.utcnow(), "payments_live": app.config["PAYMENTS_LIVE"],
-                "announcement": announcement}
+                "announcement": announcement, "notif_unread": notif_unread}
 
     @app.errorhandler(403)
     def forbidden(_e):
@@ -90,6 +105,8 @@ def create_app():
     from .routes_career import career_bp  # noqa: E402  (Phase 7: career/placements)
     from .routes_game import game_bp  # noqa: E402  (Phase 8: gamification)
     from .routes_ops import ops_bp  # noqa: E402  (Phase 9: faculty & operations)
+    from .routes_hardening import hardening_bp, notify_bp  # noqa: E402  (Phase 10)
+    from .api_v1 import api_v1_bp  # noqa: E402  (Phase 10: REST API)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -104,6 +121,13 @@ def create_app():
     app.register_blueprint(career_bp)
     app.register_blueprint(game_bp)
     app.register_blueprint(ops_bp)
+    app.register_blueprint(hardening_bp)
+    app.register_blueprint(notify_bp)
+    app.register_blueprint(api_v1_bp)
+
+    # Phase 10: file logging (monitoring page tails this file) + request stats.
+    _setup_file_logging(app)
+    _install_request_stats(app)
 
     with app.app_context():
         if os.environ.get("LMS_SKIP_CREATE_ALL") != "1":
@@ -131,8 +155,15 @@ def create_app():
                 _OPS.ensure_permission_defaults()
         except Exception:
             db.session.rollback()
+        # Phase 10: default message templates + app settings (guarded).
+        from . import hardening as _H10  # noqa: E402
+        try:
+            _H10.ensure_hardening_defaults()
+        except Exception:
+            db.session.rollback()
 
     _start_reminder_scheduler(app)
+    _start_backup_scheduler(app)
 
     return app
 
@@ -228,6 +259,11 @@ def _ensure_schema_patches(app):
          "ALTER TABLE batches ADD COLUMN end_date DATE"),
         ("announcements", "batch_id",
          "ALTER TABLE announcements ADD COLUMN batch_id INTEGER REFERENCES batches(id)"),
+        # Phase 10 — platform hardening (§20.6 SEO)
+        ("courses", "meta_title",
+         "ALTER TABLE courses ADD COLUMN meta_title VARCHAR(160) DEFAULT ''"),
+        ("courses", "meta_description",
+         "ALTER TABLE courses ADD COLUMN meta_description VARCHAR(300) DEFAULT ''"),
     ]
     try:
         with app.app_context():
@@ -285,3 +321,72 @@ def _start_reminder_scheduler(app):
 
     t = threading.Thread(target=loop, name="lms-reminder-scheduler", daemon=True)
     t.start()
+
+
+def _start_backup_scheduler(app):
+    """Background daemon: daily SQLite backups (§24.3).
+
+    Same pattern/guard as the reminder scheduler: set LMS_SCHEDULER=off
+    to disable. Checks once an hour; creates a backup only when none
+    exists in the last 24h (backup_due). No-op on Postgres.
+    """
+    if os.environ.get("LMS_SCHEDULER", "").lower() == "off":
+        return
+    if getattr(app, "_backup_scheduler_started", False):
+        return
+    app._backup_scheduler_started = True
+
+    def loop():
+        import time
+        while True:
+            try:
+                time.sleep(3600)
+                with app.app_context():
+                    from .hardening import run_scheduled_backup  # noqa: E402
+                    run_scheduled_backup()
+            except Exception:  # never crash the process on scheduler errors
+                continue
+
+    t = threading.Thread(target=loop, name="lms-backup-scheduler", daemon=True)
+    t.start()
+
+
+def _setup_file_logging(app):
+    """Log to <data>/logs/app.log so /admin/monitoring can tail it (§24.4)."""
+    import logging
+    from logging.handlers import RotatingFileHandler
+    try:
+        from .hardening import app_log_path  # noqa: E402
+        path = app_log_path()
+        handler = RotatingFileHandler(path, maxBytes=2 * 1024 * 1024,
+                                      backupCount=3, encoding="utf-8")
+        handler.setFormatter(logging.Formatter(
+            "%(asctime)s %(levelname)s %(name)s: %(message)s"))
+        handler.setLevel(logging.INFO)
+        app.logger.addHandler(handler)
+        app.logger.setLevel(logging.INFO)
+    except Exception:
+        pass  # logging must never break startup
+
+
+def _install_request_stats(app):
+    """Count requests/errors per endpoint for /admin/monitoring (§24.4)."""
+
+    @app.before_request
+    def _stats_before():
+        from flask import g  # noqa: E402
+        import time  # noqa: E402
+        g._stats_start = time.time()
+
+    @app.after_request
+    def _stats_after(response):
+        try:
+            from flask import g, request  # noqa: E402
+            from .hardening import record_request  # noqa: E402
+            endpoint = (request.url_rule.rule
+                        if request.url_rule else request.path)
+            note = f"{request.method} {request.path}"
+            record_request(endpoint, response.status_code, note)
+        except Exception:
+            pass
+        return response

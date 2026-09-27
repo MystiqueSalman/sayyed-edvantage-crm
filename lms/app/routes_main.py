@@ -160,6 +160,11 @@ def enroll(slug):
                 coupon.used_count += 1
             db.session.commit()
             try:
+                from . import hardening as _H
+                _H.emit_enrollment(current_user, enrollment)
+            except Exception:
+                pass  # events must never break enrollment
+            try:
                 from .emailer import send_enrollment_email
                 send_enrollment_email(current_user, enrollment)
             except Exception:
@@ -237,6 +242,11 @@ def payment_confirm(enrollment_id):
             coupon.used_count += 1
     db.session.commit()
     try:
+        from . import hardening as _H
+        _H.emit_enrollment(current_user, enrollment, payment_completed=True)
+    except Exception:
+        pass  # events must never break payment confirmation
+    try:
         from .emailer import send_enrollment_email
         send_enrollment_email(current_user, enrollment)
     except Exception:
@@ -252,3 +262,88 @@ def payment_confirm(enrollment_id):
         pass  # growth/WhatsApp must never break payment confirmation
     flash("Payment successful — you are enrolled!", "success")
     return redirect(url_for("student.dashboard"))
+
+
+# ------------------------------------------------- Phase 10: health + SEO (§24.4, §20.6)
+
+@main_bp.route("/health")
+def health():
+    """Liveness + DB connectivity + disk-space checks (§24.4)."""
+    from datetime import datetime as _dt
+    from flask import jsonify  # noqa: E402
+    from . import hardening as _H  # noqa: E402
+    ok, checks = _H.health_checks()
+    stats = _H.request_stats()
+    return jsonify({
+        "status": "ok" if ok else "degraded",
+        "version": "phase-10",
+        "time": _dt.utcnow().isoformat() + "Z",
+        "uptime_seconds": stats["uptime_seconds"],
+        "checks": checks,
+    }), 200 if ok else 503
+
+
+@main_bp.route("/sitemap.xml")
+def sitemap():
+    """XML sitemap: courses + public pages (§20.6)."""
+    from flask import Response  # noqa: E402
+    base = current_app.config["APP_BASE_URL"].rstrip("/")
+    urls = [
+        ("/", "weekly", "1.0"),
+        ("/courses", "weekly", "0.9"),
+        ("/bonus-courses", "weekly", "0.8"),
+        ("/jobs", "daily", "0.8"),
+        ("/enquiry", "monthly", "0.7"),
+        ("/developers", "monthly", "0.5"),
+    ]
+    for c in Course.query.order_by(Course.id).all():
+        urls.append((f"/course/{c.slug}", "weekly", "0.9"))
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>',
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for path, freq, prio in urls:
+        xml.append(
+            f"  <url><loc>{base}{path}</loc>"
+            f"<changefreq>{freq}</changefreq>"
+            f"<priority>{prio}</priority></url>")
+    xml.append("</urlset>")
+    return Response("\n".join(xml), mimetype="application/xml")
+
+
+@main_bp.route("/robots.txt")
+def robots():
+    """Robots file pointing at the sitemap (§20.6)."""
+    from flask import Response  # noqa: E402
+    base = current_app.config["APP_BASE_URL"].rstrip("/")
+    return Response(
+        f"User-agent: *\nAllow: /\nSitemap: {base}/sitemap.xml\n",
+        mimetype="text/plain")
+
+
+@main_bp.route("/developers")
+def developers():
+    """Versioned developer docs, generated from live routes (§25.5)."""
+    from .api_v1 import API_VERSION  # noqa: E402
+    from .models import ApiKey, Webhook  # noqa: E402
+    routes = []
+    for rule in current_app.url_map.iter_rules():
+        if not rule.rule.startswith("/api/v1"):
+            continue
+        if rule.endpoint.startswith("api_v1._v1_"):
+            continue  # error handlers, not real endpoints
+        view = current_app.view_functions[rule.endpoint]
+        doc = (view.__doc__ or "").strip().split("\n")[0]
+        routes.append({
+            "rule": str(rule),
+            "methods": sorted(m for m in rule.methods
+                              if m in ("GET", "POST", "PUT", "PATCH",
+                                       "DELETE")),
+            "endpoint": rule.endpoint,
+            "doc": doc,
+        })
+    routes.sort(key=lambda r: r["rule"])
+    return render_template("developers.html", routes=routes,
+                           version=API_VERSION,
+                           scopes=ApiKey.SCOPES,
+                           events=Webhook.EVENTS,
+                           base_url=current_app.config[
+                               "APP_BASE_URL"].rstrip("/"))

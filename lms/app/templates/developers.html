@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Developer Docs — API v{{ version }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🛠 Developer Docs <small style="color:var(--muted)">API v{{ version }}</small></h2><div class="line"></div></div>
+
+<div class="panel">
+  <h3 style="margin-top:0">Authentication</h3>
+  <p>All <span class="code-pill">/api/v{{ version }}</span> requests need an API key issued by an admin at <b>Admin → API Keys</b>. Send it as:</p>
+  <pre class="curl">Authorization: Bearer &lt;your-key&gt;
+# or
+X-API-Key: &lt;your-key&gt;</pre>
+  <p>Keys carry <b>scopes</b> — a key can only call endpoints whose scope it has. Error responses always use the envelope <span class="code-pill">{"error": {"code": ..., "message": ...}}</span>:</p>
+  <pre class="curl">{"error": {"code": "insufficient_scope", "message": "Key lacks required scope(s): leads.write"}}</pre>
+  <p><b>Scopes:</b> {% for s in scopes %}<span class="scope-tag">{{ s }}</span>{% endfor %}</p>
+  <p><b>Rate limiting:</b> per key (default 300 req/min). Exceeding it returns <span class="code-pill">429</span> with a <span class="code-pill">Retry-After</span> header.</p>
+</div>
+
+<div class="panel">
+  <h3 style="margin-top:0">Endpoint Reference <small style="color:var(--muted)">(generated from the live routes)</small></h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Scope</th></tr>
+    {% for r in routes %}
+    <tr><td>{% for m in r.methods %}<span class="scope-tag">{{ m }}</span>{% endfor %}</td>
+      <td><span class="code-pill">{{ r.rule }}</span>{% if r.doc %}<br><small style="color:var(--muted)">{{ r.doc }}</small>{% endif %}</td>
+      <td style="font-size:.78rem; color:var(--muted)">see docs below</td></tr>
+    {% endfor %}
+  </table>
+  <h3>Examples</h3>
+  <p><b>List courses</b> <span class="scope-tag">courses.read</span></p>
+  <pre class="curl">curl -H "Authorization: Bearer $KEY" {{ base_url }}/api/v{{ version }}/courses</pre>
+  <p><b>Create a lead</b> <span class="scope-tag">leads.write</span></p>
+  <pre class="curl">curl -X POST -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
+  -d '{"name":"Priya Verma","phone":"+919876543210","email":"priya@example.com","course_id":1}' \
+  {{ base_url }}/api/v{{ version }}/leads</pre>
+  <p><b>Verify a certificate</b> <span class="scope-tag">certificates.verify</span></p>
+  <pre class="curl">curl -H "Authorization: Bearer $KEY" {{ base_url }}/api/v{{ version }}/certificates/verify/SE-ABC123XYZ</pre>
+</div>
+
+<div class="panel">
+  <h3 style="margin-top:0">Webhooks</h3>
+  <p>Register a URL at <b>Admin → Webhooks</b> and subscribe to events. Every delivery POSTs JSON:</p>
+  <pre class="curl">{"event": "enrollment.created",
+ "sent_at": "2026-09-28T04:30:00Z",
+ "data": {"enrollment_id": 12, "user_id": 5, "course_title": "Data Science", ...}}</pre>
+  <p><b>Signature:</b> the <span class="code-pill">X-SE-Signature</span> header is the hex HMAC-SHA256 of the raw body with your webhook secret. Verify it:</p>
+  <pre class="curl">import hmac, hashlib
+sig = hmac.new(secret.encode(), request_body, hashlib.sha256).hexdigest()
+assert hmac.compare_digest(sig, request.headers["X-SE-Signature"])</pre>
+  <p>Failed deliveries retry 3× (backoff 1s → 2s → 4s); every attempt is logged under <b>Admin → Webhooks → 📋 Deliveries</b>.</p>
+  <p><b>Events:</b> {% for e in events %}<span class="ev-tag">{{ e }}</span>{% endfor %}</p>
+</div>
+
+<div class="panel">
+  <h3 style="margin-top:0">Changelog</h3>
+  <p><b>v1</b> — initial release: courses, enrollments, quiz attempts, leads (read/write), batches, payments, certificate verification; HMAC-signed webhooks for 6 events.</p>
+</div>
+{% endblock %}

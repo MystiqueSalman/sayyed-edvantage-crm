@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Edit Template — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>✏️ {{ tpl.name }}</h2><div class="line"></div>
+  <a href="{{ url_for('hardening.templates') }}">← Templates</a></div>
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Edit</h3>
+    <form method="post">
+      <label>Event key</label><input type="text" name="event_key" value="{{ tpl.event_key }}">
+      <label>Channel</label>
+      <select name="channel">{% for c in channels %}<option value="{{ c }}" {% if tpl.channel == c %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+      <label>Subject / title</label><input type="text" name="subject" value="{{ tpl.subject }}">
+      <label>Body</label><textarea name="body" rows="8">{{ tpl.body }}</textarea>
+      <p><button class="btn btn-gold" type="submit">Save</button>
+      <a class="btn btn-ghost" href="{{ url_for('hardening.template_preview', tpl_id=tpl.id) }}" style="margin-left:8px">🔍 Preview with sample data</a></p>
+    </form>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">Live Preview (sample data)</h3>
+    <p><b>{{ rendered_subject }}</b></p>
+    <div style="background:#0a1428; border:1px solid var(--card-brd); border-radius:12px; padding:12px">{{ rendered_body|safe }}</div>
+    <h3 style="margin-top:16px">Available variables</h3>
+    <p>{% for k, v in sample.items() %}<span class="scope-tag">{{ '{{' }}{{ k }}{{ '}}' }}</span>{% endfor %}</p>
+  </div>
+</div>
+{% endblock %}

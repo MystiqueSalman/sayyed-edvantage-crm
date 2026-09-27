@@ -184,3 +184,27 @@ th{color:var(--muted); font-size:.78rem; text-transform:uppercase; letter-spacin
 canvas.chart{max-height:320px}
 .inline-form{display:inline}
 .wish-btn{background:none; border:0; cursor:pointer; font-size:1.3rem; padding:2px 6px}
+
+/* Phase 10: notification bell (§12.4) */
+.notif-bell{position:relative; text-decoration:none; font-size:1.15rem; padding:4px 6px}
+.notif-count{position:absolute; top:-4px; right:-6px; background:#ff5b5b; color:#fff;
+  font-size:.62rem; font-weight:700; min-width:17px; height:17px; line-height:17px;
+  text-align:center; border-radius:9px; padding:0 4px}
+/* Phase 10: admin hardening tables/forms */
+.kv-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin:14px 0}
+.kv{background:var(--card); border:1px solid var(--card-brd); border-radius:var(--radius); padding:14px}
+.kv .k{color:var(--muted); font-size:.78rem}
+.kv .v{font-size:1.25rem; font-weight:700; color:var(--gold-lt)}
+.code-pill{font-family:ui-monospace,monospace; background:#0a1428; border:1px solid var(--card-brd);
+  border-radius:8px; padding:6px 10px; display:inline-block; font-size:.85rem; color:var(--gold-lt)}
+.log-box{background:#060d1d; border:1px solid var(--card-brd); border-radius:12px; padding:12px;
+  font-family:ui-monospace,monospace; font-size:.75rem; color:#9fb3d1; max-height:340px; overflow:auto; white-space:pre-wrap}
+.scope-tag{display:inline-block; background:rgba(46,134,255,.15); border:1px solid rgba(46,134,255,.4);
+  color:#9cc4ff; border-radius:20px; padding:2px 10px; font-size:.75rem; margin:2px}
+.ev-tag{display:inline-block; background:rgba(212,175,55,.12); border:1px solid rgba(212,175,55,.35);
+  color:var(--gold-lt); border-radius:20px; padding:2px 10px; font-size:.75rem; margin:2px}
+.notif-item{border-left:3px solid var(--gold); background:var(--card); border-radius:0 12px 12px 0; padding:12px 16px; margin:10px 0}
+.notif-item.read{border-left-color:var(--muted2); opacity:.75}
+.notif-item .t{font-weight:700}
+.notif-item .ts{color:var(--muted); font-size:.75rem}
+pre.curl{background:#060d1d; border:1px solid var(--card-brd); border-radius:12px; padding:12px; overflow:auto; font-size:.8rem; color:#cfe0ff}

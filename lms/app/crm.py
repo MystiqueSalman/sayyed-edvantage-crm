@@ -29,6 +29,12 @@ def create_lead(name="", phone="", email="", source=Lead.SOURCE_WEBSITE,
         db.session.flush()
         lead.log("system", f"Lead created via {source}." +
                  (f" {note}" if note else ""), actor_id=actor_id)
+        # Phase 10: real event — genuinely new lead (§25.2)
+        try:
+            from . import hardening as _H
+            _H.emit_lead_created(lead)
+        except Exception:
+            pass
     return lead
 
 

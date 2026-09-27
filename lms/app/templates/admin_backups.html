@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Backups — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>💾 Backups</h2><div class="line"></div>
+  <a href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+{% if not sqlite_mode %}
+<div class="panel" style="border-color:var(--warn)"><p>⚠️ Running on Postgres — database backups are handled by the Postgres provider. This page manages SQLite backups only.</p></div>
+{% endif %}
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Settings</h3>
+    <form method="post">
+      <p><label style="display:inline"><input type="checkbox" name="backup_enabled" value="1" style="width:auto" {% if enabled %}checked{% endif %}> Daily automated backups</label></p>
+      <label>Retention (keep last N backups)</label><input type="number" name="retention_days" value="{{ retention }}" min="1" max="90">
+      <p><button class="btn btn-blue btn-sm" type="submit" name="retention" value="1">Save Settings</button></p>
+    </form>
+    <h3>Manual Backup</h3>
+    <form method="post" action="{{ url_for('hardening.backup_create') }}">
+      <p><button class="btn btn-gold" type="submit" {% if not sqlite_mode %}disabled{% endif %}>Create Backup Now</button></p>
+    </form>
+    <p style="color:var(--muted); font-size:.82rem">Backups are full SQLite snapshots stored under the data directory. A daily scheduler creates one automatically when none exists in the last 24h (disable with <span class="code-pill">LMS_SCHEDULER=off</span>).</p>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">All Backups</h3>
+    <table>
+      <tr><th>File</th><th>Size</th><th>Created</th><th>Note</th><th></th></tr>
+      {% for b in rows %}
+      <tr><td style="font-size:.82rem"><span class="code-pill">{{ b.filename }}</span>{% if not b.exists %} <span class="tag" style="background:rgba(255,107,107,.15); color:#ff8f8f">missing</span>{% endif %}</td>
+        <td>{{ '%.1f' % (b.size_bytes / 1048576) }} MB</td>
+        <td style="font-size:.8rem; color:var(--muted)">{{ b.created_at.strftime('%d %b %Y %H:%M') }}</td>
+        <td style="font-size:.8rem">{{ b.note }}</td>
+        <td style="white-space:nowrap">
+          <a class="btn btn-ghost btn-sm" href="{{ url_for('hardening.backup_download', backup_id=b.id) }}">⬇ Download</a>
+          <form class="inline-form" method="post" action="{{ url_for('hardening.backup_restore', backup_id=b.id) }}"
+                onsubmit="return confirm('Restore will REPLACE the live database with {{ b.filename }}. Type RESTORE on the next screen to confirm.')"><button class="btn btn-ghost btn-sm" type="submit">↩ Restore…</button></form>
+          <form class="inline-form" method="post" action="{{ url_for('hardening.backup_delete', backup_id=b.id) }}"
+                onsubmit="return confirm('Delete backup {{ b.filename }}?')"><button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+        </td></tr>
+      {% else %}<tr><td colspan="5" style="color:var(--muted)">No backups yet.</td></tr>{% endfor %}
+    </table>
+    <h3>Restore (type RESTORE to confirm)</h3>
+    <p style="color:var(--muted); font-size:.85rem">Restoring replaces the live database file. An audit-log entry (<span class="code-pill">backup.restore</span>) is written into the restored database. Recommended: download a fresh backup first.</p>
+    {% for b in rows[:1] %}
+    <form method="post" action="{{ url_for('hardening.backup_restore', backup_id=b.id) }}">
+      <label>Type <b>RESTORE</b> to restore <span class="code-pill">{{ b.filename }}</span></label>
+      <input type="text" name="confirmation" placeholder="RESTORE" autocomplete="off">
+      <p><button class="btn btn-danger" type="submit">Restore Database</button></p>
+    </form>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -181,4 +181,18 @@ dashboard 15 minutes before the class begins.</p>"""))
                     send_live_reminder_whatsapp(stu, sess)
                 except Exception:
                     pass  # WhatsApp must never break reminders
+            # Phase 10 §12.4: in-app live-class reminder (real event).
+            try:
+                from . import hardening as _H
+                _H.notify(
+                    stu.id, "live.reminder",
+                    f"🔴 Live class in 1 hour: {sess.title}",
+                    f"{sess.title} ({sess.course.title}) starts at {when}.",
+                    link="/dashboard",
+                    context={"user_name": stu.name,
+                             "session_title": sess.title,
+                             "course_title": sess.course.title,
+                             "starts_at": when})
+            except Exception:
+                pass  # notifications must never break reminders
     return len(sessions)

@@ -1,5 +1,29 @@
 {% extends "base.html" %}
-{% block title %}{{ course.title }} — Sayyed EdVantage LMS{% endblock %}
+{% block title %}{{ course.meta_title or (course.title + " — Sayyed EdVantage LMS") }}{% endblock %}
+{% block head %}
+{# Phase 10 §20.6: SEO — per-course meta, canonical, Open Graph, JSON-LD #}
+{% set _seo_title = course.meta_title or (course.title + " — Sayyed EdVantage") %}
+{% set _seo_desc = course.meta_description or course.short_desc or ("Learn " + course.title + " with Sayyed EdVantage — Empowering Students for Success.") %}
+{% set _canon = request.host_url.rstrip('/') + url_for('main.course_detail', slug=course.slug) %}
+<meta name="description" content="{{ _seo_desc }}">
+<link rel="canonical" href="{{ _canon }}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Sayyed EdVantage">
+<meta property="og:title" content="{{ _seo_title }}">
+<meta property="og:description" content="{{ _seo_desc }}">
+<meta property="og:url" content="{{ _canon }}">
+{% if course.banner %}<meta property="og:image" content="{{ request.host_url.rstrip('/') + url_for('static', filename='img/banners/' + course.banner) }}">{% endif %}
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Course",
+ "name": {{ course.title|tojson }},
+ "description": {{ (course.meta_description or course.short_desc or "")|tojson }},
+ "provider": {"@type":"Organization","name":"Sayyed EdVantage","sameAs":{{ request.host_url.rstrip('/')|tojson }}},
+ "url": {{ _canon|tojson }},
+ "hasCourseInstance": {"@type":"CourseInstance","courseMode":"online",
+   "offers": {"@type":"Offer","price": {{ course.fee }},"priceCurrency":"INR"}}}
+</script>
+{% endblock %}
 {% block content %}
 <div class="panel" style="padding:0; overflow:hidden">
   <div class="course-banner" style="height:230px; background-image:url('{{ url_for('static', filename='img/banners/' + course.banner) if course.banner }}')"></div>

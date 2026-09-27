@@ -98,3 +98,92 @@ lms/
 - **Advanced analytics** — aggregate `QuizAttempt`/`LessonProgress` per cohort.
 - **Mobile app** — the Jinja views are responsive; wrap with a PWA manifest or API layer.
 - **Migrations** — adopt Alembic/Flask-Migrate (currently `db.create_all()`).
+
+## Phase 10 — Platform hardening (Postgres, API, backups, monitoring)
+
+### Postgres readiness
+
+The app is Postgres-safe: `DATABASE_URL` (accepting `postgres://` or
+`postgresql://`) activates Postgres, otherwise it stays on SQLite — the
+live deploy keeps working unchanged. All SQLAlchemy usage is portable
+(no `datetime('now')`, `strftime()` in SQL, `AUTOINCREMENT`, backticks,
+or `PRAGMA` anywhere; migrations use `sa.func.now()` / portable DDL).
+The Phase 10 migration (`e10a3f2b8c4d`) runs on both dialects, and
+startup `create_all()` + `_ensure_schema_patches()` keeps zero-step
+deploys working on either backend.
+
+**Attach Postgres on Railway (when ready):**
+
+1. Railway → project → **+ New → Database → PostgreSQL**.
+2. In the LMS service → **Variables** → add `DATABASE_URL` and click
+   **Insert → Reference → Postgres → DATABASE_URL** (or paste the
+   `postgres://…` connection string).
+3. Redeploy. On boot the app runs `create_all()` + schema patches, so
+   all tables/columns are created automatically — no manual migration
+   step. (Optionally run `flask db upgrade` once for the Alembic
+   version stamp.)
+4. Migrate existing SQLite data with any standard dump/load tool before
+   pointing traffic at Postgres; keep the SQLite file as a rollback
+   copy.
+5. Notes: SQLite-only features are skipped on Postgres — automated
+   `.db` backups (use the Postgres provider's backups instead) and
+   one-click restore.
+
+To verify Postgres locally: set
+`DATABASE_URL=postgresql://user:pass@localhost:5432/lms` and run
+`flask db upgrade` from a blank database — the full chain must reach
+head (`e10a3f2b8c4d`) with no errors.
+
+### Backups & recovery (SQLite)
+
+- **Automated:** a daily scheduler (same pattern as the live-class
+  reminder thread; disable with `LMS_SCHEDULER=off`) creates a
+  timestamped full snapshot under `<data>/backups/` whenever none
+  exists in the last 24h. Retention is configurable (default 7) at
+  **Admin → Backups**.
+- **Manual:** **Admin → Backups → Create Backup Now**; backups are
+  downloadable from the same page.
+- **Recovery procedure:**
+  1. Download the newest good backup (or confirm it on disk).
+  2. **Admin → Backups** → pick the backup → type `RESTORE` in the
+     confirmation box → **Restore Database**.
+  3. The live `lms.db` is atomically replaced; a `backup.restore`
+     audit-log entry is written into the restored database.
+  4. Reload the admin dashboard and spot-check courses, users and
+     enrollments before resuming normal use.
+- The scheduler and one-click restore are SQLite-only by design.
+
+### Monitoring
+
+- `GET /health` — JSON with `status`, DB connectivity check, disk-free
+  check and uptime (503 when degraded).
+- **Admin → Monitoring** — request/error counters per endpoint, recent
+  5xx errors, and a tail of the application log (`<data>/logs/app.log`).
+
+### REST API & webhooks
+
+- `GET /api/v1/...` — versioned JSON API with API-key auth (admin
+  issues keys at **Admin → API Keys**; keys are stored as SHA-256
+  hashes), per-key scopes and per-key rate limits (default 300/min,
+  `429` + `Retry-After`). Docs: **/developers**.
+- **Admin → Webhooks** — subscribe URLs to `enrollment.created`,
+  `payment.completed`, `course.completed`, `certificate.issued`,
+  `lead.created`, `quiz.submitted`. Payloads are HMAC-SHA256 signed
+  (`X-SE-Signature`); failed deliveries retry 3× with backoff and are
+  logged under **📋 Deliveries**.
+
+### Notification center & templates
+
+- Every user gets **/notifications** (bell 🔔 with unread count in the
+  navbar). Notifications are generated from real events: enrollment,
+  quiz/assignment graded, certificate issued, live-class reminder,
+  badge earned, challenge won, application status change.
+- **Admin → Templates** — manage `{{variable}}` message templates
+  (email / WhatsApp / notification channels) with live preview;
+  templates already used are deactivated, never hard-deleted.
+
+### SEO
+
+- Per-course meta title/description (editable on the course edit page),
+  canonical URLs, Open Graph tags and JSON-LD `Course` structured data
+  on course pages; `/sitemap.xml` + `/robots.txt`.

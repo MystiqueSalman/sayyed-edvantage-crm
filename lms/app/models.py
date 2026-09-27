@@ -71,6 +71,8 @@ class Course(db.Model):
     theme = db.Column(db.String(40), default="blue")  # accent theme key
     instructor_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     ai_tutor_enabled = db.Column(db.Boolean, default=True)  # Phase 5: per-course tutor toggle
+    meta_title = db.Column(db.String(160), default="")  # Phase 10 §20.6: SEO
+    meta_description = db.Column(db.String(300), default="")  # Phase 10 §20.6: SEO
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     instructor = db.relationship("User", foreign_keys=[instructor_id])
@@ -1527,3 +1529,185 @@ class Refund(db.Model):
     enrollment = db.relationship("Enrollment")
     user = db.relationship("User", foreign_keys=[user_id])
     course = db.relationship("Course")
+
+
+# ============================================================ Phase 10 (§25)
+# Platform hardening: API keys, webhooks, backups, notifications,
+# message templates, app settings. All JSON-ish fields are stored as
+# plain TEXT so the schema is identical on SQLite and Postgres.
+
+
+class ApiKey(db.Model):
+    """Hashed API keys for /api/v1 (§25.1, §25.4).
+
+    The raw key is shown ONCE at creation; only ``key_prefix`` + the
+    sha256 ``key_hash`` are stored.
+    """
+    __tablename__ = "api_keys"
+
+    SCOPES = ("courses.read", "enrollments.read", "quizzes.read",
+              "leads.read", "leads.write", "batches.read",
+              "payments.read", "certificates.verify")
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False, default="")
+    key_prefix = db.Column(db.String(24), nullable=False, default="")  # safe to display
+    key_hash = db.Column(db.String(64), nullable=False, unique=True,
+                         index=True)  # sha256 hex of the raw key
+    scopes_json = db.Column(db.Text, default="[]")  # JSON list of scope strings
+    rate_limit_per_min = db.Column(db.Integer, default=300)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_used_at = db.Column(db.DateTime, nullable=True)
+    created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"),
+                              nullable=True)
+
+    created_by = db.relationship("User", foreign_keys=[created_by_id])
+
+    @property
+    def scopes(self):
+        import json
+        try:
+            return [s for s in (json.loads(self.scopes_json or "[]"))
+                    if s in self.SCOPES]
+        except Exception:
+            return []
+
+    @scopes.setter
+    def scopes(self, values):
+        import json
+        self.scopes_json = json.dumps(
+            [s for s in (values or []) if s in self.SCOPES])
+
+    def has_scope(self, scope):
+        return scope in self.scopes
+
+
+class Webhook(db.Model):
+    """Outbound webhook subscription (§25.2)."""
+    __tablename__ = "webhooks"
+
+    EVENTS = ("enrollment.created", "payment.completed", "course.completed",
+              "certificate.issued", "lead.created", "quiz.submitted")
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False, default="")
+    url = db.Column(db.String(500), nullable=False, default="")
+    events_json = db.Column(db.Text, default="[]")  # JSON list of event names
+    secret = db.Column(db.String(128), nullable=False, default="")  # HMAC secret
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+    last_triggered_at = db.Column(db.DateTime, nullable=True)
+
+    deliveries = db.relationship("WebhookDelivery", backref="webhook",
+                                 cascade="all, delete-orphan",
+                                 order_by="WebhookDelivery.created_at.desc()")
+
+    @property
+    def events(self):
+        import json
+        try:
+            return [e for e in (json.loads(self.events_json or "[]"))
+                    if e in self.EVENTS]
+        except Exception:
+            return []
+
+    @events.setter
+    def events(self, values):
+        import json
+        self.events_json = json.dumps(
+            [e for e in (values or []) if e in self.EVENTS])
+
+    def wants(self, event):
+        return self.is_active and event in self.events
+
+
+class WebhookDelivery(db.Model):
+    """Delivery attempt log for webhooks (§25.2)."""
+    __tablename__ = "webhook_deliveries"
+    id = db.Column(db.Integer, primary_key=True)
+    webhook_id = db.Column(db.Integer, db.ForeignKey("webhooks.id"),
+                           nullable=False, index=True)
+    event = db.Column(db.String(40), nullable=False, default="")
+    payload = db.Column(db.Text, default="")  # JSON sent
+    attempts = db.Column(db.Integer, default=0)
+    status_code = db.Column(db.Integer, nullable=True)
+    latency_ms = db.Column(db.Integer, nullable=True)
+    success = db.Column(db.Boolean, default=False, index=True)
+    error = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+
+class Backup(db.Model):
+    """Metadata record for a database backup file (§24.3)."""
+    __tablename__ = "backups"
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(200), nullable=False, default="")
+    size_bytes = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    note = db.Column(db.String(200), default="")
+
+
+class Notification(db.Model):
+    """In-app notification for a user (§12.4)."""
+    __tablename__ = "notifications"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"),
+                        nullable=False, index=True)
+    ntype = db.Column(db.String(40), nullable=False, default="",
+                      index=True)  # e.g. enrollment, graded, certificate
+    title = db.Column(db.String(200), nullable=False, default="")
+    body = db.Column(db.Text, default="")
+    link = db.Column(db.String(500), default="")
+    is_read = db.Column(db.Boolean, default=False, index=True)
+    read_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    user = db.relationship("User", backref=db.backref(
+        "notifications", cascade="all, delete-orphan",
+        order_by="Notification.created_at.desc()"))
+
+
+class MessageTemplate(db.Model):
+    """Admin-managed message template with {{variables}} (§12.5)."""
+    __tablename__ = "message_templates"
+
+    CHANNELS = ("email", "whatsapp", "notification")
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False, unique=True)
+    event_key = db.Column(db.String(60), default="")  # e.g. enrollment.created
+    channel = db.Column(db.String(20), default="notification")
+    subject = db.Column(db.String(200), default="")  # used for email/notification title
+    body = db.Column(db.Text, default="")  # Jinja-style {{variables}}
+    is_active = db.Column(db.Boolean, default=True)
+    use_count = db.Column(db.Integer, default=0)  # incremented on each render
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+
+class AppSetting(db.Model):
+    """Generic key/value system settings (Phase 10: backups, API defaults)."""
+    __tablename__ = "app_settings"
+    key = db.Column(db.String(80), primary_key=True)
+    value = db.Column(db.Text, default="")
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    @classmethod
+    def get(cls, key, default=""):
+        row = db.session.get(cls, key)
+        return row.value if row else default
+
+    @classmethod
+    def set(cls, key, value):
+        row = db.session.get(cls, key)
+        if not row:
+            row = cls(key=key)
+            db.session.add(row)
+        row.value = str(value)
+        db.session.commit()
+        return row
