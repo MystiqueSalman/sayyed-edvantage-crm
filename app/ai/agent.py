@@ -761,18 +761,22 @@ def _has_required_lead_information(lead_data: dict) -> bool:
     )
 
 
-def _push_lead_to_crm(lead: dict) -> None:
+def _push_lead_to_crm(lead: dict):
     """Best-effort push of a locally created/updated lead to the CRM dashboard.
 
     The CRM is a separate Railway service with the persistent leads.json
     volume, so the agent forwards lead events to its /api/ingest-lead
     endpoint (same HTTP Basic Auth the dashboard uses). Never raises: a
     failed push must not break the student's reply.
+
+    Returns the CRM's lead record (with the CRM-assigned ``lead_id``) on
+    success, else None. The caller should quote the CRM's ID back to the
+    student so it matches what the dashboard shows.
     """
     try:
         base_url = os.environ.get("SE_CRM_BASE_URL", "").strip().rstrip("/")
         if not base_url or not isinstance(lead, dict) or not lead.get("phone"):
-            return
+            return None
         crm_user = os.environ.get("SE_CRM_USER", "")
         crm_password = os.environ.get("SE_CRM_PASSWORD", "")
         payload = {
@@ -790,10 +794,18 @@ def _push_lead_to_crm(lead: dict) -> None:
             auth=(crm_user, crm_password),
             timeout=10,
         )
-        if resp.status_code != 200:
+        if resp.status_code not in (200, 201):
             logger.warning("CRM ingest returned HTTP %s: %s", resp.status_code, resp.text[:200])
+            return None
+        try:
+            body = resp.json()
+        except Exception:  # noqa: BLE001 - non-JSON body, treat as failure
+            return None
+        crm_lead = body.get("lead") if isinstance(body, dict) else None
+        return crm_lead if isinstance(crm_lead, dict) else None
     except Exception as exc:  # noqa: BLE001 - push must never break replies
         logger.warning("CRM lead push failed: %s", exc)
+        return None
 
 
 def _create_admission_lead(
@@ -854,8 +866,13 @@ def _create_admission_lead(
     )
 
     # Forward to the CRM dashboard (separate service, persistent volume).
+    # The CRM assigns the canonical enquiry ID, so quote that back to the
+    # student: the agent's local counter and the CRM's counter differ, and
+    # the dashboard is the source of truth the admissions team works from.
     if isinstance(lead, dict):
-        _push_lead_to_crm(lead)
+        crm_lead = _push_lead_to_crm(lead)
+        if isinstance(crm_lead, dict) and crm_lead.get("lead_id"):
+            lead["lead_id"] = crm_lead["lead_id"]
 
     return lead
 
