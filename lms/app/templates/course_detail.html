@@ -45,7 +45,7 @@
     {% if s.recording_url %} · <a href="{{ s.recording_url }}" target="_blank">Watch recording</a>{% endif %}
   </div>
   {% if current_user.is_authenticated and enrollment and enrollment.status != 'pending' and s.is_joinable(now) %}
-  <a class="btn btn-gold btn-sm" href="{{ s.join_url }}" target="_blank" rel="noopener">Join Live Class 🔴</a>
+  <a class="btn btn-gold btn-sm" href="{{ url_for('ops.live_join', session_id=s.id) }}" target="_blank" rel="noopener">Join Live Class 🔴</a>
   {% elif current_user.is_authenticated and enrollment and enrollment.status != 'pending' %}
   <button class="btn btn-ghost btn-sm" disabled>Join opens 15 min before start</button>
   {% endif %}

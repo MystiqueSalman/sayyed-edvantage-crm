@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Invoice {{ inv.number }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🧾 {{ inv.number }}</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.invoices') }}">← Invoices</a>
+  <a class="btn btn-gold btn-sm" href="{{ url_for('ops.invoice_pdf', invoice_id=inv.id) }}">⬇ PDF</a></div>
+
+<div class="card"><div class="body">
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px">
+    <div>
+      <h3 style="margin:0">{{ settings.business_name }}</h3>
+      <p style="color:var(--muted);font-size:.9rem">{{ settings.address|replace('\n','<br>')|safe }}<br>
+      {{ settings.email }} · {{ settings.phone }}{% if settings.gstin %}<br>GSTIN: {{ settings.gstin }}{% endif %}</p>
+    </div>
+    <div style="text-align:right">
+      <p style="color:var(--muted);font-size:.9rem">Invoice <b style="color:var(--gold-light)">{{ inv.number }}</b><br>
+      Date: {{ inv.issued_at.strftime('%d %b %Y') if inv.issued_at }}<br>
+      Billed to: <b>{{ inv.user.name }}</b> ({{ inv.user.email }})</p>
+    </div>
+  </div>
+  <table style="width:100%;border-collapse:collapse;margin-top:16px;font-size:.95rem">
+    <tr style="color:var(--muted);text-align:left;border-bottom:1px solid var(--line)"><th>Description</th><th style="text-align:right">Amount</th></tr>
+    <tr><td style="padding:10px 0">{{ inv.course.title }} — course fee</td><td style="text-align:right">Rs. {{ "{:,}".format(inv.base_fee) }}</td></tr>
+    {% if inv.discount %}<tr><td style="padding:6px 0">Less: discount (coupon)</td><td style="text-align:right">− Rs. {{ "{:,}".format(inv.discount) }}</td></tr>{% endif %}
+    <tr><td style="padding:6px 0">Taxable value</td><td style="text-align:right">Rs. {{ "{:,}".format(inv.taxable) }}</td></tr>
+    <tr><td style="padding:6px 0">GST @ 18% (SAC {{ settings.sac_code }})</td><td style="text-align:right">Rs. {{ "{:,}".format(inv.gst_amount) }}</td></tr>
+    <tr style="border-top:2px solid var(--gold)"><td style="padding:12px 0"><b>Total (incl. GST)</b></td>
+      <td style="text-align:right"><b style="color:var(--gold-light);font-size:1.2rem">Rs. {{ "{:,}".format(inv.total) }}</b></td></tr>
+  </table>
+</div></div>
+{% endblock %}

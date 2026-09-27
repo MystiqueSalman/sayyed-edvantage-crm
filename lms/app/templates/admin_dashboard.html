@@ -26,13 +26,19 @@
        <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.coupons') }}">🎟 Coupons</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('growth.admin_referrals') }}">🎁 Referrals</a></p>
     <p><a class="btn btn-gold btn-sm" href="{{ url_for('admin.analytics') }}">📊 Analytics</a>
+       <a class="btn btn-gold btn-sm" href="{{ url_for('ops.finance') }}">💰 Finance</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.invoices') }}">🧾 Invoices</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.refunds') }}">↩ Refunds</a>
        <a class="btn btn-gold btn-sm" href="{{ url_for('career.placement_analytics') }}">🎯 Placement Analytics</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('career.admin_employers') }}">🏢 Employers</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('career.career_settings') }}">⚙️ Career Settings</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.email_settings') }}">📧 Email Automation</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('growth.whatsapp_settings') }}">💬 WhatsApp Alerts</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.announcements') }}">📢 Announcements</a>
-       <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.ai_settings') }}">🤖 AI Settings</a></p>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.ai_settings') }}">🤖 AI Settings</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.audit_logs') }}">🧾 Audit Logs</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.permissions') }}">🔐 Permissions</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.calendar') }}">📅 Calendar</a></p>
     {% else %}
     <p style="color:var(--muted); font-size:.88rem">User management and coupons are admin-only.</p>
     {% endif %}

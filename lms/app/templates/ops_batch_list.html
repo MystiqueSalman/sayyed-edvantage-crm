@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Batch Management{% endblock %}
+{% block content %}
+<div class="section-title"><h2>👥 Batches</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+
+<div class="card" style="margin-bottom:20px"><div class="body">
+  <h3 style="margin-top:0">New batch</h3>
+  <form method="post" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+    <label>Batch name<input type="text" name="name" required maxlength="160" placeholder="e.g. Data Science — Morning"></label>
+    <label>Course<select name="course_id" required>{% for c in courses %}<option value="{{ c.id }}">{{ c.title }}</option>{% endfor %}</select></label>
+    <label>Trainer<select name="faculty_id"><option value="">—</option>{% for f in faculty %}<option value="{{ f.id }}">{{ f.name }}</option>{% endfor %}</select></label>
+    <label>Start date<input type="date" name="start_date"></label>
+    <label>End date<input type="date" name="end_date"></label>
+    <label>Capacity<input type="number" name="capacity" value="50" min="1"></label>
+    <label>Schedule notes<input type="text" name="schedule_text" maxlength="200" placeholder="e.g. Mon–Fri 7–9 PM"></label>
+    <div style="align-self:end"><button class="btn btn-gold btn-sm" type="submit">Create batch</button></div>
+  </form>
+</div></div>
+
+{% for b in batches %}
+<div class="lesson-row">
+  <span style="flex:1"><b>{{ b.name }}</b><br>
+    <small style="color:var(--muted)">{{ b.course.title }} · {{ b.members|length }}/{{ b.capacity }} students
+    {% if b.faculty %} · 👨‍🏫 {{ b.faculty.name }}{% endif %}
+    {% if b.start_date %} · from {{ b.start_date.strftime('%d %b %Y') }}{% endif %}</small></span>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.batch_detail', batch_id=b.id) }}">Open</a>
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No batches yet — create the first one above.</p></div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Invoices — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🧾 Invoices</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.invoice_settings') }}">⚙ Settings</a>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.finance') }}">💰 Finance</a></div>
+
+{% if uninvoiced %}
+<div class="card" style="margin-bottom:20px"><div class="body">
+  <h3 style="margin-top:0">Paid enrollments awaiting invoice</h3>
+  {% for e in uninvoiced %}
+  <div class="lesson-row">
+    <span style="flex:1"><b>{{ e.user.name }}</b> — {{ e.course.title }}<br>
+      <small style="color:var(--muted)">Paid Rs. {{ "{:,}".format(e.amount_paid or 0) }} · {{ e.enrolled_at.strftime('%d %b %Y') if e.enrolled_at }}</small></span>
+    <form class="inline-form" method="post" action="{{ url_for('ops.invoice_issue', enrollment_id=e.id) }}">
+      <button class="btn btn-gold btn-sm" type="submit">Issue invoice</button>
+    </form>
+  </div>
+  {% endfor %}
+</div></div>
+{% endif %}
+
+<div class="card"><div class="body" style="padding:0;overflow-x:auto">
+<table style="width:100%;border-collapse:collapse;font-size:.9rem;min-width:640px">
+  <tr style="color:var(--muted);text-align:left"><th style="padding:10px">Number</th><th>Date</th><th>Student</th><th>Course</th><th>Total</th><th></th></tr>
+  {% for i in invoices %}
+  <tr style="border-top:1px solid var(--line)">
+    <td style="padding:10px"><b style="color:var(--gold-light)">{{ i.number }}</b></td>
+    <td>{{ i.issued_at.strftime('%d %b %Y') if i.issued_at }}</td>
+    <td>{{ i.user.name }}</td><td>{{ i.course.title }}</td>
+    <td>Rs. {{ "{:,}".format(i.total) }}</td>
+    <td style="text-align:right;white-space:nowrap">
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.invoice_view', invoice_id=i.id) }}">View</a>
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.invoice_pdf', invoice_id=i.id) }}">⬇ PDF</a>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" style="padding:16px;color:var(--muted)">No invoices issued yet.</td></tr>
+  {% endfor %}
+</table>
+</div></div>
+{% endblock %}

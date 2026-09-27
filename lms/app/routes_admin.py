@@ -70,6 +70,10 @@ def user_toggle(user_id):
     else:
         user.is_active = not user.is_active
         db.session.commit()
+        from . import operations as _OPS  # Phase 9: audit log
+        _OPS.audit(current_user, "user.toggle", "user", user.id,
+                   f"{user.email} -> {'active' if user.is_active else 'inactive'}",
+                   request.remote_addr)
         flash(f"{user.email} {'activated' if user.is_active else 'deactivated'}.", "info")
     return redirect(url_for("admin.users"))
 
@@ -80,8 +84,12 @@ def user_role(user_id):
     user = User.query.get_or_404(user_id)
     role = request.form.get("role", "")
     if role in ROLES and user.id != current_user.id:
+        old = user.role
         user.role = role
         db.session.commit()
+        from . import operations as _OPS  # Phase 9: audit log
+        _OPS.audit(current_user, "user.role_change", "user", user.id,
+                   f"{user.email}: {old} -> {role}", request.remote_addr)
         flash(f"{user.email} is now {role}.", "success")
     return redirect(url_for("admin.users"))
 
@@ -173,6 +181,10 @@ def coupons():
             db.session.add(Coupon(code=code, percent_off=max(1, min(100, pct)),
                                   active=bool(request.form.get("active"))))
             db.session.commit()
+            from . import operations as _OPS  # Phase 9: audit log
+            _OPS.audit(current_user, "coupon.create", "coupon", None,
+                       f"Created coupon {code} ({pct}% off)",
+                       request.remote_addr)
             flash(f"Coupon {code} created.", "success")
         return redirect(url_for("admin.coupons"))
     all_coupons = Coupon.query.order_by(Coupon.code).all()
@@ -186,6 +198,10 @@ def coupon_toggle(coupon_id):
     coupon = Coupon.query.get_or_404(coupon_id)
     coupon.active = not coupon.active
     db.session.commit()
+    from . import operations as _OPS  # Phase 9: audit log
+    _OPS.audit(current_user, "coupon.toggle", "coupon", coupon.id,
+               f"{'Activated' if coupon.active else 'Deactivated'} coupon {coupon.code}",
+               request.remote_addr)
     return redirect(url_for("admin.coupons"))
 
 
@@ -194,8 +210,12 @@ def coupon_toggle(coupon_id):
 def coupon_delete(coupon_id):
     from .models import Coupon
     coupon = Coupon.query.get_or_404(coupon_id)
+    code = coupon.code
     db.session.delete(coupon)
     db.session.commit()
+    from . import operations as _OPS  # Phase 9: audit log
+    _OPS.audit(current_user, "coupon.delete", "coupon", coupon_id,
+               f"Deleted coupon {code}", request.remote_addr)
     flash("Coupon deleted.", "info")
     return redirect(url_for("admin.coupons"))
 
@@ -252,13 +272,22 @@ def announcements():
         else:
             if request.form.get("deactivate_others"):
                 Announcement.query.update({"active": False})
+            batch_id = request.form.get("batch_id", type=int) or None
             db.session.add(Announcement(title=title, body=body,
-                                        active=bool(request.form.get("active"))))
+                                        active=bool(request.form.get("active")),
+                                        batch_id=batch_id))
             db.session.commit()
+            from . import operations as _OPS  # Phase 9: audit log
+            _OPS.audit(current_user, "announcement.create", "announcement",
+                       None, f"Posted announcement '{title}'",
+                       request.remote_addr)
             flash("Announcement posted.", "success")
         return redirect(url_for("admin.announcements"))
     items = Announcement.query.order_by(Announcement.created_at.desc()).limit(20).all()
-    return render_template("admin_announcements.html", announcements=items)
+    from .models import Batch
+    batches = Batch.query.order_by(Batch.name).all()
+    return render_template("admin_announcements.html", announcements=items,
+                           batches=batches)
 
 
 @admin_bp.route("/announcements/<int:ann_id>/toggle", methods=["POST"])
@@ -267,6 +296,10 @@ def announcement_toggle(ann_id):
     ann = Announcement.query.get_or_404(ann_id)
     ann.active = not ann.active
     db.session.commit()
+    from . import operations as _OPS  # Phase 9: audit log
+    _OPS.audit(current_user, "announcement.toggle", "announcement", ann.id,
+               f"'{ann.title}' -> {'active' if ann.active else 'inactive'}",
+               request.remote_addr)
     return redirect(url_for("admin.announcements"))
 
 
@@ -274,8 +307,12 @@ def announcement_toggle(ann_id):
 @admin_required
 def announcement_delete(ann_id):
     ann = Announcement.query.get_or_404(ann_id)
+    title = ann.title
     db.session.delete(ann)
     db.session.commit()
+    from . import operations as _OPS  # Phase 9: audit log
+    _OPS.audit(current_user, "announcement.delete", "announcement", ann_id,
+               f"Deleted announcement '{title}'", request.remote_addr)
     flash("Announcement deleted.", "info")
     return redirect(url_for("admin.announcements"))
 

@@ -189,6 +189,15 @@ def _exam_settings_from_form(form, quiz=None):
     quiz.max_attempts = max(0, int(form.get("max_attempts", 0) or 0))
     if form.get("score_policy") in ("best", "latest"):
         quiz.score_policy = form.get("score_policy")
+    # Phase 9 — exam deadline (§4.6)
+    _dl = (form.get("deadline") or "").strip()
+    if _dl:
+        try:
+            quiz.deadline = datetime.strptime(_dl, "%Y-%m-%d").date()
+        except ValueError:
+            pass
+    elif form.get("deadline_clear"):
+        quiz.deadline = None
     return quiz
 
 

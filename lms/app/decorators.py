@@ -20,3 +20,22 @@ def role_required(*roles):
 admin_required = role_required("admin")
 manager_or_admin = role_required("admin", "manager")
 content_manager_required = role_required("admin", "manager", "faculty")
+
+
+def permission_required(module, action):
+    """Phase 9 (§18.3): enforce the granular permission matrix.
+
+    Checks the DB-backed role × module × action matrix (seeded with
+    defaults that mirror the legacy role checks). Falls back to built-in
+    defaults before the matrix is seeded. Admins always pass.
+    """
+    def decorator(fn):
+        @wraps(fn)
+        @login_required
+        def wrapper(*args, **kwargs):
+            from .operations import has_permission  # lazy: avoid import cycle
+            if not has_permission(current_user, module, action):
+                abort(403)
+            return fn(*args, **kwargs)
+        return wrapper
+    return decorator

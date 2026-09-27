@@ -15,6 +15,10 @@
         <label>Time limit (minutes, 0 = no limit)</label>
         <input type="number" name="time_limit_min" value="{{ quiz.time_limit_min if quiz else 0 }}" min="0" max="600">
       </div>
+      <div>
+        <label>Exam deadline (shows on calendar, optional)</label>
+        <input type="date" name="deadline" value="{{ quiz.deadline.isoformat() if quiz and quiz.deadline }}">
+      </div>
     </div>
     <div class="two-col" style="margin-top:10px">
       <div>

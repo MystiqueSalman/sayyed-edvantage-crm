@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Mark Attendance — {{ session.title }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📝 Attendance — {{ session.title }}</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.course_attendance', course_id=session.course_id) }}">📊 Course report</a></div>
+<p style="color:var(--muted);font-size:.9rem">{{ session.course.title }} · {{ session.starts_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+
+<form method="post">
+<div class="card"><div class="body" style="padding:0">
+<table style="width:100%;border-collapse:collapse;font-size:.9rem">
+  <tr style="color:var(--muted);text-align:left"><th style="padding:10px">Student</th><th>Present</th><th>Late</th><th>Absent</th><th>Minutes</th><th>Source</th></tr>
+  {% for st in report.students %}
+  {% set rec = rec_by_user.get(st.user.id) %}
+  <tr style="border-top:1px solid var(--line)">
+    <td style="padding:10px"><b>{{ st.user.name }}</b><br><small style="color:var(--muted)">{{ st.user.email }}</small></td>
+    {% for v in ['present','late','absent'] %}
+    <td style="text-align:center"><input type="radio" name="status_{{ st.user.id }}" value="{{ v }}"
+      {{ 'checked' if rec and rec.status == v else ('checked' if not rec and v == 'present') }}
+      style="width:auto;transform:scale(1.3)"></td>
+    {% endfor %}
+    <td><input type="number" name="dur_{{ st.user.id }}" min="0" max="600" placeholder="—"
+      value="{{ rec.duration_min if rec and rec.duration_min is not none }}" style="width:70px"></td>
+    <td><small style="color:var(--muted)">{{ '🤖 auto' if rec and rec.auto else ('✋ manual' if rec else '—') }}</small></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" style="padding:16px;color:var(--muted)">No enrolled students yet.</td></tr>
+  {% endfor %}
+</table>
+</div></div>
+<button class="btn btn-gold" type="submit" style="margin-top:14px">Save attendance</button>
+</form>
+{% endblock %}

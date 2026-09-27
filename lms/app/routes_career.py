@@ -416,6 +416,10 @@ def admin_employer_approve(user_id):
         abort(404)
     u.is_active = True
     db.session.commit()
+    from . import operations as _OPS  # Phase 9: audit log
+    _OPS.audit(current_user, "employer.approve", "user", u.id,
+               f"Approved employer {u.email} ({u.company})",
+               request.remote_addr)
     flash(f"Employer {u.email} approved.", "success")
     return redirect(url_for("career.admin_employers"))
 
@@ -426,9 +430,14 @@ def admin_employer_reject(user_id):
     u = User.query.get_or_404(user_id)
     if u.role != ROLE_EMPLOYER:
         abort(404)
+    email = u.email
     db.session.delete(u)
     db.session.commit()
-    flash(f"Employer application {u.email} rejected and removed.", "info")
+    from . import operations as _OPS  # Phase 9: audit log
+    _OPS.audit(current_user, "employer.reject", "user", user_id,
+               f"Rejected employer application {email}",
+               request.remote_addr)
+    flash(f"Employer application {email} rejected and removed.", "info")
     return redirect(url_for("career.admin_employers"))
 
 

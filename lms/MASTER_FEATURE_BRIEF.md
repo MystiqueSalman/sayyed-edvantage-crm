@@ -469,6 +469,16 @@ The finished platform should provide:
 - Migration `b7e21c94d0a8` (8 new tables); verified: blank-chain `flask db upgrade` → head, Phase 7 → 8 upgrade with legacy data preserved, production-style `create_all()` zero-step deploy.
 - Tests: **46/46 new** + 36/36 Phase 1 + 92/92 Phase 2 + 78/78 Phase 3 + 80/80 Phase 4 + 43/43 chat fixes + 62/62 Phase 5 + 50/50 Phase 6 + 62/62 Phase 7 = **549/549** on fresh migrated DBs (each suite on its own fresh DB).
 
+## PHASE 9 DELIVERED (2026-09-28)
+- **Attendance (§4.3):** auto-marking on `/live/join/<id>` (present within 10-min grace, late after; manual faculty decisions never overwritten); faculty per-session marking grid + per-course report with % math and CSV export; student detail page shows live-class join buttons that route through attendance first.
+- **Unified calendar (§4.6):** `/calendar` month view + `/calendar/events` JSON aggregating live sessions, assignment due dates, **exam deadlines** (new nullable `Quiz.deadline`, editable on the faculty quiz form), project deadlines, challenge windows — no duplicate event table.
+- **Batch management (§18.4):** batches with capacity, schedule text, start/end dates; roster add/remove with capacity enforcement; batch detail shows attendance % + course progress per member; batch enrollment also ensures course enrollment; batch-targeted announcements (shown on batch detail, excluded from the global site banner).
+- **Audit logs (§18.6):** append-only `audit_logs` for user role/toggle, coupon create/toggle/delete, announcement create/toggle/delete, batch create/enroll/remove, employer approve/reject, invoice issue/settings, refund request/approve/reject, permission matrix updates; filterable admin page `/admin/audit-logs`.
+- **Granular permissions (§18.3):** DB-backed `role_permissions` matrix (16 modules × view/create/edit/delete) with admin UI; defaults preserve legacy role behavior (admin all, manager broad-minus-system, faculty own-course, student self-service, employer own jobs); enforced via `permission_required` on all new routes.
+- **Invoices & finance (§11.4–11.5):** invoice settings (business, GSTIN, SAC 999293, 18% GST, prefix); sequential `SE-<year>-0001` numbering; GST math (base − coupon discount = taxable; 18% GST; total); idempotent issue per paid enrollment; ReportLab tax-invoice PDF; finance dashboard (revenue, discounts, refunds, net) reconciled to enrollment payment records + CSV export; refund request/approve/reject flow.
+- Migration `d9f3a2b1c4e5` (6 new tables + 3 column adds incl. `quizzes.deadline`); verified: blank-chain `flask db upgrade` → head, Phase 8 → 9 upgrade, production-style `create_all()` + schema patches zero-step deploy.
+- Tests: **68/68 new** + 36/36 Phase 1 + 92/92 Phase 2 + 78/78 Phase 3 + 80/80 Phase 4 + 43/43 chat fixes + 62/62 Phase 5 + 50/50 Phase 6 + 62/62 Phase 7 + 46/46 Phase 8 = **617/617** on fresh migrated DBs (each suite on its own fresh DB).
+
 ## BUILD STATUS (living)
 - [x] Phase 1 — core LMS: roles, courses, lessons, quizzes, assignments, certificates, coupons, Razorpay stub
 - [x] Phase 2 — live Jitsi classes, drip lessons, email automation, discussions, analytics, PWA, reviews, cert verify, progress, announcements, search, wishlist
@@ -478,7 +488,7 @@ The finished platform should provide:
 - [x] Phase 6 — Assessments pro: question bank (§5.2), 6 question types (§5.1), timed exams + negative marking + attempt limits + score policy (§5.3), exam analytics (§5.4), projects (§5.5), certificate score policy (§5.6)
 - [x] Phase 7 — Career & placements complete: resume builder (§27.2), portfolio (§27.3), interview prep (§27.4), readiness score (§27.6), employer portal (§13.3), placement analytics (§13.6)
 - [x] Phase 8 — Gamification & engagement: points (§15), badges (§15), streaks (§15), challenges (§15)
-- [ ] Phase 9 — Faculty & operations: attendance (§4.3), calendar (§4.6), batch management (§18.4), audit logs (§18.6), granular permissions (§18.3), invoices + finance dashboard (§11.4–11.5)
+- [x] Phase 9 — Faculty & operations: attendance (§4.3), calendar (§4.6), batch management (§18.4), audit logs (§18.6), granular permissions (§18.3), invoices + finance dashboard (§11.4–11.5)
 - [ ] Phase 10 — Platform hardening: Postgres migration, REST API + webhooks + docs (§25), backups & monitoring (§24), notification center + templates (§12.4–12.5), SEO (§20.6)
 - [ ] Phase 11 — Marketing suite: landing page builder (§20.1), campaigns (§20.2/20.5), affiliates (§20.4), analytics integrations (§20.7)
 - [ ] Phase 12 — Advanced/future: multi-tenant SaaS (§1.4), multi-language (§23), coding labs (§7), adaptive engine (§28.1), virtual labs (§28.4), white-label (§28.7), enterprise (§28.6)

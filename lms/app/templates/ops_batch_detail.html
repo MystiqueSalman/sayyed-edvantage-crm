@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Batch — {{ summary.batch.name }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>👥 {{ summary.batch.name }}</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.batch_list') }}">← Batches</a></div>
+<p style="color:var(--muted);font-size:.9rem">{{ summary.batch.course.title }}
+  {% if summary.batch.faculty %} · 👨‍🏫 {{ summary.batch.faculty.name }}{% endif %}
+  {% if summary.batch.start_date %} · {{ summary.batch.start_date.strftime('%d %b %Y') }}{% endif %}
+  {% if summary.batch.end_date %} → {{ summary.batch.end_date.strftime('%d %b %Y') }}{% endif %}
+  {% if summary.batch.schedule_text %} · {{ summary.batch.schedule_text }}{% endif %}</p>
+
+<div class="card" style="margin-bottom:20px"><div class="body">
+  <h3 style="margin-top:0">Add student <small style="color:var(--muted)">({{ summary.count }}/{{ summary.capacity }})</small></h3>
+  <form method="post" style="display:flex;gap:10px;align-items:end">
+    <label style="flex:1">Student email<input type="email" name="email" required placeholder="student@example.com"></label>
+    <button class="btn btn-gold btn-sm" type="submit">Add to batch</button>
+  </form>
+</div></div>
+
+<div class="card" style="margin-bottom:20px"><div class="body" style="padding:0">
+<table style="width:100%;border-collapse:collapse;font-size:.9rem">
+  <tr style="color:var(--muted);text-align:left"><th style="padding:10px">Student</th><th>Attendance</th><th>Progress</th><th></th></tr>
+  {% for m in summary.members %}
+  <tr style="border-top:1px solid var(--line)">
+    <td style="padding:10px"><b>{{ m.user.name }}</b><br><small style="color:var(--muted)">{{ m.user.email }}</small></td>
+    <td>{{ m.attendance ~ '%' if m.attendance is not none else '—' }}</td>
+    <td>{{ m.progress }}%</td>
+    <td style="text-align:right">
+      <form class="inline-form" method="post" action="{{ url_for('ops.batch_remove', batch_id=summary.batch.id, user_id=m.user.id) }}"
+            onsubmit="return confirm('Remove {{ m.user.name }} from this batch?')">
+        <button class="btn btn-danger btn-sm" type="submit">Remove</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="4" style="padding:16px;color:var(--muted)">No students in this batch yet.</td></tr>
+  {% endfor %}
+</table>
+</div></div>
+
+{% if batch_announcements %}
+<div class="card"><div class="body">
+  <h3 style="margin-top:0">📢 Batch announcements</h3>
+  {% for a in batch_announcements %}
+  <div class="lesson-row"><span style="flex:1"><b>{{ a.title }}</b><br><small style="color:var(--muted)">{{ a.body }}</small></span></div>
+  {% endfor %}
+</div></div>
+{% endif %}
+{% endblock %}

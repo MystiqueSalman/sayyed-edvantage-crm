@@ -12,6 +12,11 @@
     <input type="text" name="title" required maxlength="160" placeholder="e.g. Admissions open for the October batch!">
     <label>Body <span style="color:var(--muted)">(optional)</span></label>
     <textarea name="body" rows="3" placeholder="Extra details…"></textarea>
+    <label>Target batch <span style="color:var(--muted)">(optional — batch members see it on their batch page)</span></label>
+    <select name="batch_id">
+      <option value="">All students (site-wide)</option>
+      {% for b in batches %}<option value="{{ b.id }}">{{ b.name }} — {{ b.course.title }}</option>{% endfor %}
+    </select>
     <p style="display:flex; gap:18px; align-items:center; margin-top:12px">
       <label style="margin:0"><input type="checkbox" name="active" value="1" checked style="width:auto"> Active</label>
       <label style="margin:0"><input type="checkbox" name="deactivate_others" value="1" style="width:auto"> Deactivate all others</label>

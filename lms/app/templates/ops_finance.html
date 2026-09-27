@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Finance Dashboard — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>💰 Finance</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.finance_csv') }}">⬇ Payment history CSV</a>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.invoices') }}">🧾 Invoices</a>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.refunds') }}">↩ Refunds</a></div>
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px">
+  {% for label, val in [
+    ('💵 Revenue collected', 'Rs. ' ~ "{:,}".format(s.revenue)),
+    ('✅ Paid enrollments', s.paid_count),
+    ('⏳ Pending fees', 'Rs. ' ~ "{:,}".format(s.pending_fees)),
+    ('🧾 Pending enrollments', s.pending_count),
+    ('↩ Refunds (approved)', 'Rs. ' ~ "{:,}".format(s.refunds_total)),
+    ('🎟 Coupon discounts', 'Rs. ' ~ "{:,}".format(s.discounts_total))] %}
+  <div class="card"><div class="body" style="text-align:center">
+    <div style="color:var(--muted);font-size:.8rem">{{ label }}</div>
+    <div style="font-size:1.4rem;color:var(--gold-light);font-weight:700">{{ val }}</div>
+  </div></div>
+  {% endfor %}
+</div>
+
+<div class="card" style="margin-bottom:20px"><div class="body">
+  <h3 style="margin-top:0">Collections by month</h3>
+  <canvas id="revChart" height="90"></canvas>
+</div></div>
+
+<div class="card"><div class="body" style="padding:0;overflow-x:auto">
+<table style="width:100%;border-collapse:collapse;font-size:.85rem;min-width:700px">
+  <tr style="color:var(--muted);text-align:left"><th style="padding:10px">Date</th><th>Student</th><th>Course</th><th>Paid</th><th>Coupon</th><th>Payment ref</th></tr>
+  {% for e in s.history[:100] %}
+  <tr style="border-top:1px solid var(--line)">
+    <td style="padding:10px">{{ e.enrolled_at.strftime('%d %b %Y') if e.enrolled_at }}</td>
+    <td>{{ e.user.name }}<br><small style="color:var(--muted)">{{ e.user.email }}</small></td>
+    <td>{{ e.course.title if e.course }}</td>
+    <td>Rs. {{ "{:,}".format(e.amount_paid or 0) }}</td>
+    <td>{{ e.coupon_code or '—' }}</td>
+    <td><small style="color:var(--muted)">{{ e.razorpay_payment_id or '—' }}</small></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" style="padding:16px;color:var(--muted)">No payments recorded yet.</td></tr>
+  {% endfor %}
+</table>
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById("revChart"), {type:"bar",
+  data:{labels:{{ s.by_month|map(attribute=0)|list|tojson }},
+    datasets:[{data:{{ s.by_month|map(attribute=1)|list|tojson }},
+      backgroundColor:"#d4af37"}]},
+  options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+</script>
+{% endblock %}

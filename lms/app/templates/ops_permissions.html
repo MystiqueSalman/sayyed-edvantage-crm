@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Permissions — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🔐 Permission Matrix</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<p style="color:var(--muted);font-size:.9rem">Module × action access per role. Faculty course scoping ("own courses") is still enforced separately in each route.</p>
+
+<form method="post">
+<div class="card"><div class="body" style="padding:0;overflow-x:auto">
+<table style="width:100%;border-collapse:collapse;font-size:.8rem;min-width:900px">
+  <tr style="color:var(--muted)"><th style="padding:8px;text-align:left;position:sticky;left:0">Module</th>
+    {% for r in roles %}<th colspan="4" style="padding:8px;border-left:1px solid var(--line)">{{ r }}</th>{% endfor %}</tr>
+  <tr style="color:var(--muted);font-size:.72rem"><th></th>
+    {% for r in roles %}<th style="border-left:1px solid var(--line)">V</th><th>C</th><th>E</th><th>D</th>{% endfor %}</tr>
+  {% for m in modules %}
+  <tr style="border-top:1px solid var(--line)">
+    <td style="padding:8px"><b>{{ m }}</b></td>
+    {% for r in roles %}
+    {% set row = matrix[r][m] %}
+    {% for a in ['view','create','edit','delete'] %}
+    <td style="text-align:center;border-left:1px solid var(--line);padding:4px">
+      <input type="checkbox" name="p|{{ r }}|{{ m }}|{{ a }}" {{ 'checked' if row and row['can_'+a] }} style="width:auto;transform:scale(1.2)"
+        {{ 'disabled' if r == 'admin' }}>
+    </td>
+    {% endfor %}{% endfor %}
+  </tr>
+  {% endfor %}
+</table>
+</div></div>
+<button class="btn btn-gold" type="submit" style="margin-top:14px">Save matrix</button>
+</form>
+<p style="color:var(--muted);font-size:.8rem;margin-top:8px">Admin is always full access and cannot be edited here. V=view C=create E=edit D=delete.</p>
+{% endblock %}

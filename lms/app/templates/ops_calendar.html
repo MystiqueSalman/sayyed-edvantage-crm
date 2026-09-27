@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Calendar — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📅 Calendar</h2><div class="line"></div>
+  <span style="color:var(--muted);font-size:.85rem">Classes · assignments · exam deadlines · project deadlines · challenges</span></div>
+
+<div class="card"><div class="body">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+    <button class="btn btn-ghost btn-sm" id="prev">←</button>
+    <h3 id="mtitle" style="margin:0;flex:1;text-align:center"></h3>
+    <button class="btn btn-ghost btn-sm" id="next">→</button>
+    <button class="btn btn-ghost btn-sm" id="today">Today</button>
+  </div>
+  <div id="grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div>
+  <div id="daylist" style="margin-top:18px"></div>
+</div></div>
+
+<script>
+let EVENTS = [], cursor = new Date();
+const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+fetch("{{ url_for('ops.calendar_events') }}").then(r => r.json()).then(d => {
+  EVENTS = d; render();
+});
+function ymd(dt){ return dt.toISOString().slice(0,10); }
+function render(){
+  const y = cursor.getFullYear(), m = cursor.getMonth();
+  document.getElementById("mtitle").textContent =
+    cursor.toLocaleString("en-IN", {month:"long", year:"numeric"});
+  const first = new Date(y, m, 1);
+  let startCol = (first.getDay() + 6) % 7;
+  const days = new Date(y, m + 1, 0).getDate();
+  const g = document.getElementById("grid"); g.innerHTML = "";
+  DOW.forEach(d => { const h = document.createElement("div");
+    h.innerHTML = "<b>"+d+"</b>"; h.style.cssText = "text-align:center;color:var(--muted);font-size:.8rem;padding:4px";
+    g.appendChild(h); });
+  for (let i = 0; i < startCol; i++) g.appendChild(document.createElement("div"));
+  const byDay = {};
+  EVENTS.forEach(e => { const k = e.start.slice(0,10);
+    (byDay[k] = byDay[k] || []).push(e); });
+  const todayK = ymd(new Date());
+  for (let d = 1; d <= days; d++){
+    const k = y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
+    const cell = document.createElement("div");
+    cell.style.cssText = "min-height:64px;border:1px solid var(--line);border-radius:8px;padding:4px;font-size:.78rem;cursor:pointer" +
+      (k === todayK ? ";border-color:var(--gold)" : "");
+    cell.innerHTML = "<b>"+d+"</b>";
+    (byDay[k] || []).slice(0,3).forEach(e => {
+      const s = document.createElement("div");
+      s.textContent = e.title.slice(0,22);
+      s.style.cssText = "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--gold-light)";
+      cell.appendChild(s);
+    });
+    if ((byDay[k] || []).length > 3){
+      const s = document.createElement("div");
+      s.textContent = "+" + (byDay[k].length - 3) + " more";
+      s.style.color = "var(--muted)"; cell.appendChild(s);
+    }
+    cell.onclick = () => showDay(k, byDay[k] || []);
+    g.appendChild(cell);
+  }
+}
+function showDay(k, evs){
+  const el = document.getElementById("daylist");
+  let html = "<h4 style='margin:0 0 8px'>" + k + "</h4>";
+  html += evs.length ? evs.map(e =>
+    "<div class='lesson-row'><span style='flex:1'><b>"+e.title+"</b><br><small style='color:var(--muted)'>"+
+    (e.course||"")+" · "+(e.start||"").slice(11,16)+"</small></span>"+
+    (e.url ? "<a class='btn btn-ghost btn-sm' href='"+e.url+"'>Open</a>" : "")+"</div>"
+  ).join("") : "<p style='color:var(--muted)'>Nothing scheduled.</p>";
+  el.innerHTML = html;
+}
+document.getElementById("prev").onclick = () => { cursor.setMonth(cursor.getMonth()-1); render(); };
+document.getElementById("next").onclick = () => { cursor.setMonth(cursor.getMonth()+1); render(); };
+document.getElementById("today").onclick = () => { cursor = new Date(); render(); };
+</script>
+{% endblock %}

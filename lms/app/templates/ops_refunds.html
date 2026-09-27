@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Refunds — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>↩ Refunds</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.finance') }}">💰 Finance</a></div>
+
+<div class="card" style="margin-bottom:20px"><div class="body">
+  <h3 style="margin-top:0">New refund request</h3>
+  <form method="post" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;align-items:end">
+    <label>Paid enrollment<select name="enrollment_id" required>
+      {% for e in enrollments %}<option value="{{ e.id }}">{{ e.user.name }} — {{ e.course.title }} (Rs. {{ "{:,}".format(e.amount_paid or 0) }})</option>{% endfor %}
+    </select></label>
+    <label>Amount (INR)<input type="number" name="amount" min="1" required></label>
+    <label>Reason<input type="text" name="reason" maxlength="300" placeholder="e.g. duplicate payment"></label>
+    <div><button class="btn btn-gold btn-sm" type="submit">Record request</button></div>
+  </form>
+</div></div>
+
+<div class="card"><div class="body" style="padding:0;overflow-x:auto">
+<table style="width:100%;border-collapse:collapse;font-size:.9rem;min-width:640px">
+  <tr style="color:var(--muted);text-align:left"><th style="padding:10px">Date</th><th>Student</th><th>Course</th><th>Amount</th><th>Status</th><th></th></tr>
+  {% for r in refunds %}
+  <tr style="border-top:1px solid var(--line)">
+    <td style="padding:10px">{{ r.created_at.strftime('%d %b %Y') if r.created_at }}</td>
+    <td>{{ r.user.name }}<br><small style="color:var(--muted)">{{ r.reason[:60] }}</small></td>
+    <td>{{ r.course.title }}</td><td>Rs. {{ "{:,}".format(r.amount) }}</td>
+    <td>{{ {'requested':'⏳ requested','approved':'✅ approved','rejected':'❌ rejected'}[r.status] }}</td>
+    <td style="text-align:right;white-space:nowrap">
+      {% if r.status == 'requested' %}
+      <form class="inline-form" method="post" action="{{ url_for('ops.refund_decide', refund_id=r.id, decision='approve') }}">
+        <button class="btn btn-gold btn-sm" type="submit">Approve</button></form>
+      <form class="inline-form" method="post" action="{{ url_for('ops.refund_decide', refund_id=r.id, decision='reject') }}">
+        <button class="btn btn-danger btn-sm" type="submit">Reject</button></form>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" style="padding:16px;color:var(--muted)">No refund requests.</td></tr>
+  {% endfor %}
+</table>
+</div></div>
+{% endblock %}

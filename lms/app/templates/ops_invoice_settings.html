@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Invoice Settings — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🧾 Invoice Settings</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.invoices') }}">Invoices</a>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.finance') }}">💰 Finance</a></div>
+<p style="color:var(--muted);font-size:.9rem">Business and tax details printed on every invoice. Course fees are exclusive of GST.</p>
+
+<form method="post">
+<div class="card"><div class="body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+  <label>Business name<input type="text" name="business_name" value="{{ settings.business_name }}" maxlength="160"></label>
+  <label>Address<textarea name="address" rows="2">{{ settings.address }}</textarea></label>
+  <label>Email<input type="email" name="email" value="{{ settings.email }}" maxlength="160"></label>
+  <label>Phone<input type="text" name="phone" value="{{ settings.phone }}" maxlength="30"></label>
+  <label>GSTIN <span style="color:var(--muted)">(optional)</span><input type="text" name="gstin" value="{{ settings.gstin }}" maxlength="20" placeholder="e.g. 27ABCDE1234F1Z5"></label>
+  <label>SAC code<input type="text" name="sac_code" value="{{ settings.sac_code }}" maxlength="10"></label>
+  <label>GST rate %<input type="number" step="0.1" min="0" max="40" name="gst_rate" value="{{ settings.gst_rate }}"></label>
+  <label>Invoice prefix<input type="text" name="invoice_prefix" value="{{ settings.invoice_prefix }}" maxlength="10"></label>
+  <label>Next invoice number<input type="number" value="{{ settings.next_number }}" disabled title="Auto-increments on issue"></label>
+  <label>Footer notes<textarea name="notes" rows="2">{{ settings.notes }}</textarea></label>
+</div></div>
+<button class="btn btn-gold" type="submit" style="margin-top:14px">Save settings</button>
+</form>
+{% endblock %}

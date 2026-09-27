@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Attendance Report — {{ course.title }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📊 Attendance — {{ course.title }}</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.course_attendance', course_id=course.id, format='csv') }}">⬇ CSV</a></div>
+
+<div class="card"><div class="body" style="padding:0;overflow-x:auto">
+<table style="width:100%;border-collapse:collapse;font-size:.85rem;min-width:640px">
+  <tr style="color:var(--muted);text-align:left">
+    <th style="padding:10px">Student</th>
+    {% for s in report.sessions %}<th title="{{ s.starts_at.strftime('%d %b %Y') }}">S{{ loop.index }}</th>{% endfor %}
+    <th>Present</th><th>%</th>
+  </tr>
+  {% for st in report.students %}
+  <tr style="border-top:1px solid var(--line)">
+    <td style="padding:10px"><b>{{ st.user.name }}</b></td>
+    {% for s in report.sessions %}
+    {% set v = st.records.get(s.id, '—') %}
+    <td style="text-align:center">{{ '✅' if v == 'present' else ('🕐' if v == 'late' else ('❌' if v == 'absent' else '—')) }}</td>
+    {% endfor %}
+    <td style="text-align:center">{{ st.present }}/{{ st.total }}</td>
+    <td style="text-align:center"><b style="color:{{ 'var(--gold-light)' if st.percent >= 75 else ('#e0a458' if st.percent >= 50 else '#e05c5c') }}">{{ st.percent }}%</b></td>
+  </tr>
+  {% else %}
+  <tr><td colspan="99" style="padding:16px;color:var(--muted)">{% if report.sessions %}No enrolled students yet.{% else %}No live sessions scheduled for this course yet.{% endif %}</td></tr>
+  {% endfor %}
+</table>
+</div></div>
+<p style="color:var(--muted);font-size:.8rem;margin-top:10px">S-columns are live sessions in date order. Present + late count as attended.</p>
+{% endblock %}

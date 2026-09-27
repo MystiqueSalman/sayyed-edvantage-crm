@@ -209,6 +209,8 @@ class Quiz(db.Model):
     negative_marking = db.Column(db.Float, default=0.0)  # e.g. 0.25 per wrong MCQ
     max_attempts = db.Column(db.Integer, default=0)  # 0 = unlimited
     score_policy = db.Column(db.String(10), default="best")  # best|latest
+    # Phase 9 — exam deadline (§4.6 calendar)
+    deadline = db.Column(db.Date, nullable=True)
 
     questions = db.relationship("Question", backref="quiz", cascade="all, delete-orphan",
                                 order_by="Question.position")
@@ -546,7 +548,10 @@ class Announcement(db.Model):
     title = db.Column(db.String(160), nullable=False)
     body = db.Column(db.Text, default="")
     active = db.Column(db.Boolean, default=True)
+    batch_id = db.Column(db.Integer, db.ForeignKey("batches.id"), nullable=True)  # Phase 9: batch-targeted
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    batch = db.relationship("Batch")
 
 
 class EmailSettings(db.Model):
@@ -854,6 +859,7 @@ class Batch(db.Model):
     faculty_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     schedule_text = db.Column(db.String(200), default="")
     start_date = db.Column(db.Date, nullable=True)
+    end_date = db.Column(db.Date, nullable=True)  # Phase 9: batch management
     capacity = db.Column(db.Integer, default=50)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -1351,3 +1357,173 @@ class GamificationSetting(db.Model):
             db.session.add(row)
             db.session.commit()
         return row
+
+
+# ================================================================ Phase 9 — Faculty & Operations
+# (§4.3 attendance, §4.6 calendar, §18.4 batches, §18.6 audit logs,
+#  §18.3 granular permissions, §11.4–11.5 invoices & finance)
+
+
+class SessionAttendance(db.Model):
+    """Per-student attendance record for a live session (§4.3).
+
+    Auto-marked present when a student joins via the LMS join link
+    (`/live/join/<id>`); faculty can manually override afterwards.
+    """
+    __tablename__ = "session_attendance"
+    STATUS_PRESENT = "present"
+    STATUS_ABSENT = "absent"
+    STATUS_LATE = "late"
+    STATUSES = (STATUS_PRESENT, STATUS_ABSENT, STATUS_LATE)
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(db.Integer, db.ForeignKey("live_sessions.id"),
+                           nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"),
+                        nullable=False, index=True)
+    status = db.Column(db.String(10), default=STATUS_PRESENT)
+    joined_at = db.Column(db.DateTime, nullable=True)
+    duration_min = db.Column(db.Integer, nullable=True)  # estimated for auto records
+    marked_by = db.Column(db.Integer, db.ForeignKey("users.id"),
+                          nullable=True)  # who marked/overrode manually
+    auto = db.Column(db.Boolean, default=False)  # auto-marked on join
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    __table_args__ = (db.UniqueConstraint("session_id", "user_id",
+                                         name="uq_session_attendance"),)
+
+    session = db.relationship("LiveSession", backref=db.backref(
+        "attendance_records", cascade="all, delete-orphan"))
+    user = db.relationship("User", foreign_keys=[user_id])
+    marker = db.relationship("User", foreign_keys=[marked_by])
+
+    @classmethod
+    def percent(cls, user_id, course_id):
+        """Attendance % for a student across a course's live sessions.
+
+        Returns None when the course has no live sessions yet.
+        Present + late count as attended.
+        """
+        sessions = LiveSession.query.filter_by(course_id=course_id).all()
+        if not sessions:
+            return None
+        sids = [s.id for s in sessions]
+        recs = {r.session_id: r for r in cls.query.filter(
+            cls.session_id.in_(sids), cls.user_id == user_id).all()}
+        attended = sum(
+            1 for s in sessions
+            if recs.get(s.id) and recs[s.id].status in
+            (cls.STATUS_PRESENT, cls.STATUS_LATE))
+        return round(100.0 * attended / len(sessions), 1)
+
+
+class AuditLog(db.Model):
+    """Immutable record of important admin/manager/faculty actions (§18.6)."""
+    __tablename__ = "audit_logs"
+    id = db.Column(db.Integer, primary_key=True)
+    actor_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    actor_email = db.Column(db.String(160), default="")
+    action = db.Column(db.String(80), nullable=False, index=True)  # e.g. "coupon.create"
+    target_type = db.Column(db.String(40), default="")  # e.g. "coupon"
+    target_id = db.Column(db.Integer, nullable=True)
+    detail = db.Column(db.Text, default="")
+    ip = db.Column(db.String(64), default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+
+    actor = db.relationship("User", foreign_keys=[actor_id])
+
+
+class RolePermission(db.Model):
+    """Granular permission matrix: module × action per role (§18.3)."""
+    __tablename__ = "role_permissions"
+    id = db.Column(db.Integer, primary_key=True)
+    role = db.Column(db.String(20), nullable=False, index=True)
+    module = db.Column(db.String(40), nullable=False, index=True)
+    can_view = db.Column(db.Boolean, default=False)
+    can_create = db.Column(db.Boolean, default=False)
+    can_edit = db.Column(db.Boolean, default=False)
+    can_delete = db.Column(db.Boolean, default=False)
+
+    __table_args__ = (db.UniqueConstraint("role", "module",
+                                         name="uq_role_module"),)
+
+
+class InvoiceSetting(db.Model):
+    """Single-row (id=1) business/tax details printed on invoices (§11.4)."""
+    __tablename__ = "invoice_settings"
+    id = db.Column(db.Integer, primary_key=True)
+    business_name = db.Column(db.String(160), default="Sayyed EdVantage")
+    address = db.Column(db.Text, default="")
+    email = db.Column(db.String(160), default="sayyededvantage@gmail.com")
+    phone = db.Column(db.String(30), default="+91 7977877884")
+    gstin = db.Column(db.String(20), default="")
+    sac_code = db.Column(db.String(10), default="999293")
+    gst_rate = db.Column(db.Float, default=18.0)
+    invoice_prefix = db.Column(db.String(10), default="SE")
+    next_number = db.Column(db.Integer, default=1)
+    notes = db.Column(db.Text, default="")
+
+    @classmethod
+    def get(cls):
+        row = db.session.get(cls, 1)
+        if not row:
+            row = cls(id=1)
+            db.session.add(row)
+            db.session.commit()
+        return row
+
+
+class Invoice(db.Model):
+    """Issued invoice/receipt for a paid enrollment (§11.4)."""
+    __tablename__ = "invoices"
+    id = db.Column(db.Integer, primary_key=True)
+    number = db.Column(db.String(40), unique=True, nullable=False,
+                       index=True)  # e.g. SE-2026-0001
+    enrollment_id = db.Column(db.Integer, db.ForeignKey("enrollments.id"),
+                               nullable=False, unique=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"),
+                          nullable=False)
+    base_fee = db.Column(db.Integer, default=0)   # INR, excl. GST
+    discount = db.Column(db.Integer, default=0)   # coupon discount, INR
+    taxable = db.Column(db.Integer, default=0)    # base_fee - discount
+    gst_amount = db.Column(db.Integer, default=0)  # gst_rate % of taxable
+    total = db.Column(db.Integer, default=0)      # taxable + gst_amount
+    issued_at = db.Column(db.DateTime, default=datetime.utcnow)
+    issued_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    enrollment = db.relationship("Enrollment")
+    user = db.relationship("User", foreign_keys=[user_id])
+    course = db.relationship("Course")
+    issuer = db.relationship("User", foreign_keys=[issued_by])
+
+
+class Refund(db.Model):
+    """Refund request + decision for a paid enrollment (§11.5)."""
+    __tablename__ = "refunds"
+    STATUS_REQUESTED = "requested"
+    STATUS_APPROVED = "approved"
+    STATUS_REJECTED = "rejected"
+    STATUSES = (STATUS_REQUESTED, STATUS_APPROVED, STATUS_REJECTED)
+
+    id = db.Column(db.Integer, primary_key=True)
+    enrollment_id = db.Column(db.Integer, db.ForeignKey("enrollments.id"),
+                               nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"),
+                          nullable=False)
+    amount = db.Column(db.Integer, default=0)  # INR
+    reason = db.Column(db.Text, default="")
+    status = db.Column(db.String(20), default=STATUS_REQUESTED, index=True)
+    requested_by = db.Column(db.Integer, db.ForeignKey("users.id"),
+                             nullable=True)
+    decided_by = db.Column(db.Integer, db.ForeignKey("users.id"),
+                           nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    decided_at = db.Column(db.DateTime, nullable=True)
+
+    enrollment = db.relationship("Enrollment")
+    user = db.relationship("User", foreign_keys=[user_id])
+    course = db.relationship("Course")

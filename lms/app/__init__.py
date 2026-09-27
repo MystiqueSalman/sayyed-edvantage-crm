@@ -63,6 +63,7 @@ def create_app():
     def inject_globals():
         from .models import Announcement  # noqa: E402
         announcement = (Announcement.query.filter_by(active=True)
+                        .filter(Announcement.batch_id.is_(None))
                         .order_by(Announcement.created_at.desc()).first())
         return {"now": datetime.utcnow(), "payments_live": app.config["PAYMENTS_LIVE"],
                 "announcement": announcement}
@@ -88,6 +89,7 @@ def create_app():
     from .routes_tutor import tutor_bp  # noqa: E402  (Phase 5: AI tutor/planner)
     from .routes_career import career_bp  # noqa: E402  (Phase 7: career/placements)
     from .routes_game import game_bp  # noqa: E402  (Phase 8: gamification)
+    from .routes_ops import ops_bp  # noqa: E402  (Phase 9: faculty & operations)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -101,6 +103,7 @@ def create_app():
     app.register_blueprint(tutor_bp)
     app.register_blueprint(career_bp)
     app.register_blueprint(game_bp)
+    app.register_blueprint(ops_bp)
 
     with app.app_context():
         if os.environ.get("LMS_SKIP_CREATE_ALL") != "1":
@@ -118,6 +121,14 @@ def create_app():
                     _G.run_backfill()
                 except Exception:
                     db.session.rollback()
+        except Exception:
+            db.session.rollback()
+        # Phase 9: permission matrix defaults (guarded like above).
+        from . import operations as _OPS  # noqa: E402
+        try:
+            from sqlalchemy import inspect as _insp2  # noqa: E402
+            if "role_permissions" in _insp2(db.engine).get_table_names():
+                _OPS.ensure_permission_defaults()
         except Exception:
             db.session.rollback()
 
@@ -168,6 +179,9 @@ def _ensure_schema_patches(app):
          "ALTER TABLE quizzes ADD COLUMN max_attempts INTEGER DEFAULT 0"),
         ("quizzes", "score_policy",
          "ALTER TABLE quizzes ADD COLUMN score_policy VARCHAR(10) DEFAULT 'best'"),
+        # Phase 9 — faculty & operations
+        ("quizzes", "deadline",
+         "ALTER TABLE quizzes ADD COLUMN deadline DATE"),
         ("questions", "qtype",
          "ALTER TABLE questions ADD COLUMN qtype VARCHAR(20) DEFAULT 'mcq_single'"),
         ("questions", "difficulty",
@@ -209,6 +223,11 @@ def _ensure_schema_patches(app):
          "ALTER TABLE jobs ADD COLUMN employer_id INTEGER REFERENCES users(id)"),
         ("job_applications", "employer_note",
          "ALTER TABLE job_applications ADD COLUMN employer_note TEXT DEFAULT ''"),
+        # Phase 9 — faculty & operations
+        ("batches", "end_date",
+         "ALTER TABLE batches ADD COLUMN end_date DATE"),
+        ("announcements", "batch_id",
+         "ALTER TABLE announcements ADD COLUMN batch_id INTEGER REFERENCES batches(id)"),
     ]
     try:
         with app.app_context():
