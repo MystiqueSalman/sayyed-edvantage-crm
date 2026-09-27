@@ -13,6 +13,8 @@ def _landing_for(user):
         return url_for("admin.dashboard")
     if user.role == "manager":
         return url_for("admin.dashboard")
+    if user.role == "counsellor":  # Phase 4: counsellors land on the CRM
+        return url_for("crm.leads")
     if user.role == "faculty":
         return url_for("faculty.dashboard")
     return url_for("student.dashboard")
@@ -65,10 +67,18 @@ def register():
                                      get_or_create_referral_code)
                 get_or_create_referral_code(user)  # every user gets a code
                 ref_code = request.cookies.get(REF_COOKIE, "")
-                if ref_code:
-                    attribute_signup(user, ref_code)
+                ref = attribute_signup(user, ref_code) if ref_code else None
             except Exception:
-                pass  # referrals must never break registration
+                ref = None  # referrals must never break registration
+            try:
+                # Phase 4: referral-driven signups become CRM leads
+                if ref is not None:
+                    from .crm import referral_signup_lead
+                    referral_signup_lead(
+                        user, ref.referrer.name if ref.referrer else "")
+                    db.session.commit()
+            except Exception:
+                db.session.rollback()  # CRM must never break registration
             login_user(user)
             try:
                 from .emailer import send_welcome_email

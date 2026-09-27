@@ -84,6 +84,7 @@ def create_app():
     from .routes_manage import manage_bp  # noqa: E402
     from .routes_discuss import discuss_bp  # noqa: E402
     from .routes_growth import growth_bp  # noqa: E402
+    from .routes_crm import crm_bp  # noqa: E402  (Phase 4: CRM/admissions)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -93,6 +94,7 @@ def create_app():
     app.register_blueprint(manage_bp)
     app.register_blueprint(discuss_bp)
     app.register_blueprint(growth_bp)
+    app.register_blueprint(crm_bp)
 
     with app.app_context():
         if os.environ.get("LMS_SKIP_CREATE_ALL") != "1":

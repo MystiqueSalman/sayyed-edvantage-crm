@@ -41,6 +41,34 @@ document.querySelectorAll(".countdown").forEach(function (el) {
 </script>
 {% endif %}
 
+{% if onboarding and onboarding | selectattr('done', 'equalto', false) | list | length > 0 %}
+<div class="section-title"><h2>🚀 Getting Started</h2><div class="line"></div></div>
+<div class="panel" id="onboarding-panel">
+  {% for item in onboarding %}
+  <label style="display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-bottom:1px solid var(--card-brd); cursor:pointer">
+    <input type="checkbox" data-onboard-key="{{ item.key }}" {% if item.done %}checked{% endif %} style="width:auto; margin-top:4px">
+    <span><b {% if item.done %}style="text-decoration:line-through; color:var(--muted)"{% endif %}>{{ item.title }}</b><br>
+    <small style="color:var(--muted)">{{ item.desc }}</small></span>
+  </label>
+  {% endfor %}
+</div>
+<script>
+document.querySelectorAll("[data-onboard-key]").forEach(function (box) {
+  box.addEventListener("change", function () {
+    fetch("/onboarding/toggle/" + box.dataset.onboardKey, {method: "POST"})
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.ok) {
+          var b = box.closest("label").querySelector("b");
+          b.style.textDecoration = d.done ? "line-through" : "none";
+          b.style.color = d.done ? "var(--muted)" : "";
+        }
+      }).catch(function () {});
+  });
+});
+</script>
+{% endif %}
+
 {% if enrollments %}
 <div class="grid">
   {% for e in enrollments %}

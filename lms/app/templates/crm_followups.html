@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Follow-ups — CRM{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📅 Follow-ups Due</h2><div class="line"></div>
+  <a href="{{ url_for('crm.followups') }}" class="btn btn-ghost btn-sm">All</a>
+  <a href="{{ url_for('crm.followups', mine='1') }}" class="btn btn-ghost btn-sm">Mine only</a>
+  <a href="{{ url_for('crm.leads') }}">← Leads</a></div>
+<div class="panel">
+  <table>
+    <tr><th>Due</th><th>Lead</th><th>Phone</th><th>Status</th><th>Score</th><th>Assignee</th><th></th></tr>
+    {% for l in items %}
+    <tr>
+      <td><b>{{ l.follow_up_date.strftime('%d %b %Y') }}</b></td>
+      <td>{{ l.name or '—' }}</td>
+      <td>{{ l.phone }}</td>
+      <td><span class="tag">{{ l.status_label }}</span></td>
+      <td>{% if l.score=='hot' %}🔥 Hot{% elif l.score=='warm' %}Warm{% else %}Cold{% endif %}</td>
+      <td style="color:var(--muted)">{{ l.assignee.name if l.assignee else '—' }}</td>
+      <td><a class="btn btn-blue btn-sm" href="{{ url_for('crm.lead_detail', lead_id=l.id) }}">Open</a></td>
+    </tr>
+    {% else %}<tr><td colspan="7" style="color:var(--muted)">🎉 Nothing due — all follow-ups are clear.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

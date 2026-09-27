@@ -14,6 +14,7 @@ from .models import (Announcement, Assignment, Certificate, Course, Enrollment, 
                      LessonProgress, LiveSession, Module, Quiz, QuizAttempt, Review,
                      Submission, Wishlist)
 from .pdfcert import certificate_path, generate_certificate_pdf
+from .routes_crm import _onboarding_for  # Phase 4: onboarding checklist
 
 student_bp = Blueprint("student", __name__)
 student_only = role_required("student")
@@ -87,7 +88,7 @@ def dashboard():
                          .order_by(LiveSession.starts_at).limit(6).all())
     return render_template("dashboard.html", enrollments=enrollments,
                            pending=pending, certs=certs, live_sessions=live_sessions,
-                           now=now)
+                           now=now, onboarding=_onboarding_for(current_user))
 
 
 @student_bp.route("/lesson/<int:lesson_id>")

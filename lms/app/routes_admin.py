@@ -28,6 +28,11 @@ def dashboard():
         "pending_submissions": Submission.query.filter_by(grade=None).count(),
     }
     recent = (Enrollment.query.order_by(Enrollment.enrolled_at.desc()).limit(8).all())
+    try:
+        from .crm import todays_followups
+        stats["followups_due"] = len(todays_followups())
+    except Exception:
+        stats["followups_due"] = 0
     return render_template("admin_dashboard.html", stats=stats, recent=recent)
 
 

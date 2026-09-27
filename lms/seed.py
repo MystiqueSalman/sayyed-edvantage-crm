@@ -334,6 +334,7 @@ with app.app_context():
         ("Admin User", "admin@sayyed.in", "admin123", "admin"),
         ("Manager User", "manager@sayyed.in", "manager123", "manager"),
         ("Faculty User", "faculty@sayyed.in", "faculty123", "faculty"),
+        ("Counsellor User", "counsellor@sayyed.in", "counsellor123", "counsellor"),
         ("Student User", "student@sayyed.in", "student123", "student"),
     ]
     user_map = {}

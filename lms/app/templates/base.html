@@ -33,6 +33,7 @@
       <a href="{{ url_for('main.catalog') }}">Courses</a>
       <a href="{{ url_for('main.bonus_courses') }}">Free Bonuses</a>
       <a href="{{ url_for('growth.jobs') }}">Jobs</a>
+      <a href="{{ url_for('crm.enquiry') }}">Enquire</a>
       {% if current_user.is_authenticated %}
         {% if current_user.role == 'student' %}
           <a href="{{ url_for('student.dashboard') }}">Dashboard</a>
@@ -40,6 +41,8 @@
           <a href="{{ url_for('growth.my_referrals') }}">🎁 Refer & Earn</a>
         {% elif current_user.role == 'faculty' %}
           <a href="{{ url_for('faculty.dashboard') }}">Dashboard</a>
+        {% elif current_user.role == 'counsellor' %}
+          <a href="{{ url_for('crm.leads') }}">CRM</a>
         {% else %}
           <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
         {% endif %}
@@ -69,7 +72,7 @@
 
 <footer>
   Sayyed EdVantage LMS · Empowering Students for Success · Mumbai, India<br>
-  <span style="font-size:.78rem">Phase 3 — referrals, job board &amp; WhatsApp alerts are live.</span>
+  <span style="font-size:.78rem">Phase 4 — admissions, CRM, batches & AI sales assistant are live.</span>
 </footer>
 <script>
 if ("serviceWorker" in navigator) {
@@ -91,6 +94,103 @@ function dismissAnnouncement(id) {
       }
     } catch (e) {}
   }
+})();
+</script>
+<style>
+/* Phase 4: AI sales-agent chat widget */
+#chat-fab{position:fixed; right:22px; bottom:22px; width:60px; height:60px;
+  border-radius:50%; border:none; cursor:pointer; z-index:999;
+  background:conic-gradient(from 200deg,#ffe9a8,#d4af37,#9c7a1e,#ffe9a8);
+  box-shadow:0 6px 24px rgba(212,175,55,.5); font-size:28px}
+#chat-panel{position:fixed; right:22px; bottom:94px; width:min(380px, calc(100vw - 44px));
+  height:480px; max-height:70vh; z-index:999; display:none; flex-direction:column;
+  background:#0d1b33; border:1px solid rgba(212,175,55,.35); border-radius:16px;
+  box-shadow:0 18px 60px rgba(0,0,0,.6); overflow:hidden}
+#chat-panel.open{display:flex}
+#chat-head{background:linear-gradient(135deg,#16294d,#0d1b33); padding:12px 16px;
+  border-bottom:1px solid rgba(212,175,55,.25); display:flex; align-items:center; gap:10px}
+#chat-head b{color:#f5c531}
+#chat-head small{color:var(--muted); display:block; font-weight:400}
+#chat-msgs{flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px}
+.chat-msg{max-width:85%; padding:9px 13px; border-radius:14px; font-size:.9rem; line-height:1.5;
+  white-space:pre-wrap; word-wrap:break-word}
+.chat-msg.bot{background:#16294d; color:#e8eefc; align-self:flex-start; border-bottom-left-radius:4px}
+.chat-msg.user{background:linear-gradient(135deg,#d4af37,#9c7a1e); color:#0a1628; align-self:flex-end;
+  border-bottom-right-radius:4px; font-weight:500}
+.chat-msg.typing{color:var(--muted); font-style:italic}
+#chat-form{display:flex; gap:8px; padding:10px; border-top:1px solid rgba(212,175,55,.25)}
+#chat-input{flex:1; margin:0}
+#chat-form button{flex:0 0 auto}
+</style>
+<button id="chat-fab" aria-label="Chat with admissions assistant">💬</button>
+<div id="chat-panel" role="dialog" aria-label="Admissions assistant chat">
+  <div id="chat-head">
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="" style="width:38px;height:38px;border-radius:50%">
+    <div><b>Admissions Assistant</b><small>Ask about courses, fees & batches</small></div>
+  </div>
+  <div id="chat-msgs"></div>
+  <form id="chat-form">
+    <input id="chat-input" type="text" maxlength="1000" placeholder="Type your question…" autocomplete="off">
+    <button class="btn btn-gold btn-sm" type="submit">Send</button>
+  </form>
+</div>
+<script>
+(function () {
+  var fab = document.getElementById("chat-fab");
+  var panel = document.getElementById("chat-panel");
+  var msgs = document.getElementById("chat-msgs");
+  var form = document.getElementById("chat-form");
+  var input = document.getElementById("chat-input");
+  var convId = null;
+  try { convId = localStorage.getItem("se_chat_conv") || null; } catch (e) {}
+  var greeted = false;
+  function esc(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+  function fmt(s) {
+    return esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
+  }
+  function addMsg(text, who) {
+    var d = document.createElement("div");
+    d.className = "chat-msg " + who;
+    d.innerHTML = fmt(text);
+    msgs.appendChild(d);
+    msgs.scrollTop = msgs.scrollHeight;
+    return d;
+  }
+  fab.addEventListener("click", function () {
+    panel.classList.toggle("open");
+    if (panel.classList.contains("open") && !greeted) {
+      greeted = true;
+      addMsg("Hello! 👋 I'm the **Sayyed EdVantage** admissions assistant. "
+        + "Ask me about our courses, fees, batches or admissions — "
+        + "or share your mobile number and a counsellor will call you!", "bot");
+    }
+    if (panel.classList.contains("open")) { input.focus(); }
+  });
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+    addMsg(text, "user");
+    var typing = addMsg("typing…", "bot typing");
+    fetch("/api/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({conversation_id: convId, message: text})
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      typing.remove();
+      addMsg(d.reply || "Sorry, something went wrong. Please try again.", "bot");
+      if (d.conversation_id) {
+        convId = d.conversation_id;
+        try { localStorage.setItem("se_chat_conv", convId); } catch (e) {}
+      }
+    }).catch(function () {
+      typing.remove();
+      addMsg("Connection issue — please try again or WhatsApp us at +91 7977877884.", "bot");
+    });
+  });
 })();
 </script>
 </body>

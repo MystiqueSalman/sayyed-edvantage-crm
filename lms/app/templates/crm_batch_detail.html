@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Batch — {{ batch.name }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>👥 {{ batch.name }}</h2><div class="line"></div>
+  <a href="{{ url_for('crm.batches') }}">← Batches</a></div>
+
+<div class="panel">
+  <p><b>Course:</b> {{ batch.course.title if batch.course else '—' }}<br>
+     <b>Trainer:</b> {{ batch.faculty.name if batch.faculty else '—' }}<br>
+     <b>Schedule:</b> {{ batch.schedule_text or '—' }}<br>
+     <b>Starts:</b> {% if batch.start_date %}{{ batch.start_date.strftime('%d %b %Y') }}{% else %}—{% endif %}<br>
+     <b>Capacity:</b> {{ batch.members|length }}/{{ batch.capacity }}</p>
+</div>
+
+{% if current_user.role in ('admin','manager') %}
+<div class="panel">
+  <h3 style="margin-top:0">Add Student</h3>
+  <form method="post" action="{{ url_for('crm.batch_add_member', batch_id=batch.id) }}" style="display:flex; gap:10px; align-items:end">
+    <div><label>Student email</label><input type="email" name="email" required maxlength="160" placeholder="student@example.com"></div>
+    <div><button class="btn btn-gold btn-sm" type="submit">Add to Batch</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="panel">
+  <h3 style="margin-top:0">Students ({{ batch.members|length }})</h3>
+  <table>
+    <tr><th>Name</th><th>Email</th><th>Phone</th><th>Added</th>{% if current_user.role in ('admin','manager') %}<th></th>{% endif %}</tr>
+    {% for m in batch.members %}
+    <tr>
+      <td>{{ m.user.name }}</td>
+      <td style="color:var(--muted)">{{ m.user.email }}</td>
+      <td>{{ m.user.phone or '—' }}</td>
+      <td>{{ m.added_at.strftime('%d %b %Y') }}</td>
+      {% if current_user.role in ('admin','manager') %}
+      <td><form class="inline-form" method="post" action="{{ url_for('crm.batch_remove_member', batch_id=batch.id, member_id=m.id) }}">
+        <button class="btn btn-danger btn-sm" type="submit">Remove</button></form></td>
+      {% endif %}
+    </tr>
+    {% else %}<tr><td colspan="5" style="color:var(--muted)">No students assigned yet.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

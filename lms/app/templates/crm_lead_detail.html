@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Lead — {{ lead.name or lead.phone }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🧲 {{ lead.name or 'Lead' }}</h2><div class="line"></div>
+  <a href="{{ url_for('crm.leads') }}">← All Leads</a></div>
+
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Details</h3>
+    <p><b>Phone:</b> {{ lead.phone }}<br>
+       <b>Email:</b> {{ lead.email or '—' }}<br>
+       <b>Course:</b> {{ lead.course.title if lead.course else '—' }}<br>
+       <b>Source:</b> {{ lead.source }}<br>
+       <b>Score:</b> {% if lead.score=='hot' %}🔥 Hot{% elif lead.score=='warm' %}Warm{% else %}Cold{% endif %}<br>
+       <b>Follow-up:</b> {% if lead.follow_up_date %}{{ lead.follow_up_date.strftime('%d %b %Y') }}{% else %}—{% endif %}<br>
+       <b>Assignee:</b> {{ lead.assignee.name if lead.assignee else 'Unassigned' }}<br>
+       <b>Created:</b> {{ lead.created_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+    {% if lead.converted_user %}
+    <p><span class="tag green">Converted → {{ lead.converted_user.email }}</span></p>
+    {% endif %}
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">Update</h3>
+    <form method="post" action="{{ url_for('crm.lead_status', lead_id=lead.id) }}">
+      <label>Status</label>
+      <select name="status">
+        {% for s in pipeline %}<option value="{{ s }}" {% if lead.status==s %}selected{% endif %}>{{ labels[s] }}</option>{% endfor %}
+      </select>
+      <label>Note <span style="color:var(--muted); font-weight:400">(optional)</span></label>
+      <input type="text" name="note" maxlength="500" placeholder="e.g. Called — asked about fees">
+      <p><button class="btn btn-gold btn-sm" type="submit">Save Status</button></p>
+    </form>
+    <form method="post" action="{{ url_for('crm.lead_note', lead_id=lead.id) }}">
+      <label>Follow-up note</label>
+      <textarea name="text" rows="2" maxlength="1000"></textarea>
+      <label>Follow-up date</label>
+      <input type="date" name="follow_up_date">
+      <p><button class="btn btn-blue btn-sm" type="submit">Add Note / Set Follow-up</button></p>
+    </form>
+    <form method="post" action="{{ url_for('crm.lead_assign', lead_id=lead.id) }}" style="display:flex; gap:8px; align-items:end">
+      <div><label>Assign to</label>
+      <select name="user_id">
+        {% for u in staff %}<option value="{{ u.id }}" {% if lead.assigned_to==u.id %}selected{% endif %}>{{ u.name }} ({{ u.role }})</option>{% endfor %}
+      </select></div>
+      <button class="btn btn-ghost btn-sm" type="submit">Assign</button>
+    </form>
+    <form method="post" action="{{ url_for('crm.lead_score', lead_id=lead.id) }}" style="margin-top:10px; display:flex; gap:8px; align-items:end">
+      <div><label>Score override</label>
+      <select name="score">
+        {% for s in scores %}<option value="{{ s }}" {% if lead.score==s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select></div>
+      <button class="btn btn-ghost btn-sm" type="submit">Set</button>
+    </form>
+  </div>
+</div>
+
+<div class="panel">
+  <h3 style="margin-top:0">Activity Timeline</h3>
+  {% for a in lead.activities %}
+  <div style="padding:8px 0; border-bottom:1px solid var(--card-brd)">
+    <span class="tag">{{ a.kind }}</span>
+    <span style="color:var(--muted); font-size:.85rem">{{ a.created_at.strftime('%d %b, %I:%M %p') }}
+      {% if a.actor %}· {{ a.actor.name }}{% endif %}</span><br>
+    {{ a.text }}
+  </div>
+  {% else %}<p style="color:var(--muted)">No activity yet.</p>{% endfor %}
+</div>
+{% endblock %}

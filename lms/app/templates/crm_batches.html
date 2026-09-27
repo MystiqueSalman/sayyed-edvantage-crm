@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Batches — CRM{% endblock %}
+{% block content %}
+<div class="section-title"><h2>👥 Batches</h2><div class="line"></div>
+  <a href="{{ url_for('crm.leads') }}">← CRM</a></div>
+
+{% if current_user.role in ('admin','manager') %}
+<div class="panel">
+  <h3 style="margin-top:0">Create Batch</h3>
+  <form method="post" action="{{ url_for('crm.batch_new') }}" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end">
+    <div><label>Name *</label><input type="text" name="name" required maxlength="160" placeholder="e.g. DS-October-Weekday"></div>
+    <div><label>Course *</label><select name="course_id" required>
+      <option value="">—</option>
+      {% for c in courses %}<option value="{{ c.id }}">{{ c.title }}</option>{% endfor %}</select></div>
+    <div><label>Trainer</label><select name="faculty_id"><option value="">—</option>
+      {% for u in faculty %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}</select></div>
+    <div><label>Schedule</label><input type="text" name="schedule_text" maxlength="200" placeholder="e.g. Mon/Wed/Fri 7–9 PM"></div>
+    <div><label>Start date</label><input type="date" name="start_date"></div>
+    <div><label>Capacity</label><input type="number" name="capacity" value="50" min="1" max="500"></div>
+    <div><button class="btn btn-gold btn-sm" type="submit">Create</button></div>
+  </form>
+</div>
+{% endif %}
+
+<div class="panel">
+  <table>
+    <tr><th>Batch</th><th>Course</th><th>Trainer</th><th>Schedule</th><th>Starts</th><th>Students</th><th></th></tr>
+    {% for b in items %}
+    <tr>
+      <td><b>{{ b.name }}</b></td>
+      <td>{{ b.course.title if b.course else '—' }}</td>
+      <td style="color:var(--muted)">{{ b.faculty.name if b.faculty else '—' }}</td>
+      <td style="color:var(--muted)">{{ b.schedule_text or '—' }}</td>
+      <td>{% if b.start_date %}{{ b.start_date.strftime('%d %b %Y') }}{% else %}—{% endif %}</td>
+      <td>{{ b.members|length }}/{{ b.capacity }}</td>
+      <td><a class="btn btn-blue btn-sm" href="{{ url_for('crm.batch_detail', batch_id=b.id) }}">Open</a></td>
+    </tr>
+    {% else %}<tr><td colspan="7" style="color:var(--muted)">No batches yet.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

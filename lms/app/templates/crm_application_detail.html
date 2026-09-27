@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Application — {{ app_obj.name }}{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📝 {{ app_obj.name }}</h2><div class="line"></div>
+  <a href="{{ url_for('crm.applications') }}">← Applications</a></div>
+
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Application</h3>
+    <p><b>Phone:</b> {{ app_obj.phone }}<br>
+       <b>Email:</b> {{ app_obj.email }}<br>
+       <b>Course:</b> {{ app_obj.course.title if app_obj.course else '—' }}<br>
+       <b>Education:</b> {{ app_obj.education or '—' }}<br>
+       <b>Preferred timing:</b> {{ app_obj.batch_timing or '—' }}<br>
+       <b>Document:</b> {% if app_obj.document_path %}<a href="{{ url_for('main.uploaded_file', filename=app_obj.document_path) }}" target="_blank">View document</a>{% else %}—{% endif %}<br>
+       <b>Applied:</b> {{ app_obj.created_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+    <p><b>Status:</b>
+      {% if app_obj.status=='approved' %}<span class="tag green">Approved</span>
+      {% elif app_obj.status=='rejected' %}<span class="tag" style="background:#7a1f1f">Rejected</span>
+      {% else %}<span class="tag gold">Pending review</span>{% endif %}</p>
+    {% if app_obj.status=='approved' and app_obj.created_user %}
+    <p><span class="tag green">Account: {{ app_obj.created_user.email }}</span></p>
+    {% endif %}
+    {% if app_obj.status=='rejected' %}
+    <p><b>Reason:</b> {{ app_obj.reject_reason }}</p>
+    {% endif %}
+    {% if app_obj.reviewer %}
+    <p style="color:var(--muted); font-size:.85rem">Reviewed by {{ app_obj.reviewer.name }} on {{ app_obj.reviewed_at.strftime('%d %b %Y') }}</p>
+    {% endif %}
+  </div>
+  {% if app_obj.status=='pending' %}
+  <div class="panel">
+    <h3 style="margin-top:0">Decision</h3>
+    <form method="post" action="{{ url_for('crm.application_approve', app_id=app_obj.id) }}">
+      <label>On approval, create enrollment as</label>
+      <select name="mode">
+        <option value="payment_pending">Payment Pending (pay before access)</option>
+        <option value="enrolled">Enrolled (immediate access)</option>
+      </select>
+      <p><button class="btn btn-gold" type="submit">Approve & Create Account ✅</button></p>
+      <p style="color:var(--muted); font-size:.85rem">Creates the student account + enrollment, links any matching CRM lead, and sends a welcome email.</p>
+    </form>
+    <form method="post" action="{{ url_for('crm.application_reject', app_id=app_obj.id) }}">
+      <label>Rejection reason *</label>
+      <textarea name="reason" rows="2" required maxlength="500"></textarea>
+      <p><button class="btn btn-danger" type="submit">Reject</button></p>
+    </form>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

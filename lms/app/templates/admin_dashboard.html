@@ -9,6 +9,7 @@
   <div class="stat"><div class="n">₹{{ "{:,}".format(stats.revenue) }}</div><div class="l">Revenue (test mode)</div></div>
   <div class="stat"><div class="n">{{ stats.pending_submissions }}</div><div class="l">Submissions to grade</div></div>
   <div class="stat"><div class="n">{{ stats.certificates }}</div><div class="l">Certificates issued</div></div>
+  <div class="stat"><div class="n">{{ stats.followups_due }}</div><div class="l">Follow-ups due</div></div>
 </div>
 <div class="two-col">
   <div class="panel">
@@ -16,6 +17,10 @@
     <p><a class="btn btn-blue btn-sm" href="{{ url_for('admin.courses') }}">📚 Manage Courses</a>
        <a class="btn btn-blue btn-sm" href="{{ url_for('admin.enrollments') }}">🧾 Enrollments</a>
        <a class="btn btn-blue btn-sm" href="{{ url_for('growth.admin_jobs') }}">💼 Job Board</a></p>
+    <p><a class="btn btn-gold btn-sm" href="{{ url_for('crm.leads') }}">🧲 CRM Leads</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('crm.followups') }}">📅 Follow-ups{% if stats.followups_due %} ({{ stats.followups_due }}){% endif %}</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('crm.applications') }}">📝 Applications</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('crm.batches') }}">👥 Batches</a></p>
     {% if current_user.role == 'admin' %}
     <p><a class="btn btn-ghost btn-sm" href="{{ url_for('admin.users') }}">👥 Users</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.coupons') }}">🎟 Coupons</a>

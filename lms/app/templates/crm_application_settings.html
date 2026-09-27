@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Application Form Settings{% endblock %}
+{% block content %}
+<div class="section-title"><h2>⚙️ Application Form Settings</h2><div class="line"></div>
+  <a href="{{ url_for('crm.applications') }}">← Applications</a></div>
+<div class="panel" style="max-width:640px">
+  <form method="post">
+    <label>Intro text</label>
+    <textarea name="intro_text" rows="2" maxlength="500">{{ settings.intro_text }}</textarea>
+    <p><label style="display:inline"><input type="checkbox" name="enable_education" value="1" {% if settings.enable_education %}checked{% endif %} style="width:auto"> Ask for education background</label></p>
+    <p><label style="display:inline"><input type="checkbox" name="enable_batch_timing" value="1" {% if settings.enable_batch_timing %}checked{% endif %} style="width:auto"> Ask for preferred batch timing</label></p>
+    <p><label style="display:inline"><input type="checkbox" name="enable_document" value="1" {% if settings.enable_document %}checked{% endif %} style="width:auto"> Allow document upload (ID/photo)</label></p>
+    <p><button class="btn btn-gold" type="submit">Save Settings</button></p>
+  </form>
+  <p style="color:var(--muted); font-size:.88rem">Public form: <a href="{{ url_for('crm.apply') }}">{{ url_for('crm.apply', _external=True) }}</a></p>
+</div>
+{% endblock %}

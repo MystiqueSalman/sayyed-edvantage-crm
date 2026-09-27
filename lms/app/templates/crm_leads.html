@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Leads — CRM{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🧲 Leads</h2><div class="line"></div>
+  <a href="{{ url_for('crm.followups') }}" class="btn btn-gold btn-sm">📅 Today's Follow-ups</a>
+  <a href="{{ url_for('crm.analytics') }}" class="btn btn-ghost btn-sm">📊 Analytics</a></div>
+
+<div class="panel">
+  <form method="get" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end">
+    <div><label>Status</label>
+      <select name="status"><option value="">All</option>
+      {% for s in pipeline %}<option value="{{ s }}" {% if f.get('status')==s %}selected{% endif %}>{{ labels[s] }}</option>{% endfor %}</select></div>
+    <div><label>Source</label>
+      <select name="source"><option value="">All</option>
+      {% for s in sources %}<option value="{{ s }}" {% if f.get('source')==s %}selected{% endif %}>{{ s }}</option>{% endfor %}</select></div>
+    <div><label>Course</label>
+      <select name="course_id"><option value="">All</option>
+      {% for c in courses %}<option value="{{ c.id }}" {% if f.get('course_id')==c.id|string %}selected{% endif %}>{{ c.title }}</option>{% endfor %}</select></div>
+    <div><label>Assignee</label>
+      <select name="assignee"><option value="">All</option>
+      {% for u in staff %}<option value="{{ u.id }}" {% if f.get('assignee')==u.id|string %}selected{% endif %}>{{ u.name }}</option>{% endfor %}</select></div>
+    <div><label>Search</label><input type="text" name="q" value="{{ f.get('q','') }}" placeholder="name / phone / email" style="min-width:180px"></div>
+    <div><label style="display:inline"><input type="checkbox" name="followup" value="due" {% if f.get('followup')=='due' %}checked{% endif %} style="width:auto"> Follow-up due</label></div>
+    <div><button class="btn btn-blue btn-sm" type="submit">Filter</button>
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('crm.leads') }}">Clear</a></div>
+  </form>
+</div>
+
+<div class="panel">
+  <h3 style="margin-top:0">Add Lead <span style="color:var(--muted); font-weight:400; font-size:.85rem">(manual)</span></h3>
+  <form method="post" action="{{ url_for('crm.lead_new') }}" style="display:flex; gap:10px; flex-wrap:wrap; align-items:end">
+    <div><label>Name *</label><input type="text" name="name" required maxlength="120"></div>
+    <div><label>Phone *</label><input type="tel" name="phone" required maxlength="20"></div>
+    <div><label>Email</label><input type="email" name="email" maxlength="160"></div>
+    <div><label>Course</label><select name="course_id"><option value="">—</option>
+      {% for c in courses %}<option value="{{ c.id }}">{{ c.title }}</option>{% endfor %}</select></div>
+    <div><button class="btn btn-gold btn-sm" type="submit">Add</button></div>
+  </form>
+</div>
+
+<div class="panel">
+  <table>
+    <tr><th>Name</th><th>Phone</th><th>Course</th><th>Status</th><th>Score</th><th>Source</th><th>Follow-up</th><th>Assignee</th></tr>
+    {% for l in leads %}
+    <tr>
+      <td><a href="{{ url_for('crm.lead_detail', lead_id=l.id) }}"><b>{{ l.name or '—' }}</b></a><br>
+        <small style="color:var(--muted)">{{ l.email or '' }}</small></td>
+      <td>{{ l.phone }}</td>
+      <td>{{ l.course.title if l.course else '—' }}</td>
+      <td><span class="tag {% if l.status=='enrolled' %}green{% elif l.status in ('interested','payment_pending','admitted') %}gold{% endif %}">{{ l.status_label }}</span></td>
+      <td>{% if l.score=='hot' %}<span class="tag" style="background:#7a1f1f">🔥 Hot</span>
+          {% elif l.score=='warm' %}<span class="tag gold">Warm</span>
+          {% else %}<span class="tag">Cold</span>{% endif %}</td>
+      <td style="color:var(--muted)">{{ l.source }}</td>
+      <td>{% if l.follow_up_date %}{{ l.follow_up_date.strftime('%d %b') }}{% else %}—{% endif %}</td>
+      <td style="color:var(--muted)">{{ l.assignee.name if l.assignee else '—' }}</td>
+    </tr>
+    {% else %}<tr><td colspan="8" style="color:var(--muted)">No leads match. New enquiries, chat visitors and referral signups appear here.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

@@ -424,11 +424,22 @@ The finished platform should provide:
 - Migration `68a1f67d1bff` (6 new tables + `users.phone`, `users.referral_code`); startup `create_all()` + `_ensure_schema_patches()` keep zero-manual-step deploys.
 - Tests: 78/78 new + 36/36 Phase 1 + 92/92 Phase 2 = 206/206 on fresh migrated DBs.
 
+## PHASE 4 DELIVERED (2026-09-27)
+- **CRM / Lead Management (§8):** `Lead` + `LeadActivity` timeline (system/status/note/call/email/whatsapp/meeting events); pipeline new → contacted → interested → enrolled / lost / junk with validated transitions; deduplication by phone/email; rules-based Hot/Warm/Cold scoring; filters (status, source, score, course, counsellor, follow-up due/today/overdue, search); notes + follow-up dates; follow-up inbox (all/mine/overdue); analytics — funnel, source split, counsellor leaderboard, follow-up compliance; referral signups auto-create warm CRM leads.
+- **Public capture:** `/enquiry` form → lead (source=website, warm, follow-up today); enquiry nav link on every page.
+- **Admissions (§10):** public `/apply` form (configurable intro/education/timing/document toggles, ID-proof upload ≤5MB, duplicate-email guard); admin/counsellor review queue; approve → creates student account (temporary password shown once to staff) + enrollment (payment-pending or active) + links matching lead (auto-enrolled, welcome email); reject requires reason; double-review guarded.
+- **Batches:** admin/manager create batches (course, trainer, schedule, start date, capacity 1–500); student assignment by email with capacity + duplicate guards; counsellor view-only.
+- **AI Sales Agent (§9):** floating chat widget on all public pages (💬 FAB, conversation persists via localStorage, rate-limited 20/min/IP); deterministic course/fee knowledge from the live course catalog — fee output validated against DB, only approved fees quotable; intents: greeting, fees, course match (best-word-match), demo, human handoff, phone capture (Indian 10-digit, consent-gated), enrollment, duration/placement; phone/name capture auto-creates a **hot** CRM lead with HIGH-INTENT timeline note + follow-up today; optional OpenAI path (OPENAI_API_KEY) with system-prompt guardrails (never invent fees/discounts/batches) and fee post-validation; no key → rules engine answers everything (graceful, no dead widget).
+- **Counsellor role (§1.1):** new role; lands on CRM leads; full CRM (leads, follow-ups, applications review, batches view, CRM analytics); blocked (403) from users, courses/content, coupons, email/WhatsApp settings, admin analytics, job-board admin, announcements.
+- **Onboarding checklist:** 4 tasks (first lesson, profile, community intro, demo class) on student dashboard; toggle API; counsellor-visible via profile.
+- Migration `feb4b4e0ad96` (10 new tables: leads, lead_activities, applications, application_settings, batches, batch_members, onboarding_tasks, chat_conversations, chat_messages, ai_settings); startup `create_all()` + schema patches keep zero-manual-step deploys.
+- Tests: 79/79 new + 36/36 Phase 1 + 92/92 Phase 2 + 78/78 Phase 3 = **285/285** on fresh migrated DBs.
+
 ## BUILD STATUS (living)
 - [x] Phase 1 — core LMS: roles, courses, lessons, quizzes, assignments, certificates, coupons, Razorpay stub
 - [x] Phase 2 — live Jitsi classes, drip lessons, email automation, discussions, analytics, PWA, reviews, cert verify, progress, announcements, search, wishlist
 - [x] Phase 3 — Growth & revenue: Referral & Earn (§14), Job Board core (§13.1–13.4), WhatsApp notifications (§12.1)
-- [ ] Phase 4 — Admissions & CRM: lead pipeline (§8), application forms + batch allocation + onboarding (§10), AI sales agent (§9), counsellor roles (§1.1)
+- [x] Phase 4 — Admissions & CRM: lead pipeline (§8), application forms + batch allocation + onboarding (§10), AI sales agent (§9), counsellor roles (§1.1)
 - [ ] Phase 5 — AI learning layer: AI tutor + doubt solver (§6.1–6.3), study planner (§6.7), weak-topic analysis (§6.6 light)
 - [ ] Phase 6 — Assessments pro: question bank (§5.2), more question types (§5.1), timed exams + negative marking (§5.3), projects (§5.5)
 - [ ] Phase 7 — Career & placements complete: resume builder (§27.2), portfolio (§27.3), interview prep (§27.4), readiness score (§27.6), employer portal (§13.3), placement analytics (§13.6)

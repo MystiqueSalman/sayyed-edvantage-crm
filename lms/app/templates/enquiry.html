@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Enquire — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📩 Enquire Now</h2><div class="line"></div></div>
+<div class="panel" style="max-width:640px">
+  <p style="color:var(--muted)">Share your details and our counsellor will call you back with course, fee and batch guidance.</p>
+  <form method="post">
+    <label>Full name *</label>
+    <input type="text" name="name" required maxlength="120" placeholder="Your name">
+    <label>Mobile number *</label>
+    <input type="tel" name="phone" required maxlength="20" placeholder="10-digit mobile number">
+    <label>Email</label>
+    <input type="email" name="email" maxlength="160" placeholder="you@example.com">
+    <label>Interested course</label>
+    <select name="course_id">
+      <option value="">— Not sure yet —</option>
+      {% for c in courses %}<option value="{{ c.id }}">{{ c.title }} (₹{{ "{:,}".format(c.fee) }})</option>{% endfor %}
+    </select>
+    <label>Message</label>
+    <textarea name="message" rows="3" maxlength="1000" placeholder="What would you like to know?"></textarea>
+    <p><button class="btn btn-gold" type="submit">Request Callback 📞</button></p>
+  </form>
+  <p style="color:var(--muted); font-size:.88rem">Prefer chat? WhatsApp <b>{{ "+91 7977877884" }}</b> anytime.</p>
+</div>
+{% endblock %}

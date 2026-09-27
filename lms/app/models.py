@@ -11,7 +11,8 @@ ROLE_ADMIN = "admin"
 ROLE_FACULTY = "faculty"
 ROLE_STUDENT = "student"
 ROLE_MANAGER = "manager"
-ROLES = (ROLE_ADMIN, ROLE_FACULTY, ROLE_STUDENT, ROLE_MANAGER)
+ROLE_COUNSELLOR = "counsellor"  # Phase 4: admissions/CRM
+ROLES = (ROLE_ADMIN, ROLE_FACULTY, ROLE_STUDENT, ROLE_MANAGER, ROLE_COUNSELLOR)
 
 
 class User(UserMixin, db.Model):
@@ -531,6 +532,230 @@ class WhatsAppSettings(db.Model):
     phone_number_id = db.Column(db.String(60), default="")
     access_token = db.Column(db.String(255), default="")  # never rendered/logged
     enabled = db.Column(db.Boolean, default=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    @classmethod
+    def get(cls):
+        row = cls.query.get(1)
+        if not row:
+            row = cls(id=1)
+            db.session.add(row)
+            db.session.commit()
+        return row
+
+
+# ---------------------------------------------------------------- Phase 4: Admissions & CRM
+class Lead(db.Model):
+    """LMS-internal CRM lead (separate from the standalone CRM service)."""
+    __tablename__ = "leads"
+
+    STATUS_NEW = "new"
+    STATUS_CONTACTED = "contacted"
+    STATUS_QUALIFIED = "qualified"
+    STATUS_COUNSELLING = "counselling"
+    STATUS_INTERESTED = "interested"
+    STATUS_PAYMENT_PENDING = "payment_pending"
+    STATUS_ADMITTED = "admitted"
+    STATUS_ENROLLED = "enrolled"
+    PIPELINE = (STATUS_NEW, STATUS_CONTACTED, STATUS_QUALIFIED,
+                STATUS_COUNSELLING, STATUS_INTERESTED, STATUS_PAYMENT_PENDING,
+                STATUS_ADMITTED, STATUS_ENROLLED)
+    LABELS = {STATUS_NEW: "New", STATUS_CONTACTED: "Contacted",
+              STATUS_QUALIFIED: "Qualified", STATUS_COUNSELLING: "Counselling",
+              STATUS_INTERESTED: "Interested",
+              STATUS_PAYMENT_PENDING: "Payment Pending",
+              STATUS_ADMITTED: "Admitted", STATUS_ENROLLED: "Enrolled"}
+
+    SOURCE_WEBSITE = "website"
+    SOURCE_WHATSAPP = "whatsapp"
+    SOURCE_INSTAGRAM = "instagram"
+    SOURCE_FACEBOOK = "facebook"
+    SOURCE_REFERRAL = "referral"
+    SOURCE_CHAT = "chat"
+    SOURCE_MANUAL = "manual"
+    SOURCES = (SOURCE_WEBSITE, SOURCE_WHATSAPP, SOURCE_INSTAGRAM,
+               SOURCE_FACEBOOK, SOURCE_REFERRAL, SOURCE_CHAT, SOURCE_MANUAL)
+
+    SCORE_HOT = "hot"
+    SCORE_WARM = "warm"
+    SCORE_COLD = "cold"
+    SCORES = (SCORE_HOT, SCORE_WARM, SCORE_COLD)
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False, default="")
+    phone = db.Column(db.String(20), nullable=False, default="", index=True)
+    email = db.Column(db.String(160), default="")
+    source = db.Column(db.String(20), default=SOURCE_WEBSITE)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=True)
+    status = db.Column(db.String(20), default=STATUS_NEW, index=True)
+    score = db.Column(db.String(10), default=SCORE_COLD, index=True)
+    assigned_to = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    follow_up_date = db.Column(db.Date, nullable=True, index=True)
+    converted_user_id = db.Column(db.Integer, db.ForeignKey("users.id"),
+                                 nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    course = db.relationship("Course")
+    assignee = db.relationship("User", foreign_keys=[assigned_to])
+    converted_user = db.relationship("User", foreign_keys=[converted_user_id])
+    activities = db.relationship("LeadActivity", backref="lead",
+                                 cascade="all, delete-orphan",
+                                 order_by="LeadActivity.created_at.desc()")
+
+    @property
+    def status_label(self):
+        return self.LABELS.get(self.status, self.status)
+
+    def log(self, kind, text, actor_id=None):
+        act = LeadActivity(lead_id=self.id, kind=kind, text=text,
+                           actor_id=actor_id)
+        db.session.add(act)
+        return act
+
+
+class LeadActivity(db.Model):
+    """Timeline entry on a lead: status change, note, follow-up, system."""
+    __tablename__ = "lead_activities"
+    id = db.Column(db.Integer, primary_key=True)
+    lead_id = db.Column(db.Integer, db.ForeignKey("leads.id"), nullable=False)
+    actor_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    kind = db.Column(db.String(20), default="note")  # note|status|followup|system
+    text = db.Column(db.Text, nullable=False, default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    actor = db.relationship("User")
+
+
+class ApplicationSettings(db.Model):
+    """Single-row config for the public application form (id=1)."""
+    __tablename__ = "application_settings"
+    id = db.Column(db.Integer, primary_key=True)
+    enable_education = db.Column(db.Boolean, default=True)
+    enable_batch_timing = db.Column(db.Boolean, default=True)
+    enable_document = db.Column(db.Boolean, default=True)
+    intro_text = db.Column(db.Text, default="Apply for admission to Sayyed EdVantage courses.")
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    @classmethod
+    def get(cls):
+        row = cls.query.get(1)
+        if not row:
+            row = cls(id=1)
+            db.session.add(row)
+            db.session.commit()
+        return row
+
+
+class Application(db.Model):
+    """Admission application submitted via the public form."""
+    __tablename__ = "applications"
+    STATUS_PENDING = "pending"
+    STATUS_APPROVED = "approved"
+    STATUS_REJECTED = "rejected"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(120), nullable=False)
+    phone = db.Column(db.String(20), nullable=False, default="")
+    email = db.Column(db.String(160), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=True)
+    education = db.Column(db.String(200), default="")
+    batch_timing = db.Column(db.String(120), default="")
+    document_path = db.Column(db.String(260), default="")
+    status = db.Column(db.String(20), default=STATUS_PENDING, index=True)
+    reject_reason = db.Column(db.Text, default="")
+    created_user_id = db.Column(db.Integer, db.ForeignKey("users.id"),
+                                nullable=True)
+    reviewed_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    course = db.relationship("Course")
+    created_user = db.relationship("User", foreign_keys=[created_user_id])
+    reviewer = db.relationship("User", foreign_keys=[reviewed_by])
+
+
+class Batch(db.Model):
+    """A batch/cohort of students for a course."""
+    __tablename__ = "batches"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(160), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    faculty_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    schedule_text = db.Column(db.String(200), default="")
+    start_date = db.Column(db.Date, nullable=True)
+    capacity = db.Column(db.Integer, default=50)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    course = db.relationship("Course", backref=db.backref(
+        "batches", cascade="all, delete-orphan"))
+    faculty = db.relationship("User", foreign_keys=[faculty_id])
+    members = db.relationship("BatchMember", backref="batch",
+                              cascade="all, delete-orphan",
+                              order_by="BatchMember.added_at")
+
+
+class BatchMember(db.Model):
+    __tablename__ = "batch_members"
+    id = db.Column(db.Integer, primary_key=True)
+    batch_id = db.Column(db.Integer, db.ForeignKey("batches.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    added_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship("User")
+    __table_args__ = (db.UniqueConstraint("batch_id", "user_id",
+                                         name="uq_batch_member"),)
+
+
+class OnboardingTask(db.Model):
+    """Checkable onboarding item per student."""
+    __tablename__ = "onboarding_tasks"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    key = db.Column(db.String(40), nullable=False)
+    done = db.Column(db.Boolean, default=False)
+    done_at = db.Column(db.DateTime, nullable=True)
+
+    __table_args__ = (db.UniqueConstraint("user_id", "key", name="uq_onboard"),)
+
+
+class ChatConversation(db.Model):
+    """AI sales-agent conversation (anonymous visitors allowed)."""
+    __tablename__ = "chat_conversations"
+    id = db.Column(db.String(36), primary_key=True)  # uuid hex
+    lead_id = db.Column(db.Integer, db.ForeignKey("leads.id"), nullable=True)
+    ip_hash = db.Column(db.String(64), default="")
+    fee_asks = db.Column(db.Integer, default=0)  # counts fee questions (intent)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    lead = db.relationship("Lead")
+    messages = db.relationship("ChatMessage", backref="conversation",
+                               cascade="all, delete-orphan",
+                               order_by="ChatMessage.created_at")
+
+
+class ChatMessage(db.Model):
+    __tablename__ = "chat_messages"
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.String(36),
+                               db.ForeignKey("chat_conversations.id"),
+                               nullable=False)
+    role = db.Column(db.String(10), nullable=False)  # user | assistant
+    text = db.Column(db.Text, nullable=False, default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class AISettings(db.Model):
+    """Single-row AI sales-agent config (id=1)."""
+    __tablename__ = "ai_settings"
+    id = db.Column(db.Integer, primary_key=True)
+    enabled = db.Column(db.Boolean, default=True)
+    model = db.Column(db.String(60), default="gpt-4o-mini")
     updated_at = db.Column(db.DateTime, default=datetime.utcnow,
                            onupdate=datetime.utcnow)
 

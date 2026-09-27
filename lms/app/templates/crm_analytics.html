@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}CRM Analytics{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📊 CRM Analytics</h2><div class="line"></div>
+  <a href="{{ url_for('crm.leads') }}">← Leads</a></div>
+
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Funnel</h3>
+    <table>
+      {% for s in pipeline %}
+      <tr><td>{{ labels[s] }}</td><td style="text-align:right"><b>{{ counts[s] }}</b></td></tr>
+      {% endfor %}
+      <tr><td><b>New → Enrolled conversion</b></td><td style="text-align:right"><b>{{ conversion }}%</b></td></tr>
+    </table>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">Leads by Source</h3>
+    <table>
+      {% for src, n in sources.items() %}
+      <tr><td>{{ src }}</td><td style="text-align:right"><b>{{ n }}</b></td></tr>
+      {% else %}<tr><td colspan="2" style="color:var(--muted)">No leads yet.</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+
+<div class="panel">
+  <h3 style="margin-top:0">Counsellor Performance</h3>
+  <table>
+    <tr><th>Counsellor</th><th>Assigned Leads</th><th>Enrolled</th></tr>
+    {% for r in staff %}
+    <tr><td>{{ r.name }}</td><td>{{ r.total }}</td><td><b>{{ r.enrolled }}</b></td></tr>
+    {% else %}<tr><td colspan="3" style="color:var(--muted)">No assignments yet.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}
