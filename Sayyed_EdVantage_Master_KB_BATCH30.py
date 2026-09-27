@@ -248,6 +248,19 @@ def build_master_kb_for_closure() -> Any:
     return build_master_kb_with_agent_integration()
 
 
+def build_master_kb() -> Any:
+    """Discovery-compatible entry point for the Phase-4 authoritative bridge.
+
+    Sayyed_EdVantage_PHASE4_INTEGRATION04 discovers the first importable
+    module exposing build_master_kb()/MasterKnowledgeBase and uses it as the
+    AI's course catalogue. BATCH30 is the current catalogue (7 courses,
+    including SE-EHC-001 Ethical Hacking & Cybersecurity). Without this
+    alias the bridge silently falls through to the stale BATCH01 module,
+    which contains only SE-DSP-001, so the bot denies all other courses.
+    """
+    return build_master_kb_for_closure()
+
+
 # Explicit downstream aliases.
 run_final_closure = run_closure_regression
 validate_closure = validate_closure_report

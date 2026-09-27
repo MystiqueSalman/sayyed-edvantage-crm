@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import base64
 import html
+import json
 import os
 import secrets
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -19,6 +20,8 @@ from app.leads.lead_manager import (
     get_all_leads,
     get_lead,
     update_lead,
+    create_or_update_lead,
+    find_duplicate_lead,
     add_counselling_session,
     get_counselling_history,
     add_follow_up_action,
@@ -1334,6 +1337,14 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def send_json(self, payload, status=200):
+        data = json.dumps(payload).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def redirect(self, location):
         self.send_response(303)
         self.send_header("Location", location)
@@ -1405,6 +1416,62 @@ class Handler(BaseHTTPRequestHandler):
         if not self._require_auth():
             return
         parsed = urlparse(self.path)
+
+        if parsed.path == "/api/ingest-lead":
+            # JSON lead ingest for the AI Agent API (WhatsApp / chat).
+            # Auth: same HTTP Basic Auth as the dashboard (the agent service
+            # holds SE_CRM_USER / SE_CRM_PASSWORD). Upserts on phone number so
+            # repeat conversations update one lead instead of duplicating it.
+            # New leads get tomorrow's date as follow_up_date so they appear
+            # in the follow-ups queue.
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                raw = self.rfile.read(length).decode("utf-8") if length > 0 else "{}"
+                try:
+                    data = json.loads(raw)
+                except (json.JSONDecodeError, ValueError):
+                    self.send_json({"ok": False, "error": "invalid JSON body"}, 400)
+                    return
+                if not isinstance(data, dict):
+                    self.send_json({"ok": False, "error": "JSON body must be an object"}, 400)
+                    return
+
+                phone = str(data.get("phone", "")).strip()
+                if not phone:
+                    self.send_json({"ok": False, "error": "phone is required"}, 400)
+                    return
+
+                existing = find_duplicate_lead(phone=phone, email=str(data.get("email", "")).strip())
+                lead = create_or_update_lead(
+                    name=str(data.get("name", "")).strip(),
+                    phone=phone,
+                    email=str(data.get("email", "")).strip(),
+                    country=str(data.get("country", "")).strip(),
+                    course_interest=str(data.get("course_interest", "")).strip(),
+                    message=str(data.get("message", "")).strip(),
+                    source=str(data.get("source", "")).strip() or "WhatsApp",
+                )
+                if not isinstance(lead, dict) or not lead.get("lead_id"):
+                    self.send_json({"ok": False, "error": "could not save lead"}, 500)
+                    return
+
+                created = existing is None
+                if created:
+                    tomorrow = (datetime.now() + timedelta(days=1)).date().isoformat()
+                    update_lead(lead["lead_id"], follow_up_date=tomorrow)
+                    lead = get_lead(lead["lead_id"]) or lead
+
+                self.send_json({
+                    "ok": True,
+                    "created": created,
+                    "lead_id": lead.get("lead_id"),
+                    "phone": lead.get("phone"),
+                    "course_interest": lead.get("course_interest"),
+                    "follow_up_date": lead.get("follow_up_date"),
+                })
+            except Exception as exc:
+                self.send_json({"ok": False, "error": "server error: %s" % exc}, 500)
+            return
 
         if parsed.path == "/follow-up-action":
             try:

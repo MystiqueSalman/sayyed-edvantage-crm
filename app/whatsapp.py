@@ -108,7 +108,12 @@ def process_incoming(sender: str, text: str) -> None:
     """Background job: ask the AI agent and reply on WhatsApp."""
     session_id = f"wa:{sender}"
     try:
-        reply = ask_agent(text, session_id=session_id)
+        reply = ask_agent(
+            text,
+            session_id=session_id,
+            contact_phone=sender,
+            lead_source="WhatsApp",
+        )
     except RuntimeError as exc:
         logger.warning("AI not configured, sending fallback: %s", exc)
         reply = FALLBACK_NO_AI

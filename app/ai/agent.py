@@ -1,6 +1,12 @@
 import json
+import logging
+import os
 import re
 from pathlib import Path
+
+import requests
+
+logger = logging.getLogger("sayyed-edvantage-agent")
 from app.ai.client import ask_ai
 from app.ai.memory import save_message, load_memory
 from Sayyed_EdVantage_PHASE4_INTEGRATION06_V2 import get_master_kb_pricing
@@ -755,51 +761,103 @@ def _has_required_lead_information(lead_data: dict) -> bool:
     )
 
 
+def _push_lead_to_crm(lead: dict) -> None:
+    """Best-effort push of a locally created/updated lead to the CRM dashboard.
+
+    The CRM is a separate Railway service with the persistent leads.json
+    volume, so the agent forwards lead events to its /api/ingest-lead
+    endpoint (same HTTP Basic Auth the dashboard uses). Never raises: a
+    failed push must not break the student's reply.
+    """
+    try:
+        base_url = os.environ.get("SE_CRM_BASE_URL", "").strip().rstrip("/")
+        if not base_url or not isinstance(lead, dict) or not lead.get("phone"):
+            return
+        crm_user = os.environ.get("SE_CRM_USER", "")
+        crm_password = os.environ.get("SE_CRM_PASSWORD", "")
+        payload = {
+            "name": str(lead.get("name", "")),
+            "phone": str(lead.get("phone", "")),
+            "email": str(lead.get("email", "")),
+            "country": str(lead.get("country", "")),
+            "course_interest": str(lead.get("course_interest", "")),
+            "message": str(lead.get("message", "")),
+            "source": str(lead.get("source", "") or "AI Agent"),
+        }
+        resp = requests.post(
+            base_url + "/api/ingest-lead",
+            json=payload,
+            auth=(crm_user, crm_password),
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            logger.warning("CRM ingest returned HTTP %s: %s", resp.status_code, resp.text[:200])
+    except Exception as exc:  # noqa: BLE001 - push must never break replies
+        logger.warning("CRM lead push failed: %s", exc)
+
+
 def _create_admission_lead(
-    lead_data: dict
+    lead_data: dict,
+    contact_phone: str = "",
+    lead_source: str = "AI Agent",
 ) -> dict | None:
     """
     Create a lead only when the lead data is sufficiently complete.
+
+    contact_phone: a verified contact number already known for this
+    conversation (e.g. the WhatsApp sender). Used when the student has not
+    typed a phone/email in chat, so WhatsApp conversations can still become
+    CRM leads.
     """
 
-    if not _has_required_lead_information(lead_data):
+    data = dict(lead_data or {})
+    if not str(data.get("phone", "")).strip() and contact_phone:
+        data["phone"] = str(contact_phone).strip()
+
+    if not _has_required_lead_information(data):
         return None
 
-    return create_or_update_lead(
+    lead = create_or_update_lead(
         name=str(
-            lead_data.get("student_name", "")
+            data.get("student_name", "")
         ).strip(),
 
         phone=str(
-            lead_data.get("phone", "")
+            data.get("phone", "")
         ).strip(),
 
         email=str(
-            lead_data.get("email", "")
+            data.get("email", "")
         ).strip(),
 
         country=str(
-            lead_data.get("country", "")
+            data.get("country", "")
         ).strip(),
 
         preferred_language=str(
-            lead_data.get("preferred_language", "")
+            data.get("preferred_language", "")
         ).strip(),
 
         course_interest=str(
-            lead_data.get("course_interest", "")
+            data.get("course_interest", "")
         ).strip(),
 
         education=str(
-            lead_data.get("education", "")
+            data.get("education", "")
         ).strip(),
 
         message=str(
-            lead_data.get("message", "")
+            data.get("message", "")
         ).strip(),
 
-        source="AI Agent"
+        source=lead_source,
     )
+
+    # Forward to the CRM dashboard (separate service, persistent volume).
+    if isinstance(lead, dict):
+        _push_lead_to_crm(lead)
+
+    return lead
 
 def _detect_country_from_text(text: str) -> str | None:
     """
@@ -1454,6 +1512,8 @@ def ask_agent(
     user_message: str,
     session_id: str = "default_student",
     allow_lead_creation: bool = True,
+    contact_phone: str = "",
+    lead_source: str = "AI Agent",
 ) -> str:
     """
     Main Sayyed EdVantage AI Agent.
@@ -1467,6 +1527,11 @@ def ask_agent(
     5. Saves the conversation.
     6. Detects genuine admission intent.
     7. Creates a lead only when sufficient information exists.
+
+    contact_phone: verified contact number for this conversation (e.g. the
+    WhatsApp sender id). Lets lead creation succeed even when the student
+    never types their number in chat.
+    lead_source: recorded on created leads (e.g. "WhatsApp").
     """
 
     # ---------------------------------------------
@@ -1648,7 +1713,11 @@ Make the response natural enough to be spoken aloud.
     # ---------------------------------------------
 
     lead = (
-        _create_admission_lead(lead_data)
+        _create_admission_lead(
+            lead_data,
+            contact_phone=contact_phone,
+            lead_source=lead_source,
+        )
         if allow_lead_creation
         else None
     )
