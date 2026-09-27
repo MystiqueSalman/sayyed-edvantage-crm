@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Discussions — {{ course.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('main.course_detail', slug=course.slug) }}">← {{ course.title }}</a></p>
+<div class="section-title"><h2>💬 Discussions</h2><div class="line"></div></div>
+
+<div class="panel" style="margin-bottom:22px">
+  <h3 style="margin-top:0">Start a new discussion</h3>
+  <form method="post">
+    <label>Title</label>
+    <input type="text" name="title" required maxlength="200" placeholder="What do you want to ask?">
+    <label>Details</label>
+    <textarea name="body" rows="4" placeholder="Describe your question or share something with the class…"></textarea>
+    <p><button class="btn btn-gold" type="submit" style="margin-top:10px">Post Discussion</button></p>
+  </form>
+</div>
+
+{% for t in threads %}
+<div class="lesson-row" style="align-items:flex-start">
+  <span style="font-size:1.3rem">{% if t.pinned %}📌{% else %}💭{% endif %}</span>
+  <span style="flex:1"><a href="{{ url_for('discuss.thread_view', discussion_id=t.id) }}"><b>{{ t.title }}</b></a>
+    <br><small style="color:var(--muted)">{{ t.user.name }} · {{ t.created_at.strftime('%d %b %Y, %I:%M %p') }} · {{ t.replies|length }} replies</small></span>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('discuss.thread_view', discussion_id=t.id) }}">Open</a>
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No discussions yet — be the first to start one!</p></div>
+{% endfor %}
+{% endblock %}

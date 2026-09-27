@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Announcements — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📢 Announcements</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<p style="color:var(--muted); font-size:.9rem">Active announcements appear as a dismissible banner on every page of the site.</p>
+
+<div class="panel" style="margin-bottom:22px">
+  <h3 style="margin-top:0">New announcement</h3>
+  <form method="post">
+    <label>Title</label>
+    <input type="text" name="title" required maxlength="160" placeholder="e.g. Admissions open for the October batch!">
+    <label>Body <span style="color:var(--muted)">(optional)</span></label>
+    <textarea name="body" rows="3" placeholder="Extra details…"></textarea>
+    <p style="display:flex; gap:18px; align-items:center; margin-top:12px">
+      <label style="margin:0"><input type="checkbox" name="active" value="1" checked style="width:auto"> Active</label>
+      <label style="margin:0"><input type="checkbox" name="deactivate_others" value="1" style="width:auto"> Deactivate all others</label>
+      <button class="btn btn-gold btn-sm" type="submit" style="margin-left:auto">Post</button>
+    </p>
+  </form>
+</div>
+
+{% for a in announcements %}
+<div class="lesson-row">
+  <span>{% if a.active %}🟢{% else %}⚪{% endif %}</span>
+  <span style="flex:1"><b>{{ a.title }}</b><br>
+    <small style="color:var(--muted)">{{ a.body }} · {{ a.created_at.strftime('%d %b %Y') }}</small></span>
+  <form class="inline-form" method="post" action="{{ url_for('admin.announcement_toggle', ann_id=a.id) }}">
+    <button class="btn btn-ghost btn-sm" type="submit">{{ 'Deactivate' if a.active else 'Activate' }}</button>
+  </form>
+  <form class="inline-form" method="post" action="{{ url_for('admin.announcement_delete', ann_id=a.id) }}"
+        onsubmit="return confirm('Delete this announcement?')">
+    <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+  </form>
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No announcements yet.</p></div>
+{% endfor %}
+{% endblock %}

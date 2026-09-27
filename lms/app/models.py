@@ -79,6 +79,15 @@ class Course(db.Model):
     def quizzes(self):
         return [q for m in self.modules for q in m.quizzes]
 
+    @property
+    def average_rating(self):
+        from sqlalchemy import func
+        from . import db as _db
+        avg, n = _db.session.query(func.avg(Review.rating),
+                                   func.count(Review.id))\
+            .filter(Review.course_id == self.id).first()
+        return (round(float(avg), 1) if avg else 0.0), int(n)
+
 
 class Module(db.Model):
     __tablename__ = "modules"
@@ -106,6 +115,11 @@ class Lesson(db.Model):
     body = db.Column(db.Text, default="")  # rich text / HTML for text lessons
     video_url = db.Column(db.String(500), default="")  # embeddable URL
     pdf_file = db.Column(db.String(260), default="")  # stored filename in uploads/
+    available_after_days = db.Column(db.Integer, default=0)  # drip: unlock N days after enrollment
+
+    def unlock_date(self, enrolled_at):
+        from datetime import timedelta
+        return enrolled_at + timedelta(days=self.available_after_days or 0)
 
 
 class Recording(db.Model):
@@ -259,3 +273,134 @@ class Certificate(db.Model):
     user = db.relationship("User", backref="certificates")
     course = db.relationship("Course", backref="certificates")
     __table_args__ = (db.UniqueConstraint("user_id", "course_id", name="uq_certificate"),)
+
+
+# ---------------------------------------------------------------- Phase 2
+class LiveSession(db.Model):
+    """Scheduled Jitsi live class for a course."""
+    __tablename__ = "live_sessions"
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    title = db.Column(db.String(160), nullable=False)
+    starts_at = db.Column(db.DateTime, nullable=False)
+    duration_min = db.Column(db.Integer, default=60)
+    room_name = db.Column(db.String(120), unique=True, nullable=False, index=True)
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    recording_url = db.Column(db.String(500), default="")
+    sent_reminder = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    course = db.relationship("Course", backref=db.backref(
+        "live_sessions", cascade="all, delete-orphan",
+        order_by="LiveSession.starts_at"))
+
+    @property
+    def ends_at(self):
+        from datetime import timedelta
+        return self.starts_at + timedelta(minutes=self.duration_min or 60)
+
+    @property
+    def join_url(self):
+        return f"https://meet.jit.si/{self.room_name}"
+
+    def is_joinable(self, now=None):
+        """Joinable from 15 min before start until the session ends."""
+        from datetime import timedelta
+        now = now or datetime.utcnow()
+        return self.starts_at - timedelta(minutes=15) <= now <= self.ends_at
+
+    def is_upcoming(self, now=None):
+        now = now or datetime.utcnow()
+        return now <= self.ends_at
+
+
+class Discussion(db.Model):
+    __tablename__ = "discussions"
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    body = db.Column(db.Text, default="")
+    pinned = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    course = db.relationship("Course", backref=db.backref(
+        "discussions", cascade="all, delete-orphan"))
+    user = db.relationship("User")
+    replies = db.relationship("DiscussionReply", backref="discussion",
+                              cascade="all, delete-orphan",
+                              order_by="DiscussionReply.created_at")
+
+
+class DiscussionReply(db.Model):
+    __tablename__ = "discussion_replies"
+    id = db.Column(db.Integer, primary_key=True)
+    discussion_id = db.Column(db.Integer, db.ForeignKey("discussions.id"),
+                              nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship("User")
+
+
+class Review(db.Model):
+    """One rating + text review per user per course (enrolled students only)."""
+    __tablename__ = "reviews"
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    rating = db.Column(db.Integer, nullable=False)  # 1..5
+    text = db.Column(db.Text, default="")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    course = db.relationship("Course", backref=db.backref(
+        "reviews", cascade="all, delete-orphan"))
+    user = db.relationship("User")
+    __table_args__ = (db.UniqueConstraint("user_id", "course_id", name="uq_review"),)
+
+
+class Wishlist(db.Model):
+    __tablename__ = "wishlist"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    course = db.relationship("Course")
+    user = db.relationship("User")
+    __table_args__ = (db.UniqueConstraint("user_id", "course_id", name="uq_wishlist"),)
+
+
+class Announcement(db.Model):
+    """Site-wide banner shown on all pages while active."""
+    __tablename__ = "announcements"
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(160), nullable=False)
+    body = db.Column(db.Text, default="")
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class EmailSettings(db.Model):
+    """Single-row SMTP configuration (id=1)."""
+    __tablename__ = "email_settings"
+    id = db.Column(db.Integer, primary_key=True)
+    smtp_host = db.Column(db.String(160), default="")
+    smtp_port = db.Column(db.Integer, default=587)
+    smtp_user = db.Column(db.String(160), default="")
+    smtp_pass = db.Column(db.String(255), default="")
+    from_email = db.Column(db.String(160), default="")
+    from_name = db.Column(db.String(120), default="Sayyed EdVantage LMS")
+    enabled = db.Column(db.Boolean, default=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+    @classmethod
+    def get(cls):
+        row = cls.query.get(1)
+        if not row:
+            row = cls(id=1)
+            db.session.add(row)
+            db.session.commit()
+        return row

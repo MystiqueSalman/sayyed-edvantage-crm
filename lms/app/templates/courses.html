@@ -2,17 +2,35 @@
 {% block title %}All Courses — Sayyed EdVantage LMS{% endblock %}
 {% block content %}
 <div class="section-title"><h2>Course Catalog</h2><div class="line"></div></div>
+<form class="searchbar" method="get" action="{{ url_for('main.catalog') }}">
+  <input type="text" name="q" value="{{ q or '' }}" placeholder="🔍 Search courses…">
+  <button class="btn btn-blue btn-sm" type="submit">Search</button>
+  {% if q %}<a class="btn btn-ghost btn-sm" href="{{ url_for('main.catalog') }}">Clear</a>{% endif %}
+</form>
+{% if q %}<p style="color:var(--muted)">{{ courses|length }} result{{ 's' if courses|length != 1 }} for "<b>{{ q }}</b>"</p>{% endif %}
 <div class="grid">
   {% for c in courses %}
+  {% set avg, cnt = c.average_rating %}
   <div class="card">
     <div class="course-banner" style="background-image:url('{{ url_for('static', filename='img/banners/' + c.banner) if c.banner }}')"></div>
     <div class="body">
       <h3>{{ c.title }}</h3>
+      {% if cnt %}<div class="stars">{{ "★" * (avg|round|int) }}{{ "☆" * (5 - (avg|round|int)) }} <small style="color:var(--muted)">{{ avg }} ({{ cnt }})</small></div>{% endif %}
       <p>{{ c.short_desc }}</p>
       <div class="fee">₹{{ "{:,}".format(c.fee) }} <small>+ GST</small></div>
-      <a class="btn btn-gold btn-sm" href="{{ url_for('main.course_detail', slug=c.slug) }}">View Course</a>
+      <p style="display:flex; gap:8px; align-items:center">
+        <a class="btn btn-gold btn-sm" href="{{ url_for('main.course_detail', slug=c.slug) }}">View Course</a>
+        {% if current_user.is_authenticated and current_user.role == 'student' %}
+        <form class="inline-form" method="post" action="{{ url_for('student.wishlist_toggle', slug=c.slug) }}">
+          <input type="hidden" name="next" value="{{ url_for('main.catalog') }}{% if q %}?q={{ q }}{% endif %}">
+          <button class="wish-btn" type="submit" title="{{ 'Remove from wishlist' if c.id in wishlist_ids else 'Save to wishlist' }}">{{ '❤️' if c.id in wishlist_ids else '🤍' }}</button>
+        </form>
+        {% endif %}
+      </p>
     </div>
   </div>
+  {% else %}
+  <div class="panel"><p style="color:var(--muted)">No courses found. Try a different search.</p></div>
   {% endfor %}
 </div>
 {% endblock %}

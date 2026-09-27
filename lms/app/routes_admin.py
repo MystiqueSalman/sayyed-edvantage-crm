@@ -1,14 +1,16 @@
-"""Admin routes: dashboard, users, course catalog admin, coupons, enrollments.
-Manager gets dashboard + course/enrollment views; user management & coupons are
-admin-only."""
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+"""Admin routes: dashboard, users, course catalog admin, coupons, enrollments,
+email settings, announcements, analytics.
+Manager gets dashboard + course/enrollment views; user management, coupons,
+email settings, announcements and analytics are admin-only."""
+from flask import (Blueprint, current_app, flash, jsonify, redirect, render_template,
+                   request, url_for)
 from flask_login import current_user
 from sqlalchemy import func
 
 from . import db
 from .decorators import admin_required, manager_or_admin
-from .models import (Assignment, Certificate, Course, Enrollment, Submission, User,
-                     ROLES)
+from .models import (Announcement, Assignment, Certificate, Course, EmailSettings,
+                     Enrollment, QuizAttempt, Submission, User, ROLES)
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -199,3 +201,138 @@ def coupon_delete(coupon_id):
 def enrollments():
     items = Enrollment.query.order_by(Enrollment.enrolled_at.desc()).limit(100).all()
     return render_template("admin_enrollments.html", enrollments=items)
+
+
+# ---------------------------------------------------------------- email settings (admin only)
+@admin_bp.route("/email-settings", methods=["GET", "POST"])
+@admin_required
+def email_settings():
+    settings = EmailSettings.get()
+    if request.method == "POST":
+        if "send_test" in request.form:
+            from .emailer import send_email_sync
+            to = request.form.get("test_email", "").strip() or settings.from_email
+            ok, msg = send_email_sync(
+                to, "Sayyed EdVantage LMS — test email ✅",
+                "<p>This is a test email from your LMS. Email automation is working.</p>")
+            flash(msg, "success" if ok else "danger")
+        else:
+            settings.smtp_host = request.form.get("smtp_host", "").strip()
+            try:
+                settings.smtp_port = int(request.form.get("smtp_port", 587) or 587)
+            except ValueError:
+                settings.smtp_port = 587
+            settings.smtp_user = request.form.get("smtp_user", "").strip()
+            if request.form.get("smtp_pass"):
+                settings.smtp_pass = request.form.get("smtp_pass")
+            settings.from_email = request.form.get("from_email", "").strip()
+            settings.from_name = (request.form.get("from_name", "").strip()
+                                  or "Sayyed EdVantage LMS")
+            settings.enabled = bool(request.form.get("enabled"))
+            db.session.commit()
+            flash("Email settings saved.", "success")
+        return redirect(url_for("admin.email_settings"))
+    return render_template("admin_email_settings.html", settings=settings)
+
+
+# ---------------------------------------------------------------- announcements (admin only)
+@admin_bp.route("/announcements", methods=["GET", "POST"])
+@admin_required
+def announcements():
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        body = request.form.get("body", "").strip()
+        if not title:
+            flash("Title is required.", "danger")
+        else:
+            if request.form.get("deactivate_others"):
+                Announcement.query.update({"active": False})
+            db.session.add(Announcement(title=title, body=body,
+                                        active=bool(request.form.get("active"))))
+            db.session.commit()
+            flash("Announcement posted.", "success")
+        return redirect(url_for("admin.announcements"))
+    items = Announcement.query.order_by(Announcement.created_at.desc()).limit(20).all()
+    return render_template("admin_announcements.html", announcements=items)
+
+
+@admin_bp.route("/announcements/<int:ann_id>/toggle", methods=["POST"])
+@admin_required
+def announcement_toggle(ann_id):
+    ann = Announcement.query.get_or_404(ann_id)
+    ann.active = not ann.active
+    db.session.commit()
+    return redirect(url_for("admin.announcements"))
+
+
+@admin_bp.route("/announcements/<int:ann_id>/delete", methods=["POST"])
+@admin_required
+def announcement_delete(ann_id):
+    ann = Announcement.query.get_or_404(ann_id)
+    db.session.delete(ann)
+    db.session.commit()
+    flash("Announcement deleted.", "info")
+    return redirect(url_for("admin.announcements"))
+
+
+# ---------------------------------------------------------------- analytics (admin only)
+@admin_bp.route("/analytics")
+@admin_required
+def analytics():
+    return render_template("admin_analytics.html")
+
+
+@admin_bp.route("/analytics/api/enrollments-per-course")
+@admin_required
+def api_enrollments_per_course():
+    rows = (db.session.query(Course.title, func.count(Enrollment.id))
+            .outerjoin(Enrollment, Enrollment.course_id == Course.id)
+            .group_by(Course.id).order_by(Course.title).all())
+    return jsonify({"labels": [r[0] for r in rows],
+                    "data": [r[1] for r in rows]})
+
+
+@admin_bp.route("/analytics/api/revenue-per-course")
+@admin_required
+def api_revenue_per_course():
+    rows = (db.session.query(
+                Course.title,
+                func.coalesce(func.sum(Enrollment.amount_paid), 0))
+            .outerjoin(Enrollment,
+                       (Enrollment.course_id == Course.id) & (Enrollment.paid.is_(True)))
+            .group_by(Course.id).order_by(Course.title).all())
+    return jsonify({"labels": [r[0] for r in rows],
+                    "data": [int(r[1]) for r in rows],
+                    "test_mode": not current_app.config.get("PAYMENTS_LIVE")})
+
+
+@admin_bp.route("/analytics/api/quiz-scores")
+@admin_required
+def api_quiz_scores():
+    from .models import Module, Quiz
+    rows = (db.session.query(
+                Course.title,
+                func.avg(QuizAttempt.score * 100.0 / QuizAttempt.total))
+            .join(Quiz, Quiz.id == QuizAttempt.quiz_id)
+            .join(Module, Module.id == Quiz.module_id)
+            .join(Course, Course.id == Module.course_id)
+            .filter(QuizAttempt.total > 0)
+            .group_by(Course.id).order_by(Course.title).all())
+    return jsonify({"labels": [r[0] for r in rows],
+                    "data": [round(float(r[1]), 1) if r[1] else 0 for r in rows]})
+
+
+@admin_bp.route("/analytics/api/signups-30d")
+@admin_required
+def api_signups_30d():
+    from datetime import date, timedelta
+    today = date.today()
+    labels, data = [], []
+    for i in range(29, -1, -1):
+        day = today - timedelta(days=i)
+        nxt = day + timedelta(days=1)
+        n = User.query.filter(User.created_at >= day,
+                              User.created_at < nxt).count()
+        labels.append(day.strftime("%d %b"))
+        data.append(n)
+    return jsonify({"labels": labels, "data": data})

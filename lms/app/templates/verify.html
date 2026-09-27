@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Verify Certificate {{ code }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:620px; margin:40px auto; text-align:center">
+  <div style="font-size:2.6rem">🎓</div>
+  <h2>Certificate Verification</h2>
+  {% if cert %}
+    <p class="flash success" style="text-align:center">✅ This certificate is <b>valid</b>.</p>
+    <table style="margin:18px auto; max-width:460px">
+      <tr><th>Certificate code</th><td><code>{{ cert.code }}</code></td></tr>
+      <tr><th>Issued to</th><td>{{ cert.user.name }}</td></tr>
+      <tr><th>Course</th><td>{{ cert.course.title }}</td></tr>
+      <tr><th>Issued on</th><td>{{ cert.issued_at.strftime('%d %B %Y') }}</td></tr>
+      <tr><th>Issued by</th><td>Sayyed EdVantage, Mumbai</td></tr>
+    </table>
+  {% else %}
+    <p class="flash danger" style="text-align:center">❌ No certificate found for code <code>{{ code }}</code>.
+    Check the code and try again.</p>
+  {% endif %}
+  <p style="margin-top:18px; color:var(--muted); font-size:.88rem">
+    Verify another: <code>{{ request.host_url }}verify/&lt;code&gt;</code></p>
+</div>
+{% endblock %}

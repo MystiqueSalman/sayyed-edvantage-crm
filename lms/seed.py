@@ -1,11 +1,11 @@
 """Seed the LMS with demo users, 7 courses + 2 bonus courses, and content.
 Idempotent: safe to re-run (skips existing rows).
 """
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from app import create_app, db
-from app.models import (Assignment, Course, Coupon, Lesson, Module, Question, Quiz,
-                        Recording, User)
+from app.models import (Announcement, Assignment, Course, Coupon, Lesson, LiveSession,
+                        Module, Question, Quiz, Recording, User)
 
 app = create_app()
 
@@ -363,10 +363,14 @@ with app.app_context():
                 Module, {"position": mi},
                 course_id=course.id, title=mtitle)
             for li, (ltitle, kind, body) in enumerate(lessons):
-                get_or_create(
+                lesson, _ = get_or_create(
                     Lesson,
                     {"position": li, "kind": kind, "body": body},
                     module_id=module.id, title=ltitle)
+                # drip schedule: lesson 2 unlocks after 7 days, lesson 3 after 14
+                want_drip = 7 if li == 1 else (14 if li == 2 else 0)
+                if lesson.available_after_days != want_drip:
+                    lesson.available_after_days = want_drip
             for qi, (qtitle, questions) in enumerate(data["quiz"]):
                 if qi != mi:
                     continue
@@ -413,9 +417,46 @@ with app.app_context():
         get_or_create(Coupon, {"percent_off": pct, "active": True}, code=code)
     db.session.commit()
 
+    # ---- live sessions (always upcoming; refreshed on re-run) ----
+    admin = user_map["admin"]
+    now = datetime.utcnow()
+    live_plan = [
+        ("data-science",
+         "Data Science — Week 3 Doubt-Clearing Live Class",
+         now + timedelta(days=1, hours=2), 60),
+        ("ai-generative-ai",
+         "AI & Generative AI — Prompt Engineering Workshop (Live)",
+         now + timedelta(days=2, hours=4), 90),
+    ]
+    for slug, title, starts_at, duration in live_plan:
+        course = Course.query.filter_by(slug=slug).first()
+        sess = LiveSession.query.filter_by(title=title).first()
+        if sess:
+            sess.starts_at = starts_at
+            sess.duration_min = duration
+            sess.sent_reminder = False
+        else:
+            import secrets
+            sess = LiveSession(
+                course_id=course.id, title=title, starts_at=starts_at,
+                duration_min=duration, created_by=admin.id,
+                room_name=f"se-{slug}-{secrets.token_hex(3)}")
+            db.session.add(sess)
+    db.session.commit()
+
+    # ---- announcement ----
+    ann = Announcement.query.filter_by(title="Admissions open — October batch").first()
+    if not ann:
+        db.session.add(Announcement(
+            title="Admissions open — October batch",
+            body="New batches for all 7 courses start soon. Enroll now and use code WELCOME10 for 10% off!",
+            active=True))
+    db.session.commit()
+
     print("Seed complete:")
     print(f"  users: {User.query.count()}, courses: {Course.query.count()}, "
           f"modules: {Module.query.count()}, lessons: {Lesson.query.count()}, "
           f"quizzes: {Quiz.query.count()}, questions: {Question.query.count()}, "
           f"assignments: {Assignment.query.count()}, recordings: {Recording.query.count()}, "
-          f"coupons: {Coupon.query.count()}")
+          f"coupons: {Coupon.query.count()}, live_sessions: {LiveSession.query.count()}, "
+          f"announcements: {Announcement.query.count()}")

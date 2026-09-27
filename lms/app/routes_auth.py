@@ -60,6 +60,11 @@ def register():
             db.session.add(user)
             db.session.commit()
             login_user(user)
+            try:
+                from .emailer import send_welcome_email
+                send_welcome_email(user)
+            except Exception:
+                pass  # email must never break registration
             flash("Account created — welcome to Sayyed EdVantage!", "success")
             return redirect(url_for("student.dashboard"))
     return render_template("register.html")

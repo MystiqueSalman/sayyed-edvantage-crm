@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Analytics — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📊 Analytics</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<p style="color:var(--muted); font-size:.88rem">Revenue figures reflect test-mode payments until live Razorpay keys are connected.</p>
+
+<div class="two-col">
+  <div class="panel"><h3>Enrollments per Course</h3><canvas class="chart" id="chEnroll"></canvas></div>
+  <div class="panel"><h3>Revenue per Course (₹)</h3><canvas class="chart" id="chRevenue"></canvas></div>
+</div>
+<div class="two-col" style="margin-top:22px">
+  <div class="panel"><h3>Average Quiz Score per Course (%)</h3><canvas class="chart" id="chQuiz"></canvas></div>
+  <div class="panel"><h3>Signups — Last 30 Days</h3><canvas class="chart" id="chSignups"></canvas></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+const gold = "#d4af37", blue = "#2e86ff", grid = "rgba(255,255,255,.08)", tick = "#9fb3d1";
+function bar(id, labels, data, color, label) {
+  new Chart(document.getElementById(id), {type: "bar",
+    data: {labels: labels, datasets: [{label: label, data: data,
+      backgroundColor: color, borderRadius: 8}]},
+    options: {plugins: {legend: {display: false}},
+      scales: {x: {ticks: {color: tick}, grid: {color: grid}},
+               y: {ticks: {color: tick}, grid: {color: grid}, beginAtZero: true}}}});
+}
+fetch("{{ url_for('admin.api_enrollments_per_course') }}").then(r => r.json())
+  .then(d => bar("chEnroll", d.labels, d.data, blue, "Enrollments"));
+fetch("{{ url_for('admin.api_revenue_per_course') }}").then(r => r.json())
+  .then(d => bar("chRevenue", d.labels, d.data, gold, "Revenue (₹)"));
+fetch("{{ url_for('admin.api_quiz_scores') }}").then(r => r.json())
+  .then(d => bar("chQuiz", d.labels, d.data, "#3ddc84", "Avg score %"));
+fetch("{{ url_for('admin.api_signups_30d') }}").then(r => r.json())
+  .then(d => {
+    new Chart(document.getElementById("chSignups"), {type: "line",
+      data: {labels: d.labels, datasets: [{label: "Signups", data: d.data,
+        borderColor: gold, backgroundColor: "rgba(212,175,55,.15)", fill: true, tension: .3}]},
+      options: {plugins: {legend: {display: false}},
+        scales: {x: {ticks: {color: tick, maxTicksLimit: 8}, grid: {color: grid}},
+                 y: {ticks: {color: tick, stepSize: 1}, grid: {color: grid}, beginAtZero: true}}}});
+  });
+</script>
+{% endblock %}

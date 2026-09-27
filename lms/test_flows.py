@@ -80,6 +80,13 @@ r = s_stu.post(f"{BASE}/enroll/devops", data={"coupon_code": "BOGUS"},
 check("invalid coupon warned", "invalid or expired" in r.text.lower())
 
 # ---------------- 4. lessons -> quizzes -> certificate ----------------
+# Phase 2: lessons 2+ are drip-locked (7/14 days). Backdate the enrollment so
+# the original "complete everything" flow still exercises the full path.
+from datetime import datetime as _dt, timedelta as _td
+with app.app_context():
+    _enr = Enrollment.query.get(int(enr_id))
+    _enr.enrolled_at = _dt.utcnow() - _td(days=30)
+    db.session.commit()
 for lid in lesson_ids:
     r = s_stu.post(f"{BASE}/lesson/{lid}/complete", allow_redirects=False)
     assert r.status_code == 302, f"lesson {lid} complete failed: {r.status_code}"

@@ -19,6 +19,9 @@
     <label>PDF file (for PDF lessons)</label>
     <input type="file" name="pdf_file" accept=".pdf">
     {% if lesson and lesson.pdf_file %}<p style="color:var(--muted); font-size:.85rem">Current file: {{ lesson.pdf_file }} (upload a new one to replace)</p>{% endif %}
+    <label>Drip: unlock days after enrollment <span style="color:var(--muted)">(0 = available immediately)</span></label>
+    <input type="number" name="available_after_days" min="0" max="365"
+           value="{{ lesson.available_after_days if lesson else 0 }}">
     <p><button class="btn btn-gold" type="submit" style="margin-top:14px">Save Lesson</button>
     <a class="btn btn-ghost" href="{{ url_for('manage.course_home', course_id=course.id) }}" style="margin-left:10px">Cancel</a></p>
   </form>

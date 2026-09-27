@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}My Wishlist — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>❤ My Wishlist</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('main.catalog') }}">Browse courses</a></div>
+<div class="grid">
+  {% for w in items %}
+  <div class="card">
+    <div class="course-banner" style="background-image:url('{{ url_for('static', filename='img/banners/' + w.course.banner) if w.course.banner }}')"></div>
+    <div class="body">
+      <h3>{{ w.course.title }}</h3>
+      <p>{{ w.course.short_desc }}</p>
+      <div class="fee">₹{{ "{:,}".format(w.course.fee) }} <small>+ GST</small></div>
+      <p style="display:flex; gap:10px; align-items:center">
+        <a class="btn btn-gold btn-sm" href="{{ url_for('main.course_detail', slug=w.course.slug) }}">View Course</a>
+        <form class="inline-form" method="post" action="{{ url_for('student.wishlist_toggle', slug=w.course.slug) }}">
+          <input type="hidden" name="next" value="{{ url_for('student.wishlist') }}">
+          <button class="wish-btn" type="submit" title="Remove from wishlist">💔</button>
+        </form>
+      </p>
+    </div>
+  </div>
+  {% else %}
+  <div class="panel"><p style="color:var(--muted)">Your wishlist is empty. Tap the 🤍 on any course to save it here.</p></div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -2,6 +2,16 @@
 {% block title %}{{ lesson.title }} — {{ course.title }}{% endblock %}
 {% block content %}
 <p><a href="{{ url_for('main.course_detail', slug=course.slug) }}">← {{ course.title }}</a></p>
+{% if locked %}
+<div class="panel locked-panel">
+  <div class="lock">🔒</div>
+  <h2>{{ lesson.title }}</h2>
+  <p style="color:var(--muted); font-size:1.05rem">This lesson unlocks
+    <b style="color:var(--gold-lt)">in {{ locked_days }} day{{ 's' if locked_days != 1 }}</b>
+    <br><small>Available from {{ unlock_at.strftime('%d %B %Y') }} · drip-scheduled from your enrollment date.</small></p>
+  <p><a class="btn btn-ghost" href="{{ url_for('main.course_detail', slug=course.slug) }}">← Back to course</a></p>
+</div>
+{% else %}
 <div class="panel">
   <div><span class="tag">{{ lesson.kind|upper }}</span>
     {% if done %}<span class="tag green" style="margin-left:8px">Completed ✓</span>{% endif %}</div>
@@ -37,4 +47,5 @@
     {% if next_lesson %}<a class="btn btn-blue" href="{{ url_for('student.lesson', lesson_id=next_lesson.id) }}">Next →</a>{% endif %}
   </div>
 </div>
+{% endif %}
 {% endblock %}

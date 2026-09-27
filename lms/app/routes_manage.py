@@ -12,8 +12,8 @@ from werkzeug.utils import secure_filename
 
 from . import db
 from .decorators import content_manager_required
-from .models import (Assignment, Course, Lesson, Module, Question, Quiz, Recording,
-                     Submission)
+from .models import (Assignment, Course, Lesson, LiveSession, Module, Question, Quiz,
+                     Recording, Submission)
 
 manage_bp = Blueprint("manage", __name__, url_prefix="/manage")
 
@@ -110,11 +110,16 @@ def lesson_new(module_id):
                                            module=module, lesson=None)
             pos = (db.session.query(db.func.max(Lesson.position))
                    .filter_by(module_id=module.id).scalar() or 0) + 1
+            try:
+                drip = max(0, int(request.form.get("available_after_days", 0) or 0))
+            except ValueError:
+                drip = 0
             db.session.add(Lesson(
                 module_id=module.id, title=title, position=pos, kind=kind,
                 body=request.form.get("body", ""),
                 video_url=request.form.get("video_url", "").strip(),
-                pdf_file=pdf_file or ""))
+                pdf_file=pdf_file or "",
+                available_after_days=drip))
             db.session.commit()
             flash("Lesson added.", "success")
             return redirect(url_for("manage.course_home", course_id=course.id))
@@ -134,6 +139,12 @@ def lesson_edit(lesson_id):
             lesson.kind = kind
         lesson.body = request.form.get("body", "")
         lesson.video_url = request.form.get("video_url", "").strip()
+        try:
+            lesson.available_after_days = max(
+                0, int(request.form.get("available_after_days",
+                                        lesson.available_after_days or 0) or 0))
+        except ValueError:
+            pass
         if lesson.kind == "pdf":
             pdf_file = _save_pdf_upload(request.files.get("pdf_file"))
             if pdf_file is None:
@@ -308,6 +319,11 @@ def submission_grade(submission_id):
         sub.feedback = request.form.get("feedback", "")
         sub.graded_at = datetime.utcnow()
         db.session.commit()
+        try:
+            from .emailer import send_graded_email
+            send_graded_email(sub)
+        except Exception:
+            pass  # email must never break grading
         flash("Submission graded.", "success")
         return redirect(url_for("manage.assignment_submissions",
                                 assignment_id=sub.assignment_id))
@@ -323,6 +339,77 @@ def submission_file(submission_id):
         abort(404)
     return send_file(os.path.join(current_app.config["UPLOAD_DIR"], sub.file_path),
                      as_attachment=True)
+
+
+# ---------------------------------------------------------------- live sessions (Jitsi)
+def _parse_starts_at(value):
+    value = (value or "").strip()
+    for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            return datetime.strptime(value, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+@manage_bp.route("/course/<int:course_id>/live/new", methods=["GET", "POST"])
+@content_manager_required
+def live_new(course_id):
+    course = _course_or_403(course_id)
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        starts_at = _parse_starts_at(request.form.get("starts_at"))
+        try:
+            duration = int(request.form.get("duration_min", 60) or 60)
+        except ValueError:
+            duration = 60
+        if not title or not starts_at:
+            flash("Title and start date/time are required.", "danger")
+        else:
+            room = f"se-{course.slug}-{uuid.uuid4().hex[:8]}"
+            db.session.add(LiveSession(
+                course_id=course.id, title=title, starts_at=starts_at,
+                duration_min=max(15, min(480, duration)), room_name=room,
+                created_by=current_user.id,
+                recording_url=request.form.get("recording_url", "").strip()))
+            db.session.commit()
+            flash("Live class scheduled.", "success")
+            return redirect(url_for("manage.course_home", course_id=course.id))
+    return render_template("manage_live_form.html", course=course, session=None)
+
+
+@manage_bp.route("/live/<int:session_id>/edit", methods=["GET", "POST"])
+@content_manager_required
+def live_edit(session_id):
+    sess = LiveSession.query.get_or_404(session_id)
+    course = _course_or_403(sess.course_id)
+    if request.method == "POST":
+        sess.title = request.form.get("title", "").strip() or sess.title
+        starts_at = _parse_starts_at(request.form.get("starts_at"))
+        if starts_at:
+            sess.starts_at = starts_at
+            sess.sent_reminder = False  # re-arm reminder on reschedule
+        try:
+            sess.duration_min = max(15, min(480,
+                int(request.form.get("duration_min", sess.duration_min) or 60)))
+        except ValueError:
+            pass
+        sess.recording_url = request.form.get("recording_url", "").strip()
+        db.session.commit()
+        flash("Live class updated.", "success")
+        return redirect(url_for("manage.course_home", course_id=course.id))
+    return render_template("manage_live_form.html", course=course, session=sess)
+
+
+@manage_bp.route("/live/<int:session_id>/delete", methods=["POST"])
+@content_manager_required
+def live_delete(session_id):
+    sess = LiveSession.query.get_or_404(session_id)
+    course = _course_or_403(sess.course_id)
+    db.session.delete(sess)
+    db.session.commit()
+    flash("Live class deleted.", "info")
+    return redirect(url_for("manage.course_home", course_id=course.id))
 
 
 # ---------------------------------------------------------------- recordings

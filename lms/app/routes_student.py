@@ -1,7 +1,7 @@
 """Student routes: dashboard, learning, quizzes, assignments, certificates."""
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from flask import (Blueprint, abort, current_app, flash, redirect, render_template,
                    request, send_file, url_for)
@@ -10,8 +10,9 @@ from werkzeug.utils import secure_filename
 
 from . import db
 from .decorators import role_required
-from .models import (Assignment, Certificate, Course, Enrollment, Lesson, LessonProgress,
-                     Module, Quiz, QuizAttempt, Submission)
+from .models import (Announcement, Assignment, Certificate, Course, Enrollment, Lesson,
+                     LessonProgress, LiveSession, Module, Quiz, QuizAttempt, Review,
+                     Submission, Wishlist)
 from .pdfcert import certificate_path, generate_certificate_pdf
 
 student_bp = Blueprint("student", __name__)
@@ -76,8 +77,17 @@ def dashboard():
                    .filter(~Assignment.id.in_(submitted_ids) if submitted_ids else True)
                    .order_by(Assignment.due_date).limit(10).all())
     certs = Certificate.query.filter_by(user_id=current_user.id).all()
+    # live class widget: upcoming sessions across enrolled courses
+    now = datetime.utcnow()
+    live_sessions = []
+    if course_ids:
+        live_sessions = (LiveSession.query
+                         .filter(LiveSession.course_id.in_(course_ids),
+                                 LiveSession.starts_at >= now - timedelta(hours=3))
+                         .order_by(LiveSession.starts_at).limit(6).all())
     return render_template("dashboard.html", enrollments=enrollments,
-                           pending=pending, certs=certs)
+                           pending=pending, certs=certs, live_sessions=live_sessions,
+                           now=now)
 
 
 @student_bp.route("/lesson/<int:lesson_id>")
@@ -85,9 +95,18 @@ def dashboard():
 def lesson(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
     course = lesson.module.course
-    if not _active_enrollment_or_403(course.id):
+    enr = _active_enrollment_or_403(course.id)
+    if not enr:
         flash("Enroll in this course to access lessons.", "warning")
         return redirect(url_for("main.course_detail", slug=course.slug))
+    # drip scheduling: locked until enrolled_at + available_after_days
+    unlock_at = lesson.unlock_date(enr.enrolled_at)
+    locked_days = (unlock_at.date() - datetime.utcnow().date()).days
+    if locked_days > 0:
+        return render_template("lesson.html", lesson=lesson, course=course,
+                               done=False, prev_lesson=None, next_lesson=None,
+                               module_quiz=None, locked=True,
+                               locked_days=locked_days, unlock_at=unlock_at)
     done = LessonProgress.query.filter_by(
         user_id=current_user.id, lesson_id=lesson.id).first() is not None
     # prev / next navigation
@@ -98,7 +117,7 @@ def lesson(lesson_id):
     module_quiz = lesson.module.quizzes[0] if lesson.module.quizzes else None
     return render_template("lesson.html", lesson=lesson, course=course, done=done,
                            prev_lesson=prev_lesson, next_lesson=next_lesson,
-                           module_quiz=module_quiz)
+                           module_quiz=module_quiz, locked=False)
 
 
 @student_bp.route("/lesson/<int:lesson_id>/complete", methods=["POST"])
@@ -106,8 +125,11 @@ def lesson(lesson_id):
 def lesson_complete(lesson_id):
     lesson = Lesson.query.get_or_404(lesson_id)
     course = lesson.module.course
-    if not _active_enrollment_or_403(course.id):
+    enr = _active_enrollment_or_403(course.id)
+    if not enr:
         abort(403)
+    if lesson.unlock_date(enr.enrolled_at).date() > datetime.utcnow().date():
+        abort(403)  # drip-locked lessons can't be completed early
     if not LessonProgress.query.filter_by(
             user_id=current_user.id, lesson_id=lesson.id).first():
         db.session.add(LessonProgress(user_id=current_user.id, lesson_id=lesson.id))
@@ -235,3 +257,61 @@ def certificate_download(code):
         generate_certificate_pdf(cert, path)
     return send_file(path, as_attachment=True,
                      download_name=f"SayyedEdVantage-{cert.code}.pdf")
+
+
+# ---------------------------------------------------------------- reviews
+@student_bp.route("/course/<slug>/review", methods=["POST"])
+@student_only
+def review_add(slug):
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    enr = Enrollment.query.filter(
+        Enrollment.user_id == current_user.id,
+        Enrollment.course_id == course.id,
+        Enrollment.status.in_([Enrollment.STATUS_ACTIVE,
+                               Enrollment.STATUS_COMPLETED])).first()
+    if not enr:
+        flash("Enroll in this course to leave a review.", "warning")
+        return redirect(url_for("main.course_detail", slug=slug))
+    if Review.query.filter_by(user_id=current_user.id,
+                              course_id=course.id).first():
+        flash("You've already reviewed this course.", "info")
+        return redirect(url_for("main.course_detail", slug=slug))
+    try:
+        rating = int(request.form.get("rating", 0) or 0)
+    except ValueError:
+        rating = 0
+    text = request.form.get("text", "").strip()
+    if rating < 1 or rating > 5:
+        flash("Please pick a rating from 1 to 5 stars.", "danger")
+    else:
+        db.session.add(Review(course_id=course.id, user_id=current_user.id,
+                              rating=rating, text=text))
+        db.session.commit()
+        flash("Thanks for your review! ⭐", "success")
+    return redirect(url_for("main.course_detail", slug=slug))
+
+
+# ---------------------------------------------------------------- wishlist
+@student_bp.route("/wishlist")
+@student_only
+def wishlist():
+    items = (Wishlist.query.filter_by(user_id=current_user.id)
+             .order_by(Wishlist.created_at.desc()).all())
+    return render_template("wishlist.html", items=items)
+
+
+@student_bp.route("/course/<slug>/wishlist", methods=["POST"])
+@student_only
+def wishlist_toggle(slug):
+    course = Course.query.filter_by(slug=slug).first_or_404()
+    existing = Wishlist.query.filter_by(user_id=current_user.id,
+                                        course_id=course.id).first()
+    if existing:
+        db.session.delete(existing)
+        flash(f"Removed {course.title} from your wishlist.", "info")
+    else:
+        db.session.add(Wishlist(user_id=current_user.id, course_id=course.id))
+        flash(f"Saved {course.title} to your wishlist. ❤", "success")
+    db.session.commit()
+    nxt = request.form.get("next") or url_for("main.course_detail", slug=slug)
+    return redirect(nxt)

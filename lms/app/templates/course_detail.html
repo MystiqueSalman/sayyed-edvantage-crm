@@ -11,6 +11,7 @@
     <h1 style="margin:.4em 0">{{ course.title }}</h1>
     <div>{{ course.description|safe }}</div>
     <div class="fee" style="margin:12px 0">₹{{ "{:,}".format(course.fee) }} <small>+ GST</small></div>
+    {% if rating_count %}<div class="stars" style="margin-bottom:10px">{{ "★" * (avg_rating|round|int) }}{{ "☆" * (5 - (avg_rating|round|int)) }} <small style="color:var(--muted)">{{ avg_rating }} · {{ rating_count }} review{{ 's' if rating_count != 1 }}</small></div>{% endif %}
     <p>
       {% if not current_user.is_authenticated %}
         <a class="btn btn-gold" href="{{ url_for('auth.login', next=url_for('main.enroll', slug=course.slug)) }}">Login to Enroll</a>
@@ -22,9 +23,35 @@
           {% if course.is_bonus or course.fee == 0 %}Enroll Free{% else %}Enroll Now{% endif %}</a>
       {% endif %}
       <a class="btn btn-ghost" href="{{ url_for('main.recordings', slug=course.slug) }}" style="margin-left:10px">Recorded Sessions</a>
+      {% if current_user.is_authenticated %}
+      <a class="btn btn-ghost" href="{{ url_for('discuss.thread_list', slug=course.slug) }}" style="margin-left:10px">💬 Discussions</a>
+      {% endif %}
+      {% if current_user.is_authenticated and current_user.role == 'student' %}
+      <form class="inline-form" method="post" action="{{ url_for('student.wishlist_toggle', slug=course.slug) }}" style="margin-left:10px">
+        <button class="btn btn-ghost btn-sm" type="submit">{{ '❤️ Wishlisted' if wishlisted else '🤍 Wishlist' }}</button>
+      </form>
+      {% endif %}
     </p>
   </div>
 </div>
+
+{% if live_sessions %}
+<div class="section-title"><h2>🔴 Live Classes</h2><div class="line"></div></div>
+{% for s in live_sessions %}
+<div class="live-card">
+  <div><span class="live-dot"></span><b>{{ s.title }}</b></div>
+  <div style="margin:8px 0; color:var(--muted); font-size:.92rem">
+    🕒 {{ s.starts_at.strftime('%d %b %Y, %I:%M %p') }} · {{ s.duration_min }} min
+    {% if s.recording_url %} · <a href="{{ s.recording_url }}" target="_blank">Watch recording</a>{% endif %}
+  </div>
+  {% if current_user.is_authenticated and enrollment and enrollment.status != 'pending' and s.is_joinable(now) %}
+  <a class="btn btn-gold btn-sm" href="{{ s.join_url }}" target="_blank" rel="noopener">Join Live Class 🔴</a>
+  {% elif current_user.is_authenticated and enrollment and enrollment.status != 'pending' %}
+  <button class="btn btn-ghost btn-sm" disabled>Join opens 15 min before start</button>
+  {% endif %}
+</div>
+{% endfor %}
+{% endif %}
 
 <div class="section-title"><h2>Curriculum</h2><div class="line"></div></div>
 {% for m in course.modules %}
@@ -34,6 +61,9 @@
   <div class="lesson-row">
     <span>{% if l.kind == 'video' %}🎬{% elif l.kind == 'pdf' %}📄{% else %}📖{% endif %}</span>
     <span>{{ l.title }}</span>
+    {% if l.available_after_days and l.available_after_days > 0 %}
+    <span class="tag gold" style="margin-left:8px">🔒 Day {{ l.available_after_days }}</span>
+    {% endif %}
     <span class="tag" style="margin-left:auto">{{ l.kind|upper }}</span>
   </div>
   {% endfor %}
@@ -53,4 +83,34 @@
   {% endfor %}
 </div>
 {% endif %}
+
+<div class="section-title"><h2>⭐ Student Reviews</h2><div class="line"></div></div>
+{% if enrollment and enrollment.status != 'pending' and not my_review and current_user.role == 'student' %}
+<div class="panel" style="margin-bottom:16px">
+  <h3 style="margin-top:0">Write a review</h3>
+  <form method="post" action="{{ url_for('student.review_add', slug=course.slug) }}">
+    <label>Your rating</label>
+    <select name="rating" required>
+      <option value="">— pick stars —</option>
+      <option value="5">★★★★★ (5) Excellent</option>
+      <option value="4">★★★★ (4) Good</option>
+      <option value="3">★★★ (3) Average</option>
+      <option value="2">★★ (2) Poor</option>
+      <option value="1">★ (1) Terrible</option>
+    </select>
+    <label>Review <span style="color:var(--muted)">(optional)</span></label>
+    <textarea name="text" rows="3" placeholder="What did you think of this course?"></textarea>
+    <p><button class="btn btn-gold btn-sm" type="submit" style="margin-top:10px">Submit Review</button></p>
+  </form>
+</div>
+{% endif %}
+{% for r in reviews %}
+<div class="panel" style="margin-bottom:12px">
+  <div class="stars">{{ "★" * r.rating }}{{ "☆" * (5 - r.rating) }}</div>
+  {% if r.text %}<p style="margin:.5em 0">{{ r.text }}</p>{% endif %}
+  <small style="color:var(--muted)">{{ r.user.name }} · {{ r.created_at.strftime('%d %b %Y') }}</small>
+</div>
+{% else %}
+<p style="color:var(--muted)">No reviews yet — enrolled students can leave the first one.</p>
+{% endfor %}
 {% endblock %}

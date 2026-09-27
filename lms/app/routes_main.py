@@ -1,4 +1,7 @@
 """Public routes: landing, catalog, course detail, recordings, enrollment & payments."""
+import os
+from datetime import timedelta
+
 from flask import (Blueprint, current_app, flash, redirect, render_template, request,
                    send_from_directory, url_for)
 from flask_login import current_user, login_required
@@ -26,8 +29,21 @@ def index():
 
 @main_bp.route("/courses")
 def catalog():
-    courses = Course.query.filter_by(is_bonus=False).order_by(Course.title).all()
-    return render_template("courses.html", courses=courses)
+    q = request.args.get("q", "").strip()
+    query = Course.query.filter_by(is_bonus=False)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            (Course.title.ilike(like)) | (Course.short_desc.ilike(like)) |
+            (Course.description.ilike(like)))
+    courses = query.order_by(Course.title).all()
+    wishlist_ids = set()
+    if current_user.is_authenticated and current_user.role == "student":
+        from .models import Wishlist
+        wishlist_ids = {w.course_id for w in
+                        Wishlist.query.filter_by(user_id=current_user.id).all()}
+    return render_template("courses.html", courses=courses, q=q,
+                           wishlist_ids=wishlist_ids)
 
 
 @main_bp.route("/bonus-courses")
@@ -38,12 +54,54 @@ def bonus_courses():
 
 @main_bp.route("/course/<slug>")
 def course_detail(slug):
+    from datetime import datetime
+    from .models import LiveSession, Review, Wishlist
     course = Course.query.filter_by(slug=slug).first_or_404()
     enrollment = None
+    my_review = None
+    wishlisted = False
     if current_user.is_authenticated:
         enrollment = Enrollment.query.filter_by(
             user_id=current_user.id, course_id=course.id).first()
-    return render_template("course_detail.html", course=course, enrollment=enrollment)
+        my_review = Review.query.filter_by(
+            user_id=current_user.id, course_id=course.id).first()
+        wishlisted = Wishlist.query.filter_by(
+            user_id=current_user.id, course_id=course.id).first() is not None
+    now = datetime.utcnow()
+    live_sessions = (LiveSession.query
+                     .filter(LiveSession.course_id == course.id,
+                             LiveSession.starts_at >= now - timedelta(hours=3))
+                     .order_by(LiveSession.starts_at).all())
+    avg_rating, rating_count = course.average_rating
+    reviews = (Review.query.filter_by(course_id=course.id)
+               .order_by(Review.created_at.desc()).limit(20).all())
+    return render_template("course_detail.html", course=course, enrollment=enrollment,
+                           live_sessions=live_sessions, now=now,
+                           avg_rating=avg_rating, rating_count=rating_count,
+                           reviews=reviews, my_review=my_review,
+                           wishlisted=wishlisted)
+
+
+@main_bp.route("/verify/<code>")
+def verify_certificate(code):
+    """Public certificate verification — no login required."""
+    from .models import Certificate
+    cert = Certificate.query.filter_by(code=code.strip().upper()).first()
+    return render_template("verify.html", cert=cert, code=code.strip().upper())
+
+
+@main_bp.route("/manifest.json")
+def manifest():
+    return send_from_directory(
+        os.path.join(current_app.root_path, "static"), "manifest.json",
+        mimetype="application/manifest+json")
+
+
+@main_bp.route("/sw.js")
+def service_worker():
+    return send_from_directory(
+        os.path.join(current_app.root_path, "static"), "sw.js",
+        mimetype="application/javascript")
 
 
 @main_bp.route("/course/<slug>/recordings")
@@ -101,6 +159,11 @@ def enroll(slug):
             if coupon:
                 coupon.used_count += 1
             db.session.commit()
+            try:
+                from .emailer import send_enrollment_email
+                send_enrollment_email(current_user, enrollment)
+            except Exception:
+                pass
             flash("Enrolled successfully — happy learning!", "success")
             return redirect(url_for("student.dashboard"))
         return redirect(url_for("main.checkout", enrollment_id=enrollment.id))
@@ -166,5 +229,10 @@ def payment_confirm(enrollment_id):
         if coupon:
             coupon.used_count += 1
     db.session.commit()
+    try:
+        from .emailer import send_enrollment_email
+        send_enrollment_email(current_user, enrollment)
+    except Exception:
+        pass
     flash("Payment successful — you are enrolled!", "success")
     return redirect(url_for("student.dashboard"))

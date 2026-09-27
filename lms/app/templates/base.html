@@ -3,10 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a1628">
+<meta name="description" content="Sayyed EdVantage LMS — Empowering Students for Success.">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='img/icons/icon-192.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icons/icon-192.png') }}">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>{% block title %}Sayyed EdVantage LMS{% endblock %}</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+{% if announcement %}
+<div id="announce-bar" class="announce-bar" data-ann-id="{{ announcement.id }}">
+  <span class="announce-ico">📢</span>
+  <span><b>{{ announcement.title }}</b>{% if announcement.body %} — {{ announcement.body }}{% endif %}</span>
+  <button class="announce-x" onclick="dismissAnnouncement({{ announcement.id }})" aria-label="Dismiss">✕</button>
+</div>
+{% endif %}
+
 <nav class="nav">
   <div class="nav-inner">
     <a class="brand" href="{{ url_for('main.index') }}">
@@ -19,6 +35,7 @@
       {% if current_user.is_authenticated %}
         {% if current_user.role == 'student' %}
           <a href="{{ url_for('student.dashboard') }}">Dashboard</a>
+          <a href="{{ url_for('student.wishlist') }}">❤ Wishlist</a>
         {% elif current_user.role == 'faculty' %}
           <a href="{{ url_for('faculty.dashboard') }}">Dashboard</a>
         {% else %}
@@ -50,7 +67,29 @@
 
 <footer>
   Sayyed EdVantage LMS · Empowering Students for Success · Mumbai, India<br>
-  <span style="font-size:.78rem">Phase 1 MVP — live classes, drip &amp; community arrive in Phase 2.</span>
+  <span style="font-size:.78rem">Phase 2 — live classes, drip scheduling &amp; community are here.</span>
 </footer>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("/sw.js").catch(function () {});
+  });
+}
+function dismissAnnouncement(id) {
+  try { localStorage.setItem("dismissed_ann_" + id, "1"); } catch (e) {}
+  var bar = document.getElementById("announce-bar");
+  if (bar) bar.style.display = "none";
+}
+(function () {
+  var bar = document.getElementById("announce-bar");
+  if (bar) {
+    try {
+      if (localStorage.getItem("dismissed_ann_" + bar.dataset.annId)) {
+        bar.style.display = "none";
+      }
+    } catch (e) {}
+  }
+})();
+</script>
 </body>
 </html>

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if session else 'Schedule' }} Live Class — {{ course.title }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:640px; margin:30px auto">
+  <h2>{{ 'Edit' if session else 'Schedule' }} Live Class <span style="color:var(--muted); font-size:.9rem">· {{ course.title }}</span></h2>
+  <p style="color:var(--muted); font-size:.88rem">🔴 Powered by Jitsi — students join at <b>meet.jit.si</b> from 15 minutes before start.</p>
+  <form method="post">
+    <label>Class title</label>
+    <input type="text" name="title" value="{{ session.title if session }}" required autofocus
+           placeholder="e.g. Week 3 Doubt-Clearing Session">
+    <label>Starts at (your local time)</label>
+    <input type="datetime-local" name="starts_at"
+           value="{{ session.starts_at.strftime('%Y-%m-%dT%H:%M') if session }}" required>
+    <label>Duration (minutes)</label>
+    <input type="number" name="duration_min" min="15" max="480"
+           value="{{ session.duration_min if session else 60 }}">
+    <label>Recording URL <span style="color:var(--muted)">(optional — added after the class)</span></label>
+    <input type="text" name="recording_url" value="{{ session.recording_url if session }}"
+           placeholder="https://…">
+    {% if session %}
+    <p style="color:var(--muted); font-size:.85rem">Room: <code>meet.jit.si/{{ session.room_name }}</code></p>
+    {% endif %}
+    <p><button class="btn btn-gold" type="submit" style="margin-top:14px">Save Live Class</button>
+    <a class="btn btn-ghost" href="{{ url_for('manage.course_home', course_id=course.id) }}" style="margin-left:10px">Cancel</a></p>
+  </form>
+</div>
+{% endblock %}

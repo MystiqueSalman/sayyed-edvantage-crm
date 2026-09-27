@@ -66,4 +66,19 @@
     {% else %}<p style="color:var(--muted)">No recordings yet.</p>{% endfor %}
   </div>
 </div>
+
+<div class="panel" style="margin-top:22px">
+  <h3>🔴 Live Classes (Jitsi) <a class="btn btn-gold btn-sm" style="margin-left:10px" href="{{ url_for('manage.live_new', course_id=course.id) }}">+ Schedule</a></h3>
+  {% for s in course.live_sessions %}
+  <div class="lesson-row"><span>🔴</span>
+    <span><b>{{ s.title }}</b> <span style="color:var(--muted)">· {{ s.starts_at.strftime('%d %b %Y, %I:%M %p') }} · {{ s.duration_min }} min</span>
+      <br><small style="color:var(--muted)">meet.jit.si/{{ s.room_name }}{% if s.recording_url %} · <a href="{{ s.recording_url }}" target="_blank">recording</a>{% endif %}</small></span>
+    <span style="margin-left:auto; display:flex; gap:8px">
+      <a class="btn btn-ghost btn-sm" href="{{ s.join_url }}" target="_blank">Open Room</a>
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('manage.live_edit', session_id=s.id) }}">Edit</a>
+      <form class="inline-form" method="post" action="{{ url_for('manage.live_delete', session_id=s.id) }}"
+            onsubmit="return confirm('Delete this live class?')"><button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+    </span></div>
+  {% else %}<p style="color:var(--muted)">No live classes scheduled yet.</p>{% endfor %}
+</div>
 {% endblock %}

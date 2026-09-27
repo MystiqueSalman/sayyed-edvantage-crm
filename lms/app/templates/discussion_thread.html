@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}{{ disc.title }} — Discussions{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('discuss.thread_list', slug=course.slug) }}">← All discussions</a></p>
+<div class="panel">
+  <div>{% if disc.pinned %}<span class="tag gold">📌 Pinned</span>{% endif %}</div>
+  <h2 style="margin:.4em 0">{{ disc.title }}</h2>
+  <p style="color:var(--muted); font-size:.85rem">{{ disc.user.name }} · {{ disc.created_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+  {% if disc.body %}<div style="line-height:1.7">{{ disc.body }}</div>{% endif %}
+  {% if current_user.role in ('admin', 'faculty') %}
+  <p style="margin-top:14px; display:flex; gap:10px">
+    <form class="inline-form" method="post" action="{{ url_for('discuss.thread_pin', discussion_id=disc.id) }}">
+      <button class="btn btn-ghost btn-sm" type="submit">{% if disc.pinned %}Unpin{% else %}📌 Pin{% endif %}</button>
+    </form>
+    <form class="inline-form" method="post" action="{{ url_for('discuss.thread_delete', discussion_id=disc.id) }}"
+          onsubmit="return confirm('Delete this discussion and all replies?')">
+      <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+    </form>
+  </p>
+  {% endif %}
+</div>
+
+<div class="section-title"><h2>Replies ({{ disc.replies|length }})</h2><div class="line"></div></div>
+{% for r in disc.replies %}
+<div class="panel" style="margin-bottom:12px">
+  <p style="color:var(--muted); font-size:.85rem"><b style="color:var(--text)">{{ r.user.name }}</b>
+    <span class="role-tag" style="font-size:.6rem; padding:3px 8px">{{ r.user.role }}</span>
+    · {{ r.created_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+  <div style="line-height:1.7">{{ r.body }}</div>
+</div>
+{% else %}
+<p style="color:var(--muted)">No replies yet.</p>
+{% endfor %}
+
+<div class="panel" style="margin-top:18px">
+  <h3 style="margin-top:0">Write a reply</h3>
+  <form method="post">
+    <textarea name="body" rows="4" required placeholder="Share your thoughts…"></textarea>
+    <p><button class="btn btn-blue" type="submit" style="margin-top:10px">Post Reply</button></p>
+  </form>
+</div>
+{% endblock %}

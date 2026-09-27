@@ -2,7 +2,44 @@
 {% block title %}My Learning — Sayyed EdVantage LMS{% endblock %}
 {% block content %}
 <div class="section-title"><h2>My Learning</h2><div class="line"></div>
-  <a class="btn btn-ghost btn-sm" href="{{ url_for('main.catalog') }}">+ Enroll in more</a></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('main.catalog') }}">+ Enroll in more</a>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('student.wishlist') }}">❤ Wishlist</a></div>
+
+{% if live_sessions %}
+<div class="section-title"><h2>🔴 Upcoming Live Classes</h2><div class="line"></div></div>
+{% for s in live_sessions %}
+<div class="live-card">
+  <div><span class="live-dot"></span><b>{{ s.title }}</b>
+    <span style="color:var(--muted)">· {{ s.course.title }}</span></div>
+  <div style="margin:8px 0; color:var(--muted); font-size:.92rem">
+    🕒 {{ s.starts_at.strftime('%d %b %Y, %I:%M %p') }} · {{ s.duration_min }} min
+    {% if s.is_joinable(now) %}
+      <span class="tag green" style="margin-left:10px">LIVE NOW / JOINABLE</span>
+    {% else %}
+      · starts <span class="countdown" data-starts="{{ s.starts_at.strftime('%Y-%m-%dT%H:%M:%S') }}">…</span>
+    {% endif %}
+  </div>
+  {% if s.is_joinable(now) %}
+  <a class="btn btn-gold btn-sm" href="{{ s.join_url }}" target="_blank" rel="noopener">Join Live Class 🔴</a>
+  {% else %}
+  <button class="btn btn-ghost btn-sm" disabled title="Join opens 15 minutes before start">Join opens 15 min before</button>
+  {% endif %}
+</div>
+{% endfor %}
+<script>
+document.querySelectorAll(".countdown").forEach(function (el) {
+  var target = new Date(el.dataset.starts + "Z").getTime();
+  function tick() {
+    var ms = target - Date.now();
+    if (ms <= 0) { el.textContent = "starting… refresh to join"; return; }
+    var d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24,
+        m = Math.floor(ms / 6e4) % 60, s = Math.floor(ms / 1e3) % 60;
+    el.textContent = (d ? d + "d " : "") + h + "h " + m + "m " + s + "s";
+  }
+  tick(); setInterval(tick, 1000);
+});
+</script>
+{% endif %}
 
 {% if enrollments %}
 <div class="grid">

@@ -150,3 +150,33 @@ footer{margin-top:60px; padding:34px 0; border-top:1px solid var(--card-brd); co
   padding:4px 10px; border-radius:999px; letter-spacing:1px}
 .two-col{display:grid; grid-template-columns:1fr 1fr; gap:22px}
 @media(max-width:760px){.two-col{grid-template-columns:1fr}.nav-links{gap:12px}}
+
+/* ---------- Phase 2 ---------- */
+.announce-bar{display:flex; align-items:center; gap:12px; padding:10px 22px;
+  background:linear-gradient(90deg, rgba(212,175,55,.22), rgba(212,175,55,.10));
+  border-bottom:1px solid var(--card-brd); color:var(--text); font-size:.92rem}
+.announce-ico{font-size:1.15rem}
+.announce-x{margin-left:auto; background:none; border:0; color:var(--muted);
+  font-size:1rem; cursor:pointer; padding:4px 10px}
+.announce-x:hover{color:var(--gold-lt)}
+.live-card{border:1px solid rgba(255,107,107,.35); border-radius:14px; padding:16px 18px;
+  background:linear-gradient(135deg, rgba(255,107,107,.10), rgba(19,38,71,.55)); margin-bottom:12px}
+.live-card .live-dot{display:inline-block; width:10px; height:10px; border-radius:50%;
+  background:#ff5252; box-shadow:0 0 10px #ff5252; margin-right:8px; animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.35}}
+.countdown{font-variant-numeric:tabular-nums; color:var(--gold-lt); font-weight:800}
+.stars{color:var(--gold); letter-spacing:2px}
+.searchbar{display:flex; gap:10px; max-width:520px; margin:0 0 22px}
+.searchbar input{flex:1; margin:0}
+.locked-panel{text-align:center; padding:60px 20px}
+.locked-panel .lock{font-size:3rem}
+table{width:100%; border-collapse:collapse; font-size:.92rem}
+th,td{text-align:left; padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.07)}
+th{color:var(--muted); font-size:.78rem; text-transform:uppercase; letter-spacing:1px}
+.stat-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; margin-bottom:24px}
+.stat{background:var(--card); border:1px solid var(--card-brd); border-radius:14px; padding:16px; text-align:center}
+.stat .n{font-size:1.5rem; font-weight:800; color:var(--gold-lt)}
+.stat .l{color:var(--muted); font-size:.8rem; margin-top:4px}
+canvas.chart{max-height:320px}
+.inline-form{display:inline}
+.wish-btn{background:none; border:0; cursor:pointer; font-size:1.3rem; padding:2px 6px}
