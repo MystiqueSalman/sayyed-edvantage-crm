@@ -85,6 +85,16 @@
 {% endif %}
 
 <div class="section-title"><h2>⭐ Student Reviews</h2><div class="line"></div></div>
+{% if enrollment and enrollment.status != 'pending' and current_user.role == 'student' %}
+{% set pp = enrollment.project_performance() %}
+{% if pp %}
+<div class="panel" style="margin-bottom:16px">
+  <h3 style="margin-top:0">🛠 Project performance</h3>
+  <p>{{ pp.evaluated }}/{{ pp.total }} projects evaluated{% if pp.avg_percent is not none %} · average <b>{{ pp.avg_percent }}%</b>{% endif %} · {{ pp.submitted }} submitted</p>
+  <a class="btn btn-blue btn-sm" href="{{ url_for('student.projects') }}">My Projects</a>
+</div>
+{% endif %}
+{% endif %}
 {% if enrollment and enrollment.status != 'pending' and not my_review and current_user.role == 'student' %}
 <div class="panel" style="margin-bottom:16px">
   <h3 style="margin-top:0">Write a review</h3>

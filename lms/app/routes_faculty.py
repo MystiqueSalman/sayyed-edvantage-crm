@@ -5,7 +5,8 @@ from flask_login import current_user
 from . import db
 from .ai_tutor import weak_topics_for_course
 from .decorators import role_required
-from .models import Assignment, Course, Submission
+from .models import (Assignment, Course, Module, Project, ProjectSubmission,
+                     Quiz, QuizAnswer, QuizAttempt, Submission)
 
 faculty_bp = Blueprint("faculty", __name__)
 
@@ -20,6 +21,18 @@ def dashboard():
         pending = (Submission.query.join(Assignment)
                    .filter(Assignment.course_id.in_(course_ids),
                            Submission.grade.is_(None)).count())
+        # descriptive answers awaiting review
+        pending += (QuizAnswer.query
+                    .join(QuizAttempt, QuizAnswer.attempt_id == QuizAttempt.id)
+                    .join(Quiz, QuizAttempt.quiz_id == Quiz.id)
+                    .join(Module, Quiz.module_id == Module.id)
+                    .filter(Module.course_id.in_(course_ids),
+                            QuizAnswer.needs_review.is_(True)).count())
+        # project submissions awaiting evaluation
+        pending += (ProjectSubmission.query.join(Project)
+                    .filter(Project.course_id.in_(course_ids),
+                            ProjectSubmission.status.in_(
+                                ("submitted", "under_review"))).count())
     return render_template("faculty_dashboard.html", courses=courses, pending=pending)
 
 

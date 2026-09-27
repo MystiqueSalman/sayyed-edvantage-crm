@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Question Bank{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🗃 Question Bank</h2><div class="line"></div></div>
+<div class="panel">
+  <form method="get" class="two-col">
+    <div><label>Course</label>
+      <select name="course_id"><option value="">All my courses</option>
+        {% for c in courses %}<option value="{{ c.id }}" {% if f.course_id == c.id|string %}selected{% endif %}>{{ c.title }}</option>{% endfor %}</select></div>
+    <div><label>Type</label>
+      <select name="qtype"><option value="">All types</option>
+        {% for t in qtypes %}<option value="{{ t }}" {% if f.qtype == t %}selected{% endif %}>{{ t.replace('_',' ') }}</option>{% endfor %}</select></div>
+    <div><label>Difficulty</label>
+      <select name="difficulty"><option value="">All</option>
+        {% for d in ['easy','medium','hard'] %}<option {% if f.difficulty == d %}selected{% endif %}>{{ d }}</option>{% endfor %}</select></div>
+    <div><label>Topic / skill / text search</label>
+      <input type="text" name="topic" value="{{ f.topic or '' }}" placeholder="e.g. loops"></div>
+    <div><label>Status</label>
+      <select name="active"><option value="1" {% if f.active != '0' %}selected{% endif %}>Active only</option><option value="0" {% if f.active == '0' %}selected{% endif %}>Deactivated</option><option value="" {% if f.active == '' %}selected{% endif %}>All</option></select></div>
+    <div style="padding-top:24px"><button class="btn btn-blue btn-sm" type="submit">Filter</button>
+      <a class="btn btn-gold btn-sm" href="{{ url_for('manage.bank_question_new') }}" style="margin-left:8px">+ New Question</a></div>
+  </form>
+</div>
+<div class="panel">
+  <h3 style="margin-top:0">{{ questions|length }} question(s)</h3>
+  {% for q in questions %}
+  <div class="quiz-q">
+    <p>{{ q.text }}
+      <span class="tag">{{ q.qtype_label }}</span><span class="tag">{{ q.difficulty }}</span>
+      {% if q.topic %}<span class="tag">📑 {{ q.topic }}</span>{% endif %}
+      {% if not q.is_active %}<span class="tag" style="background:#7a2e2e">deactivated</span>{% endif %}
+      <br><span style="color:var(--muted); font-size:.85rem">{{ q.quiz.module.course.title }} · {{ q.quiz.title }} · {{ q.marks }} mark(s)</span>
+    </p>
+    <form class="inline-form" method="post" action="{{ url_for('manage.bank_question_toggle', question_id=q.id) }}">
+      <button class="btn btn-ghost btn-sm" type="submit">{{ 'Deactivate' if q.is_active else 'Activate' }}</button>
+    </form>
+  </div>
+  {% else %}<p style="color:var(--muted)">No questions match.</p>{% endfor %}
+</div>
+{% endblock %}

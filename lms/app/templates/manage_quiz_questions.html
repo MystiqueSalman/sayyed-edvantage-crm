@@ -2,18 +2,58 @@
 {% block title %}Quiz Questions — {{ quiz.title }}{% endblock %}
 {% block content %}
 <p><a href="{{ url_for('manage.course_home', course_id=course.id) }}">← Manage {{ course.title }}</a></p>
+<p>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('manage.quiz_edit', quiz_id=quiz.id) }}">⚙ Exam settings</a>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('manage.quiz_from_bank', quiz_id=quiz.id) }}">🗃 Add from Question Bank</a>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('manage.quiz_analytics', quiz_id=quiz.id) }}">📊 Analytics</a>
+  {% if quiz.time_limit_min %}<span class="tag">⏱ {{ quiz.time_limit_min }} min</span>{% endif %}
+  {% if quiz.max_attempts %}<span class="tag">max {{ quiz.max_attempts }} attempts</span>{% endif %}
+  {% if quiz.negative_marking %}<span class="tag">−{{ quiz.negative_marking }} negative</span>{% endif %}
+</p>
 <div class="two-col">
   <div class="panel">
     <h3 style="margin-top:0">Add Question</h3>
-    <form method="post">
+    <form method="post" id="qform">
       <label>Question</label>
       <textarea name="text" rows="3" required></textarea>
-      <label>Option A</label><input type="text" name="option_a" required>
-      <label>Option B</label><input type="text" name="option_b" required>
-      <label>Option C</label><input type="text" name="option_c" required>
-      <label>Option D</label><input type="text" name="option_d" required>
-      <label>Correct option</label>
-      <select name="correct">{% for o in ['A','B','C','D'] %}<option>{{ o }}</option>{% endfor %}</select>
+      <div class="two-col">
+        <div><label>Question type</label>
+          <select name="qtype" id="qtype">
+            <option value="mcq_single">MCQ — single answer</option>
+            <option value="mcq_multiple">MCQ — multiple answers</option>
+            <option value="true_false">True / False</option>
+            <option value="fill_blank">Fill in the blank</option>
+            <option value="matching">Matching</option>
+            <option value="descriptive">Descriptive (faculty graded)</option>
+          </select></div>
+        <div><label>Marks</label><input type="number" name="marks" value="1" min="0.5" step="0.5"></div>
+      </div>
+      <div class="two-col">
+        <div><label>Difficulty</label>
+          <select name="difficulty"><option>easy</option><option selected>medium</option><option>hard</option></select></div>
+        <div><label>Topic</label><input type="text" name="topic" placeholder="e.g. Python loops"></div>
+      </div>
+      <label>Skill tags (comma separated)</label>
+      <input type="text" name="skills" placeholder="e.g. python, oops">
+      <div id="f-mcq">
+        <label>Option A</label><input type="text" name="option_a">
+        <label>Option B</label><input type="text" name="option_b">
+        <label>Option C</label><input type="text" name="option_c">
+        <label>Option D</label><input type="text" name="option_d">
+        <div id="f-single"><label>Correct option</label>
+          <select name="correct">{% for o in ['A','B','C','D'] %}<option>{{ o }}</option>{% endfor %}</select></div>
+        <div id="f-multi" style="display:none"><label>Correct options (tick 2+)</label><br>
+          {% for o in ['A','B','C','D'] %}<label class="opt" style="display:inline-block;margin-right:10px"><input type="checkbox" name="correct_multi" value="{{ o }}"> {{ o }}</label>{% endfor %}</div>
+      </div>
+      <div id="f-tf" style="display:none"><label>Correct answer</label>
+        <select name="correct_tf"><option value="true">True</option><option value="false">False</option></select></div>
+      <div id="f-fill" style="display:none"><label>Accepted answers (one per line — case-insensitive)</label>
+        <textarea name="accepted" rows="3" placeholder="Guido van Rossum&#10;Guido Rossum"></textarea></div>
+      <div id="f-match" style="display:none">
+        <label>Left items (one per line)</label><textarea name="match_left" rows="3"></textarea>
+        <label>Right items (one per line, same order = correct pairs)</label><textarea name="match_right" rows="3"></textarea></div>
+      <div id="f-desc" style="display:none"><label>Model answer (faculty guidance, optional)</label>
+        <textarea name="model_answer" rows="3"></textarea></div>
       <label>Tests lesson (optional — powers weak-topic analysis)</label>
       <select name="lesson_id">
         <option value="">— no specific lesson —</option>
@@ -26,11 +66,22 @@
     <h3 style="margin-top:0">{{ quiz.title }} <span style="color:var(--muted)">({{ quiz.questions|length }} questions)</span></h3>
     {% for q in quiz.questions %}
     <div class="quiz-q">
-      <p>Q{{ loop.index }}. {{ q.text }} <span class="tag green">Answer: {{ q.correct }}</span>
-        {% if q.lesson_id and q.lesson %}<span class="tag" title="Tagged lesson">📘 {{ q.lesson.title }}</span>{% endif %}</p>
+      <p>Q{{ loop.index }}. {{ q.text }}
+        <span class="tag">{{ q.qtype_label }}</span>
+        <span class="tag">{{ q.difficulty }}</span>
+        {% if q.topic %}<span class="tag">📑 {{ q.topic }}</span>{% endif %}
+        {% if q.lesson_id and q.lesson %}<span class="tag" title="Tagged lesson">📘 {{ q.lesson.title }}</span>{% endif %}
+        <span class="tag">{{ q.marks }} mark(s)</span>
+      </p>
+      {% if q.qtype in ['mcq_single','mcq_multiple'] %}
       <ol type="A" style="color:var(--muted); margin:0">
         <li>{{ q.option_a }}</li><li>{{ q.option_b }}</li><li>{{ q.option_c }}</li><li>{{ q.option_d }}</li>
       </ol>
+      <p style="color:var(--muted)">Answer: {{ q.answer.get('correct', q.correct) }}</p>
+      {% elif q.qtype == 'true_false' %}<p style="color:var(--muted)">Answer: {{ q.answer.get('correct', '?')|title }}</p>
+      {% elif q.qtype == 'fill_blank' %}<p style="color:var(--muted)">Accepted: {{ q.answer.get('accepted', [])|join(', ') }}</p>
+      {% elif q.qtype == 'matching' %}<p style="color:var(--muted)">Pairs: {% for p in q.answer.get('pairs', []) %}{{ p[0] }}→{{ p[1] }}{% if not loop.last %}; {% endif %}{% endfor %}</p>
+      {% else %}<p style="color:var(--muted)">Faculty-graded descriptive.</p>{% endif %}
       <form class="inline-form" method="post" action="{{ url_for('manage.question_delete', question_id=q.id) }}"
             onsubmit="return confirm('Delete this question?')">
         <button class="btn btn-danger btn-sm" type="submit" style="margin-top:8px">Delete</button>
@@ -39,4 +90,22 @@
     {% else %}<p style="color:var(--muted)">No questions yet.</p>{% endfor %}
   </div>
 </div>
+<script>
+(function(){
+  var t = document.getElementById('qtype');
+  var secs = {mcq: 'f-mcq', single: 'f-single', multi: 'f-multi', tf: 'f-tf', fill: 'f-fill', match: 'f-match', desc: 'f-desc'};
+  function show(id, on){ document.getElementById(id).style.display = on ? '' : 'none'; }
+  function upd(){
+    var v = t.value;
+    show('f-mcq', v === 'mcq_single' || v === 'mcq_multiple');
+    show('f-single', v === 'mcq_single');
+    show('f-multi', v === 'mcq_multiple');
+    show('f-tf', v === 'true_false');
+    show('f-fill', v === 'fill_blank');
+    show('f-match', v === 'matching');
+    show('f-desc', v === 'descriptive');
+  }
+  t.addEventListener('change', upd); upd();
+})();
+</script>
 {% endblock %}

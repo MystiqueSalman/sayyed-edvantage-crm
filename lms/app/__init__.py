@@ -137,6 +137,53 @@ def _ensure_schema_patches(app):
          "ALTER TABLE ai_settings ADD COLUMN tutor_daily_limit INTEGER DEFAULT 30"),
         ("courses", "ai_tutor_enabled",
          "ALTER TABLE courses ADD COLUMN ai_tutor_enabled BOOLEAN DEFAULT TRUE"),
+        # Phase 6 — advanced assessments
+        ("quizzes", "time_limit_min",
+         "ALTER TABLE quizzes ADD COLUMN time_limit_min INTEGER DEFAULT 0"),
+        ("quizzes", "shuffle_questions",
+         "ALTER TABLE quizzes ADD COLUMN shuffle_questions BOOLEAN DEFAULT FALSE"),
+        ("quizzes", "shuffle_options",
+         "ALTER TABLE quizzes ADD COLUMN shuffle_options BOOLEAN DEFAULT FALSE"),
+        ("quizzes", "negative_marking",
+         "ALTER TABLE quizzes ADD COLUMN negative_marking FLOAT DEFAULT 0.0"),
+        ("quizzes", "max_attempts",
+         "ALTER TABLE quizzes ADD COLUMN max_attempts INTEGER DEFAULT 0"),
+        ("quizzes", "score_policy",
+         "ALTER TABLE quizzes ADD COLUMN score_policy VARCHAR(10) DEFAULT 'best'"),
+        ("questions", "qtype",
+         "ALTER TABLE questions ADD COLUMN qtype VARCHAR(20) DEFAULT 'mcq_single'"),
+        ("questions", "difficulty",
+         "ALTER TABLE questions ADD COLUMN difficulty VARCHAR(10) DEFAULT 'medium'"),
+        ("questions", "topic",
+         "ALTER TABLE questions ADD COLUMN topic VARCHAR(120) DEFAULT ''"),
+        ("questions", "skills",
+         "ALTER TABLE questions ADD COLUMN skills VARCHAR(200) DEFAULT ''"),
+        ("questions", "marks",
+         "ALTER TABLE questions ADD COLUMN marks FLOAT DEFAULT 1.0"),
+        ("questions", "is_active",
+         "ALTER TABLE questions ADD COLUMN is_active BOOLEAN DEFAULT TRUE"),
+        ("questions", "answer_data",
+         "ALTER TABLE questions ADD COLUMN answer_data TEXT DEFAULT ''"),
+        ("quiz_attempts", "started_at",
+         "ALTER TABLE quiz_attempts ADD COLUMN started_at DATETIME"),
+        ("quiz_attempts", "submitted_at",
+         "ALTER TABLE quiz_attempts ADD COLUMN submitted_at DATETIME"),
+        ("quiz_attempts", "question_order",
+         "ALTER TABLE quiz_attempts ADD COLUMN question_order TEXT DEFAULT '[]'"),
+        ("quiz_attempts", "time_expired",
+         "ALTER TABLE quiz_attempts ADD COLUMN time_expired BOOLEAN DEFAULT FALSE"),
+        ("quiz_attempts", "pending_review",
+         "ALTER TABLE quiz_attempts ADD COLUMN pending_review BOOLEAN DEFAULT FALSE"),
+        ("quiz_answers", "marks_awarded",
+         "ALTER TABLE quiz_answers ADD COLUMN marks_awarded FLOAT DEFAULT 0.0"),
+        ("quiz_answers", "needs_review",
+         "ALTER TABLE quiz_answers ADD COLUMN needs_review BOOLEAN DEFAULT FALSE"),
+        ("quiz_answers", "feedback",
+         "ALTER TABLE quiz_answers ADD COLUMN feedback TEXT DEFAULT ''"),
+        ("quiz_answers", "reviewed_by",
+         "ALTER TABLE quiz_answers ADD COLUMN reviewed_by INTEGER REFERENCES users(id)"),
+        ("quiz_answers", "reviewed_at",
+         "ALTER TABLE quiz_answers ADD COLUMN reviewed_at DATETIME"),
     ]
     try:
         with app.app_context():
@@ -151,6 +198,19 @@ def _ensure_schema_patches(app):
                 with db.engine.begin() as conn:
                     conn.execute(text(ddl))
                 app.logger.info("schema patch applied: %s.%s", table, column)
+            # Phase 6: legacy attempts (pre-Phase-6) were completed-at-POST, so
+            # mark them submitted — otherwise they'd look like in-progress
+            # attempts to the new exam flow. Idempotent.
+            if "quiz_attempts" in existing_tables:
+                cols = {c["name"] for c in insp.get_columns("quiz_attempts")}
+                if {"started_at", "submitted_at", "taken_at"} <= cols:
+                    with db.engine.begin() as conn:
+                        conn.execute(text(
+                            "UPDATE quiz_attempts SET submitted_at = taken_at "
+                            "WHERE submitted_at IS NULL AND taken_at IS NOT NULL"))
+                        conn.execute(text(
+                            "UPDATE quiz_attempts SET started_at = taken_at "
+                            "WHERE started_at IS NULL AND taken_at IS NOT NULL"))
     except Exception:
         app.logger.exception("schema patch check failed (non-fatal)")
 

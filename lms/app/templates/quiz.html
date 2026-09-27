@@ -3,24 +3,85 @@
 {% block content %}
 <p><a href="{{ url_for('main.course_detail', slug=course.slug) }}">← {{ course.title }}</a></p>
 <div class="panel">
-  <h2 style="margin-top:0">{{ quiz.title }}</h2>
-  <p style="color:var(--muted)">{{ quiz.questions|length }} questions · pass mark {{ quiz.pass_percent }}% · attempts are tracked</p>
+  <h2 style="margin-top:0">{{ quiz.title }}
+    {% if quiz.time_limit_min %}<span class="tag" style="background:#7a2e2e">⏱ Exam mode</span>{% endif %}
+  </h2>
+  <p style="color:var(--muted)">
+    {{ quiz.questions|selectattr('is_active')|list|length }} questions ·
+    pass mark {{ quiz.pass_percent }}% ·
+    {% if quiz.time_limit_min %}time limit {{ quiz.time_limit_min }} min ·{% endif %}
+    {% if quiz.max_attempts %}max {{ quiz.max_attempts }} attempt(s) · used {{ used }} ·{% endif %}
+    {% if quiz.negative_marking %}-{{ quiz.negative_marking }} negative marking ·{% endif %}
+    attempts are tracked
+  </p>
+  {% if remaining %}
+  <p style="font-size:1.3rem">⏱ Time left: <b id="timer" style="color:var(--gold)">--:--</b></p>
+  {% endif %}
   {% if attempts %}
   <p style="color:var(--muted)">Previous attempts:
-    {% for a in attempts %}<span class="tag {% if a.percent >= quiz.pass_percent %}green{% endif %}" style="margin-right:6px">{{ a.score }}/{{ a.total }}</span>{% endfor %}
+    {% for a in attempts %}<span class="tag {% if a.percent >= quiz.pass_percent %}green{% endif %}" style="margin-right:6px">{{ a.score|round(2) }}/{{ a.total|round(2) }}</span>{% endfor %}
+    {% if best %}· best {{ best }}%{% endif %}
   </p>
   {% endif %}
-  <form method="post">
-    {% for q in quiz.questions %}
+  {% if blocked %}
+    <p class="flash warning">You have used all {{ quiz.max_attempts }} attempt(s) for this exam.</p>
+  {% else %}
+  <form method="post" id="quiz-form">
+    {% for q in questions_ordered %}
     <div class="quiz-q">
-      <p>Q{{ loop.index }}. {{ q.text }}</p>
-      {% for opt in ['A','B','C','D'] %}
-      <label class="opt"><input type="radio" name="q{{ q.id }}" value="{{ opt }}" required>
-        <b>{{ opt }}.</b> {{ q['option_' + opt|lower] }}</label>
-      {% endfor %}
+      <p>Q{{ loop.index }}. {{ q.text }}
+        <span class="tag">{{ q.qtype_label }}</span>
+        <span class="tag">{{ q.marks|round(2) }} mark(s)</span>
+        {% if q.qtype == 'descriptive' %}<span class="tag" style="background:#5a4a1a">graded by faculty</span>{% endif %}
+      </p>
+      {% if q.qtype == 'mcq_single' %}
+        {% for letter, text in opt_orders[q.id] %}
+        <label class="opt"><input type="radio" name="q{{ q.id }}" value="{{ letter }}">
+          <b>{{ letter }}.</b> {{ text }}</label>
+        {% endfor %}
+      {% elif q.qtype == 'mcq_multiple' %}
+        <p style="color:var(--muted); font-size:.85rem">Select all that apply — partial credit.</p>
+        {% for letter, text in opt_orders[q.id] %}
+        <label class="opt"><input type="checkbox" name="q{{ q.id }}" value="{{ letter }}">
+          <b>{{ letter }}.</b> {{ text }}</label>
+        {% endfor %}
+      {% elif q.qtype == 'true_false' %}
+        <label class="opt"><input type="radio" name="q{{ q.id }}" value="true"> True</label>
+        <label class="opt"><input type="radio" name="q{{ q.id }}" value="false"> False</label>
+      {% elif q.qtype == 'fill_blank' %}
+        <input type="text" name="q{{ q.id }}" placeholder="Your answer" autocomplete="off" style="max-width:400px">
+      {% elif q.qtype == 'matching' %}
+        {% for pair in q.answer.get('pairs', []) %}
+        <p style="margin:6px 0"><b>{{ pair[0] }}</b> →
+          <select name="q{{ q.id }}_m{{ loop.index0 }}">
+            <option value="">— choose —</option>
+            {% for r in match_rights[q.id] %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+          </select></p>
+        {% endfor %}
+      {% elif q.qtype == 'descriptive' %}
+        <textarea name="q{{ q.id }}" rows="5" placeholder="Write your answer — a faculty member will review it."></textarea>
+      {% endif %}
     </div>
     {% endfor %}
-    <button class="btn btn-gold" type="submit">Submit Quiz</button>
+    <button class="btn btn-gold" type="submit">Submit {% if quiz.time_limit_min %}Exam{% else %}Quiz{% endif %}</button>
   </form>
+  {% endif %}
 </div>
+{% if remaining and not blocked %}
+<script>
+(function(){
+  var left = {{ remaining }};
+  var el = document.getElementById('timer');
+  var form = document.getElementById('quiz-form');
+  function fmt(s){ var m = Math.floor(s/60), ss = s%60; return m + ':' + (ss<10?'0':'') + ss; }
+  el.textContent = fmt(left);
+  var t = setInterval(function(){
+    left -= 1;
+    if (left <= 0) { clearInterval(t); el.textContent = '0:00'; form.submit(); return; }
+    el.textContent = fmt(left);
+    if (left <= 60) el.style.color = '#ff6b6b';
+  }, 1000);
+})();
+</script>
+{% endif %}
 {% endblock %}

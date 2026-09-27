@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Grading Queue{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📝 Grading Queue <span style="color:var(--muted)">({{ pending|length }} awaiting review)</span></h2><div class="line"></div></div>
+{% for a in pending %}
+<div class="panel" style="margin-bottom:14px">
+  <h3 style="margin-top:0">{{ a.attempt.quiz.title }}
+    <span style="color:var(--muted); font-size:.85rem">· {{ a.attempt.quiz.module.course.title }} · {{ a.attempt.user.email }} · {{ a.attempt.taken_at.strftime('%d %b %Y') if a.attempt.taken_at }}</span></h3>
+  <p><b>Q:</b> {{ a.question.text }} <span class="tag">{{ a.question.marks }} mark(s)</span></p>
+  <p><b>Student's answer:</b></p>
+  <div class="panel" style="background:var(--bg)">{{ a.chosen or '(no answer)' }}</div>
+  {% if a.question.answer.get('model_answer') %}<p style="color:var(--muted)"><b>Model answer:</b> {{ a.question.answer['model_answer'] }}</p>{% endif %}
+  <form method="post" action="{{ url_for('manage.grade_answer', answer_id=a.id) }}">
+    <div class="two-col">
+      <div><label>Marks (max {{ a.question.marks }})</label><input type="number" name="marks" step="0.5" min="0" max="{{ a.question.marks }}" required></div>
+      <div><label>Feedback for student</label><input type="text" name="feedback" placeholder="optional"></div>
+    </div>
+    <p><button class="btn btn-gold btn-sm" type="submit">Save grade</button></p>
+  </form>
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">All descriptive answers are graded. 🎉</p></div>
+{% endfor %}
+{% endblock %}

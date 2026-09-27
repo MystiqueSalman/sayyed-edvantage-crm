@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Manage Projects{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🛠 Projects</h2><div class="line"></div></div>
+<p>
+  <a class="btn btn-gold btn-sm" href="{{ url_for('manage.project_new') }}">+ New Project Brief</a>
+</p>
+<div class="panel">
+  <form method="get" class="inline-form">
+    <select name="course_id" onchange="this.form.submit()">
+      <option value="">All my courses</option>
+      {% for c in courses %}<option value="{{ c.id }}" {% if f.course_id == c.id|string %}selected{% endif %}>{{ c.title }}</option>{% endfor %}
+    </select>
+  </form>
+  {% for p in projects %}
+  <div class="quiz-q">
+    <p><b>{{ p.title }}</b> <span style="color:var(--muted)">· {{ p.course.title }}</span>
+      {% if p.deadline %}<span class="tag">⏰ {{ p.deadline.strftime('%d %b %Y') }}</span>{% endif %}
+      <span class="tag">{{ p.max_marks }} marks</span>
+      {% if not p.is_active %}<span class="tag" style="background:#7a2e2e">inactive</span>{% endif %}
+    </p>
+    <p style="color:var(--muted); font-size:.9rem">{{ p.submissions|length }} submission(s)</p>
+    <a class="btn btn-blue btn-sm" href="{{ url_for('manage.project_submissions', project_id=p.id) }}">📥 Submissions & Evaluate</a>
+  </div>
+  {% else %}<p style="color:var(--muted)">No project briefs yet.</p>{% endfor %}
+</div>
+{% endblock %}

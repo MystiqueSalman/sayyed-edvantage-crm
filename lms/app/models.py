@@ -1,5 +1,5 @@
 """Sayyed EdVantage LMS — data models."""
-from datetime import datetime
+from datetime import date, datetime
 
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -168,6 +168,21 @@ class Enrollment(db.Model):
         ).count()
         return round(100 * done / len(lessons))
 
+    def project_performance(self):
+        """Phase 6: evaluated project score summary for course analytics."""
+        projects = Project.query.filter_by(course_id=self.course_id,
+                                           is_active=True).all()
+        if not projects:
+            return None
+        subs = {s.project_id: s for s in ProjectSubmission.query.filter_by(
+            student_id=self.user_id).all()}
+        evaluated = [subs[p.id] for p in projects
+                     if p.id in subs and subs[p.id].status == "evaluated"]
+        avg = (round(sum(s.percent for s in evaluated) / len(evaluated), 1)
+               if evaluated else None)
+        return {"total": len(projects), "submitted": len(subs),
+                "evaluated": len(evaluated), "avg_percent": avg}
+
 
 class LessonProgress(db.Model):
     __tablename__ = "lesson_progress"
@@ -184,6 +199,13 @@ class Quiz(db.Model):
     module_id = db.Column(db.Integer, db.ForeignKey("modules.id"), nullable=False)
     title = db.Column(db.String(160), nullable=False)
     pass_percent = db.Column(db.Integer, default=60)
+    # Phase 6 — exam settings (§5.3)
+    time_limit_min = db.Column(db.Integer, default=0)  # 0 = no limit
+    shuffle_questions = db.Column(db.Boolean, default=False)
+    shuffle_options = db.Column(db.Boolean, default=False)
+    negative_marking = db.Column(db.Float, default=0.0)  # e.g. 0.25 per wrong MCQ
+    max_attempts = db.Column(db.Integer, default=0)  # 0 = unlimited
+    score_policy = db.Column(db.String(10), default="best")  # best|latest
 
     questions = db.relationship("Question", backref="quiz", cascade="all, delete-orphan",
                                 order_by="Question.position")
@@ -198,13 +220,55 @@ class Question(db.Model):
     option_b = db.Column(db.String(300), default="")
     option_c = db.Column(db.String(300), default="")
     option_d = db.Column(db.String(300), default="")
-    correct = db.Column(db.String(1), default="A")  # A|B|C|D
+    correct = db.Column(db.String(1), default="A")  # A|B|C|D (mcq_single)
     position = db.Column(db.Integer, default=0)
     # Optional tag linking the question to the lesson it tests, so the AI
     # tutor / weak-topic analysis can point students back to the material.
     lesson_id = db.Column(db.Integer, db.ForeignKey("lessons.id"), nullable=True)
+    # Phase 6 — question types & bank (§5.1, §5.2)
+    # qtype: mcq_single | mcq_multiple | true_false | fill_blank | matching | descriptive
+    qtype = db.Column(db.String(20), default="mcq_single")
+    difficulty = db.Column(db.String(10), default="medium")  # easy|medium|hard
+    topic = db.Column(db.String(120), default="")
+    skills = db.Column(db.String(200), default="")  # comma-separated tags
+    marks = db.Column(db.Float, default=1.0)
+    is_active = db.Column(db.Boolean, default=True)  # bank deactivation
+    # Structured answer payload (JSON) for non-mcq_single types:
+    #  mcq_multiple: {"correct": ["A","C"]}
+    #  true_false:   {"correct": "true"}        (display via option_a/b)
+    #  fill_blank:   {"accepted": ["ans1","ans2"]}
+    #  matching:     {"pairs": [["l1","r1"],["l2","r2"]]}
+    #  descriptive:  {"model_answer": "..."}     (faculty guidance, optional)
+    answer_data = db.Column(db.Text, default="")
 
     lesson = db.relationship("Lesson")
+
+    @property
+    def answer(self):
+        """Parsed answer_data dict (never raises)."""
+        import json
+        try:
+            data = json.loads(self.answer_data or "")
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
+    @property
+    def qtype_label(self):
+        return {
+            "mcq_single": "MCQ (single answer)",
+            "mcq_multiple": "MCQ (multiple answers)",
+            "true_false": "True / False",
+            "fill_blank": "Fill in the blank",
+            "matching": "Matching",
+            "descriptive": "Descriptive",
+        }.get(self.qtype, self.qtype)
+
+    @property
+    def options(self):
+        """[(letter, text)] for choice-based types."""
+        return [("A", self.option_a or ""), ("B", self.option_b or ""),
+                ("C", self.option_c or ""), ("D", self.option_d or "")]
 
 
 class QuizAttempt(db.Model):
@@ -212,15 +276,35 @@ class QuizAttempt(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     quiz_id = db.Column(db.Integer, db.ForeignKey("quizzes.id"), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
-    score = db.Column(db.Integer, default=0)
-    total = db.Column(db.Integer, default=0)
-    taken_at = db.Column(db.DateTime, default=datetime.utcnow)
+    score = db.Column(db.Float, default=0.0)  # Float: partial credit / negative marking
+    total = db.Column(db.Float, default=0.0)
+    taken_at = db.Column(db.DateTime, default=datetime.utcnow)  # submitted at
+    # Phase 6 — exam mode (§5.3)
+    started_at = db.Column(db.DateTime, default=datetime.utcnow)
+    submitted_at = db.Column(db.DateTime, nullable=True)  # NULL = in progress
+    question_order = db.Column(db.Text, default="[]")  # JSON [question_id...]
+    time_expired = db.Column(db.Boolean, default=False)  # auto-submitted by timer
+    pending_review = db.Column(db.Boolean, default=False)  # descriptive answers awaiting faculty grading
 
     quiz = db.relationship("Quiz", backref="attempts")
+    user = db.relationship("User", backref="quiz_attempts")
+
+    @property
+    def is_submitted(self):
+        return self.submitted_at is not None
+
+    @property
+    def question_ids_in_order(self):
+        import json
+        try:
+            ids = json.loads(self.question_order or "[]")
+            return [int(i) for i in ids if isinstance(i, int)]
+        except Exception:
+            return []
 
     @property
     def percent(self):
-        return round(100 * self.score / self.total) if self.total else 0
+        return round(100 * (self.score or 0) / self.total) if self.total else 0
 
 
 class Assignment(db.Model):
@@ -252,6 +336,60 @@ class Submission(db.Model):
 
     user = db.relationship("User", backref="submissions")
     __table_args__ = (db.UniqueConstraint("assignment_id", "user_id", name="uq_submission"),)
+
+
+class Project(db.Model):
+    """Phase 6 — project brief posted by faculty per course (§5.5)."""
+    __tablename__ = "projects"
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    title = db.Column(db.String(160), nullable=False)
+    description = db.Column(db.Text, default="")
+    skills = db.Column(db.String(200), default="")  # comma-separated
+    deadline = db.Column(db.Date, nullable=True)
+    max_marks = db.Column(db.Integer, default=100)
+    is_active = db.Column(db.Boolean, default=True)
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    course = db.relationship("Course", backref="projects")
+    submissions = db.relationship("ProjectSubmission", backref="project",
+                                  cascade="all, delete-orphan")
+
+    @property
+    def is_overdue(self):
+        return bool(self.deadline and self.deadline < date.today())
+
+
+class ProjectSubmission(db.Model):
+    """Phase 6 — student project submission + faculty evaluation (§5.5)."""
+    __tablename__ = "project_submissions"
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey("projects.id"), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    project_url = db.Column(db.String(300), default="")  # GitHub / live link
+    file_path = db.Column(db.String(260), default="")  # stored file in uploads/
+    notes = db.Column(db.Text, default="")
+    # submitted → under_review → evaluated
+    status = db.Column(db.String(20), default="submitted")
+    marks = db.Column(db.Float, nullable=True)
+    feedback = db.Column(db.Text, default="")
+    submitted_at = db.Column(db.DateTime, default=datetime.utcnow)
+    evaluated_at = db.Column(db.DateTime, nullable=True)
+    evaluated_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+
+    user = db.relationship("User", foreign_keys="ProjectSubmission.user_id",
+                             backref="project_submissions")
+    evaluator = db.relationship("User",
+                                foreign_keys="ProjectSubmission.evaluated_by")
+    __table_args__ = (db.UniqueConstraint("project_id", "user_id",
+                                         name="uq_project_submission"),)
+
+    @property
+    def percent(self):
+        if self.marks is None or not self.project.max_marks:
+            return None
+        return round(100 * self.marks / self.project.max_marks)
 
 
 class Coupon(db.Model):
@@ -838,8 +976,17 @@ class QuizAnswer(db.Model):
                            nullable=False)
     question_id = db.Column(db.Integer, db.ForeignKey("questions.id"),
                             nullable=False)
-    chosen = db.Column(db.String(1), default="")  # A|B|C|D ("" = skipped)
+    # Raw student response. mcq_single/true_false: "A".."D"; mcq_multiple:
+    # "A,C"; fill_blank: free text; matching: JSON {"left1":"rightX",...};
+    # descriptive: free text; "" = skipped.
+    chosen = db.Column(db.Text, default="")
     is_correct = db.Column(db.Boolean, default=False)
+    # Phase 6 — richer grading (§5.1)
+    marks_awarded = db.Column(db.Float, default=0.0)
+    needs_review = db.Column(db.Boolean, default=False)  # descriptive, ungraded
+    feedback = db.Column(db.Text, default="")  # faculty feedback (descriptive)
+    reviewed_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    reviewed_at = db.Column(db.DateTime, nullable=True)
 
     attempt = db.relationship("QuizAttempt", backref=db.backref(
         "answers", cascade="all, delete-orphan"))

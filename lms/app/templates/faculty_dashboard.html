@@ -6,6 +6,11 @@
   <div class="stat"><div class="n">{{ courses|length }}</div><div class="l">My courses</div></div>
   <div class="stat"><div class="n">{{ pending }}</div><div class="l">Submissions awaiting grading</div></div>
 </div>
+<div class="panel" style="margin-bottom:20px">
+  <a class="btn btn-gold btn-sm" href="{{ url_for('manage.question_bank') }}">🗃 Question Bank</a>
+  <a class="btn btn-blue btn-sm" href="{{ url_for('manage.grading_queue') }}" style="margin-left:8px">📝 Grading Queue</a>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('manage.manage_projects') }}" style="margin-left:8px">🛠 Projects</a>
+</div>
 <div class="grid">
   {% for c in courses %}
   <div class="card">

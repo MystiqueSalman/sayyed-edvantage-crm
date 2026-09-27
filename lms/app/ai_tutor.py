@@ -354,7 +354,8 @@ def _misses_by_lesson(user_id, course_id):
         return []
     answers = (QuizAnswer.query
                .filter(QuizAnswer.attempt_id.in_(latest.values()),
-                       QuizAnswer.is_correct.is_(False)).all())
+                       QuizAnswer.is_correct.is_(False),
+                       QuizAnswer.needs_review.is_(False)).all())
     misses = {}
     for ans in answers:
         q = ans.question
@@ -404,7 +405,8 @@ def weak_topics_for_course(course_id):
         return []
     answers = (QuizAnswer.query
                .filter(QuizAnswer.attempt_id.in_(latest.values()),
-                       QuizAnswer.is_correct.is_(False)).all())
+                       QuizAnswer.is_correct.is_(False),
+                       QuizAnswer.needs_review.is_(False)).all())
     misses = {}
     students = {}
     for ans in answers:

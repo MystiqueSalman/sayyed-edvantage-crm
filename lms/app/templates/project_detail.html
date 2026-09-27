@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}{{ project.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('student.projects') }}">← My Projects</a></p>
+<div class="panel">
+  <h2 style="margin-top:0">{{ project.title }}
+    <span style="color:var(--muted); font-size:.9rem">· {{ project.course.title }}</span></h2>
+  <p>{{ project.description }}</p>
+  {% if project.skills %}<p style="color:var(--muted)">🛠 Skills: {{ project.skills }}</p>{% endif %}
+  <p style="color:var(--muted)">⏰ Deadline: {{ project.deadline.strftime('%d %b %Y') if project.deadline else 'none' }} · Max {{ project.max_marks }} marks</p>
+  {% if sub %}
+    <h3>Your submission</h3>
+    <p>Status:
+      {% if sub.status == 'evaluated' %}<span class="tag green">✅ Evaluated — {{ sub.marks }}/{{ project.max_marks }}</span>
+      {% elif sub.status == 'under_review' %}<span class="tag">👀 Under review</span>
+      {% else %}<span class="tag">📤 Submitted {{ sub.submitted_at.strftime('%d %b %Y') if sub.submitted_at }}</span>{% endif %}</p>
+    {% if sub.project_url %}<p>🔗 <a href="{{ sub.project_url }}" target="_blank" rel="noopener">Submitted link</a></p>{% endif %}
+    {% if sub.file_path %}<p>📎 <a href="{{ url_for('student.project_file', sub_id=sub.id) }}">Download submitted file</a></p>{% endif %}
+    {% if sub.notes %}<p style="color:var(--muted)">Notes: {{ sub.notes }}</p>{% endif %}
+    {% if sub.feedback %}<p><b>Faculty feedback:</b> {{ sub.feedback }}</p>{% endif %}
+    {% if sub.status != 'evaluated' and can_resubmit %}
+      <h3 style="margin-top:20px">Resubmit (before deadline)</h3>
+      <form method="post" enctype="multipart/form-data">
+        <label>Project URL (GitHub repo / live demo)</label><input type="url" name="project_url" placeholder="https://github.com/...">
+        <label>File (pdf/zip/py/ipynb)</label><input type="file" name="file">
+        <label>Notes</label><textarea name="notes" rows="3"></textarea>
+        <p><button class="btn btn-gold" type="submit">Resubmit Project</button></p>
+      </form>
+    {% endif %}
+  {% else %}
+    <h3>Submit your project</h3>
+    <form method="post" enctype="multipart/form-data">
+      <label>Project URL (GitHub repo / live demo)</label><input type="url" name="project_url" placeholder="https://github.com/...">
+      <label>File (pdf/zip/py/ipynb)</label><input type="file" name="file">
+      <label>Notes</label><textarea name="notes" rows="3"></textarea>
+      <p><button class="btn btn-gold" type="submit">Submit Project</button></p>
+    </form>
+  {% endif %}
+</div>
+{% endblock %}

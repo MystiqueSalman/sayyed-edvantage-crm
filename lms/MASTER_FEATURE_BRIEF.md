@@ -435,13 +435,26 @@ The finished platform should provide:
 - Migration `feb4b4e0ad96` (10 new tables: leads, lead_activities, applications, application_settings, batches, batch_members, onboarding_tasks, chat_conversations, chat_messages, ai_settings); startup `create_all()` + schema patches keep zero-manual-step deploys.
 - Tests: 79/79 new + 36/36 Phase 1 + 92/92 Phase 2 + 78/78 Phase 3 = **285/285** on fresh migrated DBs.
 
+## PHASE 6 DELIVERED (2026-09-28)
+- **Six question types (§5.1):** MCQ single-answer, MCQ multi-answer (partial credit), True/False, fill-in-the-blank (case-insensitive, multiple accepted variants), matching (per-pair partial marks), descriptive (faculty-graded). Grading engine in `app/assessment.py`.
+- **Exam settings (§5.3):** per-quiz timer with live countdown + auto-submit on expiry, question/option randomization per attempt, negative marking (e.g. −0.25 per wrong MCQ, attempt score clamped at 0), pass percentage, max attempts with blocked-state messaging, best/latest score policy.
+- **Question Bank (§5.2):** faculty bank with filters (course, type, difficulty, topic/skill/text search, active status), create/edit/deactivate, manual pick into any quiz, auto-generate N random questions by difficulty/topic. Bank-only questions live on a hidden `__question_bank__` placeholder quiz (404 for students, skipped in certificates/lesson pages).
+- **Descriptive grading queue:** faculty sees all pending answers with student text + model answer, awards marks ≤ question marks + written feedback; attempt score recomputed, pending flag cleared, certificate check re-run.
+- **Exam analytics (§5.4):** attempts, average/best/latest score, pass rate, pending-review count, time-expired count, per-question average % of marks.
+- **Projects (§5.5):** faculty briefs (title, requirements, skills, deadline, max marks); student My Projects page; URL + file (pdf/doc/docx/zip/txt/png/jpg/py/ipynb) + notes submission; resubmission before deadline resets evaluation; overdue submissions rejected; faculty submission queue with evaluation (marks + feedback) and status flow submitted → under_review → evaluated; project file download; evaluated project scores feed course analytics via `Enrollment.project_performance()` widget on course pages.
+- **Certificates (§5.6):** now honor each quiz's score policy (best vs latest) and only count submitted, fully-graded attempts.
+- **Legacy compatibility:** pre-Phase-6 attempts backfilled (`submitted_at`/`started_at` = `taken_at`) by idempotent startup patch — never mistaken for in-progress attempts; old direct-POST MCQ flow unchanged.
+- Migration `c6d7e8f9a0b1` (quiz/question/attempt/answer columns widened, projects + project_submissions tables); verified: blank-chain `flask db upgrade` → head, Phase 5 → 6 upgrade with legacy data, and production-style `create_all()` + `_ensure_schema_patches()` zero-step deploy.
+- Tests: **50/50 new** + 36/36 Phase 1 + 92/92 Phase 2 + 78/78 Phase 3 + 80/80 Phase 4 + 43/43 chat fixes + 62/62 Phase 5 = **441/441** on fresh migrated DBs.
+- Faculty UI: Faculty Dashboard → 🗃 Question Bank (`/manage/question-bank`), 📝 Grading Queue (`/manage/grading`), 🛠 Projects (`/manage/projects`); per-quiz ⚙ Exam settings, 🗃 Add from Bank, 📊 Analytics on the quiz questions page. Student UI: 🛠 Projects nav (`/projects`), exams via lesson pages / quiz links with ⏱ live countdown.
+
 ## BUILD STATUS (living)
 - [x] Phase 1 — core LMS: roles, courses, lessons, quizzes, assignments, certificates, coupons, Razorpay stub
 - [x] Phase 2 — live Jitsi classes, drip lessons, email automation, discussions, analytics, PWA, reviews, cert verify, progress, announcements, search, wishlist
 - [x] Phase 3 — Growth & revenue: Referral & Earn (§14), Job Board core (§13.1–13.4), WhatsApp notifications (§12.1)
 - [x] Phase 4 — Admissions & CRM: lead pipeline (§8), application forms + batch allocation + onboarding (§10), AI sales agent (§9), counsellor roles (§1.1)
-- [ ] Phase 5 — AI learning layer: AI tutor + doubt solver (§6.1–6.3), study planner (§6.7), weak-topic analysis (§6.6 light)
-- [ ] Phase 6 — Assessments pro: question bank (§5.2), more question types (§5.1), timed exams + negative marking (§5.3), projects (§5.5)
+- [x] Phase 5 — AI learning layer: AI tutor + doubt solver (§6.1–6.3), study planner (§6.7), weak-topic analysis (§6.6 light)
+- [x] Phase 6 — Assessments pro: question bank (§5.2), 6 question types (§5.1), timed exams + negative marking + attempt limits + score policy (§5.3), exam analytics (§5.4), projects (§5.5), certificate score policy (§5.6)
 - [ ] Phase 7 — Career & placements complete: resume builder (§27.2), portfolio (§27.3), interview prep (§27.4), readiness score (§27.6), employer portal (§13.3), placement analytics (§13.6)
 - [ ] Phase 8 — Gamification & engagement: badges, points, streaks, leaderboards, challenges (§15), bookmarks & notes (§2.4)
 - [ ] Phase 9 — Faculty & operations: attendance (§4.3), calendar (§4.6), batch management (§18.4), audit logs (§18.6), granular permissions (§18.3), invoices + finance dashboard (§11.4–11.5)

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}My Projects{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🛠 My Projects</h2><div class="line"></div></div>
+{% for p in projects %}
+<div class="card" style="margin-bottom:14px">
+  <div class="body">
+    <h3>{{ p.title }} <span style="color:var(--muted); font-size:.85rem">· {{ p.course.title }}</span></h3>
+    <p>{{ p.description[:180] }}</p>
+    <p style="color:var(--muted); font-size:.9rem">
+      {% if p.deadline %}⏰ Deadline: {{ p.deadline.strftime('%d %b %Y') }} ·{% endif %}
+      Max {{ p.max_marks }} marks ·
+      {% set s = subs.get(p.id) %}
+      {% if s %}
+        {% if s.status == 'evaluated' %}<span class="tag green">✅ Evaluated: {{ s.marks }}/{{ p.max_marks }}</span>
+        {% elif s.status == 'under_review' %}<span class="tag">👀 Under review</span>
+        {% else %}<span class="tag">📤 Submitted</span>{% endif %}
+      {% else %}<span class="tag" style="background:#7a2e2e">Not submitted</span>{% endif %}
+    </p>
+    <a class="btn btn-blue btn-sm" href="{{ url_for('student.project_detail', project_id=p.id) }}">{{ 'View / Resubmit' if s else 'Open & Submit' }}</a>
+  </div>
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No projects yet. Your instructors will publish project briefs here.</p></div>
+{% endfor %}
+{% endblock %}

@@ -5,14 +5,14 @@ from datetime import datetime, timedelta
 
 from flask import (Blueprint, abort, current_app, flash, redirect, render_template,
                    request, send_file, url_for)
-from flask_login import current_user
+from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
 
 from . import db
 from .decorators import role_required
 from .models import (Announcement, Assignment, Certificate, Course, Enrollment, Lesson,
-                     LessonProgress, LiveSession, Module, Quiz, QuizAnswer,
-                     QuizAttempt, Review, Submission, Wishlist)
+                     LessonProgress, LiveSession, Module, Project, ProjectSubmission,
+                     Quiz, QuizAnswer, QuizAttempt, Review, Submission, Wishlist)
 from .pdfcert import certificate_path, generate_certificate_pdf
 from .routes_crm import _onboarding_for  # Phase 4: onboarding checklist
 
@@ -33,8 +33,25 @@ def _active_enrollment_or_403(course_id):
     return enr
 
 
+def _policy_attempt(quiz, user_id):
+    """Phase 6: the attempt that counts under the quiz's score policy.
+    Only submitted, fully-graded attempts count (no pending review)."""
+    attempts = (QuizAttempt.query
+                .filter(QuizAttempt.quiz_id == quiz.id,
+                        QuizAttempt.user_id == user_id,
+                        QuizAttempt.submitted_at.isnot(None),
+                        QuizAttempt.pending_review.is_(False))
+                .order_by(QuizAttempt.id).all())
+    if not attempts:
+        return None
+    if quiz.score_policy == "latest":
+        return attempts[-1]
+    return max(attempts, key=lambda a: (a.percent or 0.0, a.id))
+
+
 def check_and_issue_certificate(user_id, course_id):
-    """Issue a certificate when all lessons are done and every module quiz is passed."""
+    """Issue a certificate when all lessons are done and every module quiz is
+    passed per that quiz's score policy (§5.6)."""
     course = db.session.get(Course, course_id)
     lessons = course.lessons
     if not lessons:
@@ -45,9 +62,10 @@ def check_and_issue_certificate(user_id, course_id):
     if done < len(lessons):
         return None
     for quiz in course.quizzes:
-        best = (QuizAttempt.query.filter_by(quiz_id=quiz.id, user_id=user_id)
-                .order_by(QuizAttempt.score.desc()).first())
-        if not best or best.percent < quiz.pass_percent:
+        if quiz.title == "__question_bank__":
+            continue
+        counting = _policy_attempt(quiz, user_id)
+        if not counting or counting.percent < quiz.pass_percent:
             return None
     existing = Certificate.query.filter_by(user_id=user_id, course_id=course_id).first()
     if existing:
@@ -126,7 +144,9 @@ def lesson(lesson_id):
     idx = [l.id for l in lessons].index(lesson.id)
     prev_lesson = lessons[idx - 1] if idx > 0 else None
     next_lesson = lessons[idx + 1] if idx < len(lessons) - 1 else None
-    module_quiz = lesson.module.quizzes[0] if lesson.module.quizzes else None
+    visible_quizzes = [q for q in lesson.module.quizzes
+                       if q.title != "__question_bank__"]
+    module_quiz = visible_quizzes[0] if visible_quizzes else None
     return render_template("lesson.html", lesson=lesson, course=course, done=done,
                            prev_lesson=prev_lesson, next_lesson=next_lesson,
                            module_quiz=module_quiz, locked=False)
@@ -162,35 +182,153 @@ def lesson_complete(lesson_id):
 @student_bp.route("/quiz/<int:quiz_id>", methods=["GET", "POST"])
 @student_only
 def quiz(quiz_id):
+    """Phase 6 — exam mode (§5.3): attempt limits, timed exams with live
+    countdown + auto-submit, per-attempt question/option randomization, and
+    the multi-type grading engine (app/assessment.py)."""
+    from .assessment import (attempts_used, best_score, can_attempt,
+                             grade_attempt, option_order_for_question,
+                             order_questions_for_attempt)
+    import json as _json
     quiz = Quiz.query.get_or_404(quiz_id)
+    if quiz.title == "__question_bank__":
+        abort(404)
     course = quiz.module.course
     if not _active_enrollment_or_403(course.id):
         abort(403)
-    if request.method == "POST":
-        score, total = 0, len(quiz.questions)
-        attempt = QuizAttempt(quiz_id=quiz.id, user_id=current_user.id,
-                              score=0, total=total)
-        db.session.add(attempt)
-        db.session.flush()  # attempt.id needed for per-question answers
-        for q in quiz.questions:
-            chosen = request.form.get(f"q{q.id}", "").upper()
-            ok = chosen == q.correct
-            if ok:
-                score += 1
-            # Phase 5: per-question results power weak-topic analysis
-            db.session.add(QuizAnswer(attempt_id=attempt.id,
-                                      question_id=q.id, chosen=chosen,
-                                      is_correct=ok))
+    questions = [q for q in quiz.questions if q.is_active]
+
+    def submitted_count():
+        return QuizAttempt.query.filter_by(
+            quiz_id=quiz.id, user_id=current_user.id).filter(
+            QuizAttempt.submitted_at.isnot(None)).count()
+
+    def current_attempt():
+        return (QuizAttempt.query.filter_by(quiz_id=quiz.id,
+                                            user_id=current_user.id,
+                                            submitted_at=None)
+                .order_by(QuizAttempt.started_at.desc()).first())
+
+    def time_left_seconds(attempt):
+        if not quiz.time_limit_min or not attempt or not attempt.started_at:
+            return None
+        elapsed = (datetime.utcnow() - attempt.started_at).total_seconds()
+        return max(0, int(quiz.time_limit_min * 60 - elapsed))
+
+    def collect_answers(form):
+        """Raw answers per question from the submitted form."""
+        raw = {}
+        for q in questions:
+            key = f"q{q.id}"
+            if q.qtype == "mcq_multiple":
+                vals = form.getlist(key)
+                raw[q.id] = ",".join(v.strip().upper() for v in vals if v.strip())
+            elif q.qtype == "matching":
+                pairs = q.answer.get("pairs", [])
+                mapping = {}
+                for i, (left, _right) in enumerate(pairs):
+                    mapping[left] = form.get(f"{key}_m{i}", "")
+                raw[q.id] = _json.dumps(mapping)
+            else:
+                raw[q.id] = form.get(key, "")
+        return raw
+
+    def finalize(attempt, raw_answers, expired=False):
+        ordered = order_questions_for_attempt(
+            quiz, questions, seed=attempt.id or 0)
+        # keep only questions still on the quiz, in the stored order
+        by_id = {q.id: q for q in questions}
+        stored = attempt.question_ids_in_order
+        ordered = [by_id[i] for i in stored if i in by_id] or ordered
+        per_q, score, total, pending = grade_attempt(quiz, ordered, raw_answers)
         attempt.score = score
+        attempt.total = total
+        attempt.submitted_at = datetime.utcnow()
+        attempt.time_expired = expired
+        attempt.pending_review = pending
+        for q, raw, g in per_q:
+            db.session.add(QuizAnswer(
+                attempt_id=attempt.id, question_id=q.id,
+                chosen=raw if isinstance(raw, str) else _json.dumps(raw),
+                is_correct=g.is_correct, marks_awarded=g.marks_awarded,
+                needs_review=g.needs_review))
         db.session.commit()
-        cert = check_and_issue_certificate(current_user.id, course.id)
-        if cert:
-            flash("Course completed! Your certificate is ready.", "success")
-            return redirect(url_for("student.certificates"))
+        if not pending:
+            cert = check_and_issue_certificate(current_user.id, course.id)
+            if cert:
+                flash("Course completed! Your certificate is ready.", "success")
+                return redirect(url_for("student.certificates"))
+        else:
+            flash("Submitted! Descriptive answers are pending faculty review.",
+                  "info")
         return redirect(url_for("student.quiz_result", attempt_id=attempt.id))
-    attempts = (QuizAttempt.query.filter_by(quiz_id=quiz.id, user_id=current_user.id)
-                .order_by(QuizAttempt.taken_at.desc()).all())
-    return render_template("quiz.html", quiz=quiz, course=course, attempts=attempts)
+
+    if request.method == "POST":
+        attempt = current_attempt()
+        if attempt is None:
+            # Direct POST (no GET first): start and submit immediately.
+            allowed, reason = can_attempt(quiz, current_user.id)
+            if not allowed:
+                flash(reason, "warning")
+                return redirect(url_for("student.quiz", quiz_id=quiz.id))
+            attempt = QuizAttempt(quiz_id=quiz.id, user_id=current_user.id,
+                                  started_at=datetime.utcnow(),
+                                  submitted_at=None,
+                                  question_order=_json.dumps([q.id for q in questions]))
+            db.session.add(attempt)
+            db.session.flush()
+        expired = time_left_seconds(attempt) == 0
+        return finalize(attempt, collect_answers(request.form), expired=expired)
+
+    # GET — start or resume
+    allowed, reason = can_attempt(quiz, current_user.id)
+    if not allowed:
+        flash(reason, "warning")
+        attempts = (QuizAttempt.query.filter_by(quiz_id=quiz.id,
+                                                user_id=current_user.id)
+                    .filter(QuizAttempt.submitted_at.isnot(None))
+                    .order_by(QuizAttempt.submitted_at.desc()).all())
+        return render_template("quiz.html", quiz=quiz, course=course,
+                               attempts=attempts, blocked=True,
+                               best=best_score(quiz, current_user.id))
+    attempt = current_attempt()
+    if attempt is None:
+        # random seed per fresh attempt so two attempts differ
+        import random as _random
+        seed = _random.randrange(1, 10 ** 9)
+        ordered_ids = [q.id for q in order_questions_for_attempt(
+            quiz, questions, seed=seed)]
+        attempt = QuizAttempt(
+            quiz_id=quiz.id, user_id=current_user.id,
+            started_at=datetime.utcnow(), submitted_at=None,
+            question_order=_json.dumps(ordered_ids))
+        db.session.add(attempt)
+        db.session.commit()
+    remaining = time_left_seconds(attempt)
+    if remaining == 0:
+        # time ran out before they even loaded the page
+        return finalize(attempt, {}, expired=True)
+    by_id = {q.id: q for q in questions}
+    ordered = [by_id[i] for i in attempt.question_ids_in_order if i in by_id]
+    if not ordered:
+        ordered = list(questions)
+    opt_orders = {q.id: option_order_for_question(
+        quiz, q, seed=(attempt.id or 0) * 100003 + q.id) for q in ordered}
+    attempts = (QuizAttempt.query.filter_by(quiz_id=quiz.id,
+                                            user_id=current_user.id)
+                .filter(QuizAttempt.submitted_at.isnot(None))
+                .order_by(QuizAttempt.submitted_at.desc()).all())
+    match_rights = {}
+    for q in ordered:
+        if q.qtype == "matching":
+            rights = [r for _, r in q.answer.get("pairs", [])]
+            import random as _random
+            _random.Random((attempt.id or 0) * 7919 + q.id).shuffle(rights)
+            match_rights[q.id] = rights
+    return render_template(
+        "quiz.html", quiz=quiz, course=course, attempts=attempts,
+        attempt=attempt, questions_ordered=ordered, opt_orders=opt_orders,
+        match_rights=match_rights, remaining=remaining,
+        used=submitted_count(), best=best_score(quiz, current_user.id))
 
 
 @student_bp.route("/quiz/result/<int:attempt_id>")
@@ -199,7 +337,10 @@ def quiz_result(attempt_id):
     attempt = QuizAttempt.query.get_or_404(attempt_id)
     if attempt.user_id != current_user.id:
         abort(403)
+    ordered_answers = sorted(attempt.answers,
+                             key=lambda a: (a.question.position or 0, a.id))
     return render_template("quiz_result.html", attempt=attempt,
+                           answers=ordered_answers,
                            course=attempt.quiz.module.course)
 
 
@@ -259,6 +400,95 @@ def assignment_detail(assignment_id):
         flash("Assignment submitted.", "success")
         return redirect(url_for("student.assignment_detail", assignment_id=assignment.id))
     return render_template("assignment_detail.html", assignment=assignment, sub=sub)
+
+
+# ------------------------------------------------------- Phase 6: projects
+@student_bp.route("/project/submission/<int:sub_id>/file")
+@login_required
+def project_file(sub_id):
+    """Download a project submission file (own, or faculty/admin)."""
+    sub = ProjectSubmission.query.get_or_404(sub_id)
+    if not (sub.user_id == current_user.id or current_user.role in
+            ("admin", "manager") or (
+                current_user.role == "faculty"
+                and sub.project.course.instructor_id == current_user.id)):
+        abort(403)
+    path = os.path.join(current_app.config["UPLOAD_DIR"], sub.file_path)
+    if not os.path.isfile(path):
+        abort(404)
+    return send_file(path, as_attachment=True)
+
+
+@student_bp.route("/projects")
+@student_only
+def projects():
+    """Student: project briefs for enrolled courses + my submissions."""
+    course_ids = [e.course_id for e in Enrollment.query.filter_by(
+        user_id=current_user.id).filter(
+        Enrollment.status.in_([Enrollment.STATUS_ACTIVE,
+                               Enrollment.STATUS_COMPLETED])).all()]
+    items = (Project.query.filter(Project.course_id.in_(course_ids),
+                                 Project.is_active.is_(True))
+             .order_by(Project.deadline.asc()).all()) if course_ids else []
+    subs = {s.project_id: s for s in ProjectSubmission.query.filter_by(
+        user_id=current_user.id).all()}
+    return render_template("projects.html", projects=items, subs=subs)
+
+
+@student_bp.route("/project/<int:project_id>", methods=["GET", "POST"])
+@student_only
+def project_detail(project_id):
+    """Student: view brief + submit (URL + file + notes). Resubmit allowed
+    before the deadline; re-evaluation resets on resubmit."""
+    project = Project.query.get_or_404(project_id)
+    if not _active_enrollment_or_403(project.course_id):
+        abort(403)
+    sub = ProjectSubmission.query.filter_by(
+        project_id=project.id, user_id=current_user.id).first()
+    if request.method == "POST":
+        if project.is_overdue:
+            flash("The deadline has passed — submissions are closed.", "danger")
+            return redirect(url_for("student.project_detail",
+                                    project_id=project.id))
+        url = request.form.get("project_url", "").strip()[:300]
+        notes = request.form.get("notes", "").strip()
+        file = request.files.get("file")
+        filename = sub.file_path if sub else ""
+        if file and file.filename:
+            ext = file.filename.rsplit(".", 1)[-1].lower()
+            if ext not in ALLOWED_SUBMIT_EXTS:
+                flash("File type not allowed.", "danger")
+                return redirect(url_for("student.project_detail",
+                                        project_id=project.id))
+            if filename:
+                old = os.path.join(current_app.config["UPLOAD_DIR"], filename)
+                if os.path.exists(old):
+                    os.remove(old)
+            filename = (f"proj_{project.id}_{current_user.id}_"
+                        f"{uuid.uuid4().hex[:8]}."
+                        f"{secure_filename(file.filename).rsplit('.', 1)[-1].lower()}")
+            file.save(os.path.join(current_app.config["UPLOAD_DIR"], filename))
+        if not filename and not url and not notes:
+            flash("Add a project URL, attach a file, or write notes.", "warning")
+            return redirect(url_for("student.project_detail",
+                                    project_id=project.id))
+        if sub:
+            sub.project_url, sub.file_path, sub.notes = url, filename, notes
+            sub.status = "submitted"  # back into the evaluation queue
+            sub.marks, sub.feedback = None, ""
+            sub.submitted_at = datetime.utcnow()
+            sub.evaluated_at, sub.evaluated_by = None, None
+        else:
+            sub = ProjectSubmission(project_id=project.id,
+                                    user_id=current_user.id,
+                                    project_url=url, file_path=filename,
+                                    notes=notes, status="submitted")
+            db.session.add(sub)
+        db.session.commit()
+        flash("Project submitted for evaluation.", "success")
+        return redirect(url_for("student.project_detail", project_id=project.id))
+    return render_template("project_detail.html", project=project, sub=sub,
+                           can_resubmit=not project.is_overdue)
 
 
 @student_bp.route("/certificates")

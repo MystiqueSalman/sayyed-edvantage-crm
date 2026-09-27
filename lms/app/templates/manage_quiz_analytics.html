@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Exam Analytics — {{ quiz.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('manage.quiz_questions', quiz_id=quiz.id) }}">← {{ quiz.title }}</a></p>
+<div class="section-title"><h2>📊 Exam Analytics — {{ quiz.title }}</h2><div class="line"></div></div>
+<div class="stat-grid">
+  <div class="stat"><div class="n">{{ n }}</div><div class="l">Submitted attempts</div></div>
+  <div class="stat"><div class="n">{% if avg is not none %}{{ avg }}%{% else %}—{% endif %}</div><div class="l">Average score</div></div>
+  <div class="stat"><div class="n">{% if best is not none %}{{ best|round(1) }}%{% else %}—{% endif %}</div><div class="l">Best score</div></div>
+  <div class="stat"><div class="n">{% if latest is not none %}{{ latest|round(1) }}%{% else %}—{% endif %}</div><div class="l">Latest attempt</div></div>
+  <div class="stat"><div class="n">{% if pass_rate is not none %}{{ pass_rate }}%{% else %}—{% endif %}</div><div class="l">Pass rate ({{ quiz.pass_percent }}% bar)</div></div>
+  <div class="stat"><div class="n">{{ pending }}</div><div class="l">Descriptive answers pending review</div></div>
+  <div class="stat"><div class="n">{{ expired }}</div><div class="l">Time-expired attempts</div></div>
+</div>
+<div class="panel">
+  <h3 style="margin-top:0">Per-question performance</h3>
+  <table class="table">
+    <thead><tr><th>Question</th><th>Type</th><th>Graded answers</th><th>Avg % of marks</th></tr></thead>
+    <tbody>
+    {% for s in qstats %}
+    <tr>
+      <td>{{ s.q.text[:70] }}</td>
+      <td>{{ s.q.qtype_label }}</td>
+      <td>{{ s.n }}</td>
+      <td>{% if s.avg is not none %}{{ s.avg }}%{% else %}—{% endif %}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

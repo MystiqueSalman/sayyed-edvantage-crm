@@ -1,15 +1,42 @@
 {% extends "base.html" %}
 {% block title %}Quiz Result{% endblock %}
 {% block content %}
-<div class="panel" style="max-width:560px; margin:40px auto; text-align:center">
-  <h2>{{ attempt.quiz.title }}</h2>
-  <div class="fee" style="font-size:2.6rem">{{ attempt.score }} / {{ attempt.total }}</div>
-  {% if attempt.percent >= attempt.quiz.pass_percent %}
-    <p class="flash success">🎉 You passed with {{ attempt.percent }}% (needed {{ attempt.quiz.pass_percent }}%)</p>
-  {% else %}
-    <p class="flash warning">You scored {{ attempt.percent }}% — {{ attempt.quiz.pass_percent }}% needed to pass. Try again!</p>
-  {% endif %}
-  <p>
+<div class="panel" style="max-width:720px; margin:40px auto">
+  <div style="text-align:center">
+    <h2>{{ attempt.quiz.title }}</h2>
+    <div class="fee" style="font-size:2.6rem">{{ attempt.score|round(2) }} / {{ attempt.total|round(2) }}</div>
+    {% if attempt.time_expired %}<p class="tag" style="background:#7a2e2e">⏱ Auto-submitted — time expired</p>{% endif %}
+    {% if attempt.pending_review %}
+      <p class="flash warning">⏳ Some answers are pending faculty review — your score may change.</p>
+    {% elif attempt.percent >= attempt.quiz.pass_percent %}
+      <p class="flash success">🎉 You passed with {{ attempt.percent }}% (needed {{ attempt.quiz.pass_percent }}%)</p>
+    {% else %}
+      <p class="flash warning">You scored {{ attempt.percent }}% — {{ attempt.quiz.pass_percent }}% needed to pass. Try again!</p>
+    {% endif %}
+  </div>
+  <h3>Answer breakdown</h3>
+  {% for a in answers %}
+  <div class="quiz-q">
+    <p><b>Q{{ loop.index }}.</b> {{ a.question.text }}
+      <span class="tag">{{ a.question.qtype_label }}</span>
+      {% if a.needs_review %}<span class="tag" style="background:#5a4a1a">⏳ pending review</span>
+      {% elif a.is_correct %}<span class="tag green">✓ correct</span>
+      {% else %}<span class="tag" style="background:#7a2e2e">✗ incorrect</span>{% endif %}
+      <span class="tag">{{ a.marks_awarded|round(2) }}/{{ a.question.marks|round(2) }}</span>
+    </p>
+    {% if a.question.qtype == 'descriptive' %}
+      <p style="color:var(--muted)">Your answer: {{ a.chosen or '—' }}</p>
+      {% if a.feedback %}<p><b>Faculty feedback:</b> {{ a.feedback }}</p>{% endif %}
+    {% elif a.question.qtype == 'fill_blank' %}
+      <p style="color:var(--muted)">Your answer: <b>{{ a.chosen or '—' }}</b></p>
+    {% elif a.question.qtype == 'matching' %}
+      <p style="color:var(--muted)">Your matches: {{ a.chosen or '—' }}</p>
+    {% else %}
+      <p style="color:var(--muted)">You chose: <b>{{ a.chosen or '—' }}</b></p>
+    {% endif %}
+  </div>
+  {% endfor %}
+  <p style="text-align:center">
     <a class="btn btn-ghost" href="{{ url_for('student.quiz', quiz_id=attempt.quiz_id) }}">Retake Quiz</a>
     <a class="btn btn-blue" href="{{ url_for('main.course_detail', slug=course.slug) }}" style="margin-left:10px">Back to Course</a>
   </p>

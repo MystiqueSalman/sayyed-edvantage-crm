@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Submissions — {{ project.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('manage.manage_projects') }}">← Projects</a></p>
+<div class="section-title"><h2>📥 {{ project.title }} <span style="color:var(--muted)">({{ subs|length }} submissions)</span></h2><div class="line"></div></div>
+{% for s in subs %}
+<div class="panel" style="margin-bottom:14px">
+  <h3 style="margin-top:0">{{ s.user.name or s.user.email }}
+    {% if s.status == 'evaluated' %}<span class="tag green">✅ Evaluated {{ s.marks }}/{{ project.max_marks }}</span>
+    {% elif s.status == 'under_review' %}<span class="tag">👀 Under review</span>
+    {% else %}<span class="tag">📤 Submitted</span>{% endif %}</h3>
+  <p style="color:var(--muted); font-size:.9rem">Submitted {{ s.submitted_at.strftime('%d %b %Y %H:%M') if s.submitted_at }}</p>
+  {% if s.project_url %}<p>🔗 <a href="{{ s.project_url }}" target="_blank" rel="noopener">{{ s.project_url }}</a></p>{% endif %}
+  {% if s.file_path %}<p>📎 <a href="{{ url_for('student.project_file', sub_id=s.id) }}">Download submitted file</a></p>{% endif %}
+  {% if s.notes %}<p style="color:var(--muted)">Notes: {{ s.notes }}</p>{% endif %}
+  <form method="post" action="{{ url_for('manage.project_evaluate', sub_id=s.id) }}">
+    <div class="two-col">
+      <div><label>Marks (max {{ project.max_marks }})</label><input type="number" name="marks" step="0.5" min="0" max="{{ project.max_marks }}" value="{{ s.marks or '' }}" required></div>
+      <div><label>Feedback</label><input type="text" name="feedback" value="{{ s.feedback or '' }}" placeholder="written feedback for the student"></div>
+    </div>
+    <p><button class="btn btn-gold btn-sm" type="submit">Save evaluation</button></p>
+  </form>
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No submissions yet.</p></div>
+{% endfor %}
+{% endblock %}
