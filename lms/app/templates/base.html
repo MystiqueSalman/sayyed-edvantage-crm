@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>{% block title %}Sayyed EdVantage LMS{% endblock %}</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
 </head>
 <body>
 {% if announcement %}
@@ -27,7 +27,7 @@
   <div class="nav-inner">
     <a class="brand" href="{{ url_for('main.index') }}">
       <img class="brand-logo" src="{{ url_for('static', filename='img/logo.png') }}" alt="Sayyed EdVantage logo">
-      <span>Sayyed EdVantage<small>EMPOWERING STUDENTS FOR SUCCESS</small></span>
+      <span class="brand-name"><span class="bn-sayyed">Sayyed</span> <span class="bn-edvantage">EdVantage</span><small>EMPOWERING STUDENTS FOR SUCCESS</small></span>
     </a>
     <div class="nav-links">
       <a href="{{ url_for('main.catalog') }}">Courses</a>
