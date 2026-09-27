@@ -268,6 +268,7 @@ def _ensure_schema_patches(app):
     try:
         with app.app_context():
             insp = inspect(db.engine)
+            is_pg = db.engine.dialect.name == "postgresql"
             existing_tables = set(insp.get_table_names())
             for table, column, ddl in patches:
                 if table not in existing_tables:
@@ -275,8 +276,13 @@ def _ensure_schema_patches(app):
                 cols = {c["name"] for c in insp.get_columns(table)}
                 if column in cols:
                     continue
+                ddl_sql = ddl
+                if is_pg:
+                    # Postgres has no DATETIME type; TIMESTAMP is the
+                    # portable equivalent (verified on PG 16).
+                    ddl_sql = ddl.replace(" DATETIME", " TIMESTAMP")
                 with db.engine.begin() as conn:
-                    conn.execute(text(ddl))
+                    conn.execute(text(ddl_sql))
                 app.logger.info("schema patch applied: %s.%s", table, column)
             # Phase 6: legacy attempts (pre-Phase-6) were completed-at-POST, so
             # mark them submitted — otherwise they'd look like in-progress
