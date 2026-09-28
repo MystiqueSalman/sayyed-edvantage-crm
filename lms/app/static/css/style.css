@@ -38,7 +38,7 @@ img{max-width:100%}
   margin:0 auto; padding:10px 24px; min-width:0}
 .brand{display:flex; align-items:center; gap:12px; flex:0 0 auto; min-width:0; overflow:hidden}
 .brand-logo{height:44px; width:auto; display:block; flex:0 0 auto}
-.brand-text{height:54px; width:auto; display:block; flex:0 0 auto}
+.brand-text{height:108px; width:auto; display:block; flex:0 0 auto}
 /* UI15: link group is a proper flex child that can shrink; nothing inside it forces page overflow */
 .nav-links{display:flex; align-items:center; gap:2px; flex:1 1 auto; min-width:0; justify-content:center}
 .nav-links>a{color:#c3cfe4; font-weight:600; font-size:.92rem; padding:9px 12px;
@@ -556,7 +556,7 @@ pre{max-width:100%; overflow-x:auto}
 }
 @media(max-width:640px){
   .brand-logo{height:32px; width:auto}
-  .brand-text{height:38px}
+  .brand-text{height:64px}
   .nav-inline{gap:6px}
   .nav-inline .nav-cta-btn{height:36px; padding:0 12px; font-size:.8rem}
   .nav-inline .ph-num{display:none}
