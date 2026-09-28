@@ -21,7 +21,7 @@
 {% if meta_pixel_id %}<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','{{ meta_pixel_id }}');fbq('track','PageView');</script>{% endif %}
 {% if head_snippet %}{{ head_snippet|safe }}{% endif %}
 {% endif %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5">
 {# Phase 12 §21.3: tenant color overrides — only emitted when configured #}
 {% if brand.primary_color or brand.accent_color %}<style>
 :root{ {% if brand.primary_color %}--gold:{{ brand.primary_color }};{% endif %} {% if brand.accent_color %}--blue:{{ brand.accent_color }};{% endif %} }
@@ -44,32 +44,12 @@
       <img class="brand-text" src="{{ url_for('static', filename='img/nav-text-v1.png') }}" alt="Sayyed EdVantage — Empowering Students for Success">
     </a>
     <div class="nav-links" id="navLinks">
-      <a href="{{ url_for('main.index') }}" class="{% if request.path == '/' %}on{% endif %}">{{ t('home') if t else 'Home' }}</a>
-      <span class="nav-drop">
-        <a href="{{ url_for('main.catalog') }}" class="{% if request.path.startswith('/course') or request.path.startswith('/courses') %}on{% endif %}">{{ t('courses') }} ▾</a>
-        {% if nav_courses %}
-        <span class="nav-drop-menu">
-          {% for c in nav_courses %}
-          <a href="{{ url_for('main.course_detail', slug=c.slug) }}">{{ c.title }}<small>₹{{ "{:,}".format(c.fee) }} + GST</small></a>
-          {% endfor %}
-        </span>
-        {% endif %}
-      </span>
-      <a href="{{ url_for('main.about') }}">{{ t('about') if t else 'About Us' }}</a>
-      <a href="{{ url_for('growth.jobs') }}">{{ t('placements') if t else 'Placements' }}</a>
-      <a href="{{ url_for('main.index') }}#why-us">{{ t('why_us') if t else 'Why Us' }}</a>
-      <a href="{{ url_for('main.blogs') }}">{{ t('blogs') if t else 'Blogs' }}</a>
-      <a href="{{ url_for('main.contact') }}">{{ t('contact') if t else 'Contact' }}</a>
-      <span class="nav-lang" title="Language">
-        <a href="{{ url_for('saas.switch_lang', code='en') }}" class="{% if lang != 'hi' %}on{% endif %}">EN</a>|
-        <a href="{{ url_for('saas.switch_lang', code='hi') }}" class="{% if lang == 'hi' %}on{% endif %}">हिं</a>
-      </span>
       <form class="nav-search" action="{{ url_for('main.catalog') }}" method="get" role="search">
         <input type="search" name="q" placeholder="Search courses, skills, or jobs…" aria-label="Search courses">
         <button type="submit" aria-label="Search">🔍</button>
       </form>
       <div class="drawer-cta">
-        <a class="btn btn-gold btn-block" href="tel:+917977877884">📞 +91 79778 77884</a>
+        <a class="btn btn-gold btn-block" href="tel:+917977867884">📞 +91 79778 67884</a>
         <a class="btn btn-outline-w btn-block" href="{{ url_for('crm.enquiry') }}">{{ t('enquire') }}</a>
         {% if current_user.is_authenticated %}
           {% if current_user.role == 'student' %}
@@ -93,7 +73,7 @@
       {% if current_user.is_authenticated %}
         <a href="{{ url_for('notify.notifications') }}" class="notif-bell" title="Notifications" aria-label="Notifications">🔔{% if notif_unread %}<span class="notif-count">{{ notif_unread }}</span>{% endif %}</a>
       {% endif %}
-      <a class="btn btn-gold btn-sm nav-cta-btn" href="tel:+917977877884" title="Call Sayyed EdVantage">📞 <span class="ph-num">+91 79778 77884</span></a>
+      <a class="btn btn-gold btn-sm nav-cta-btn" href="tel:+917977867884" title="Call Sayyed EdVantage">📞 <span class="ph-num">+91 79778 67884</span></a>
       <a class="btn btn-outline-w btn-sm nav-cta-btn" href="{{ url_for('crm.enquiry') }}">{{ t('enquire') }}</a>
       {% if current_user.is_authenticated %}
         {% if current_user.role == 'student' %}

@@ -21,41 +21,12 @@
 {% endblock %}
 
 {% block content %}
-{# ---------- Popular Courses ---------- #}
+{# shared defaults used by sections below #}
 {% set stats = stats|default({'students': 0, 'courses': 0, 'certificates': 0, 'faculty': 0}, true) %}
 {% set custom_stats = custom_stats|default([], true) %}
 {% set batches = batches|default([], true) %}
 {% set testimonials = testimonials|default([], true) %}
 {% set partners = partners|default([], true) %}
-<div class="band tint">
-  <div class="wrap">
-    <div class="sec-head">
-      <div><h2>Our <span class="hl">Popular Courses</span></h2>
-      <p>Learn in-demand skills from industry experts and build your career in future technologies.</p></div>
-      <a class="more" href="{{ url_for('main.catalog') }}">View All Courses →</a>
-    </div>
-    <div class="course-grid">
-      {% for c in courses[:7] %}
-      {% set slug = c.slug or '' %}
-      {% set ico = '📊' if 'data-science' in slug and 'analytics' not in slug else
-                   '📈' if 'analytics' in slug else
-                   '🤖' if 'ai' in slug or 'gen' in slug else
-                   '🐍' if 'python' in slug else
-                   '🐧' if 'linux' in slug and 'devops' not in slug else
-                   '♾️' if 'devops' in slug else '💻' %}
-      <div class="course-card">
-        <div class="course-banner" style="background-image:url('{{ url_for('static', filename='img/banners/' + c.banner) if c.banner }}')"></div>
-        <div class="cc-body">
-          <div class="cc-title"><span class="cc-ico">{{ ico }}</span><h3>{{ c.title }}</h3></div>
-          <p>{{ c.short_desc or '' }}</p>
-          <div class="fee">₹{{ "{:,}".format(c.fee) }} <small>+ GST</small></div>
-          <a class="btn btn-soft btn-sm btn-block" href="{{ url_for('main.course_detail', slug=c.slug) }}">Know More →</a>
-        </div>
-      </div>
-      {% endfor %}
-    </div>
-  </div>
-</div>
 
 {# ---------- Why Choose Sayyed EdVantage ---------- #}
 <div class="band features" id="why-us">
