@@ -21,7 +21,7 @@
 {% if meta_pixel_id %}<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','{{ meta_pixel_id }}');fbq('track','PageView');</script>{% endif %}
 {% if head_snippet %}{{ head_snippet|safe }}{% endif %}
 {% endif %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=5">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=6">
 {# Phase 12 §21.3: tenant color overrides — only emitted when configured #}
 {% if brand.primary_color or brand.accent_color %}<style>
 :root{ {% if brand.primary_color %}--gold:{{ brand.primary_color }};{% endif %} {% if brand.accent_color %}--blue:{{ brand.accent_color }};{% endif %} }
@@ -43,31 +43,6 @@
       <img class="brand-logo" src="{{ url_for('static', filename='img/logo-badge-circle.png') }}" alt="Sayyed EdVantage logo">
       <img class="brand-text" src="{{ url_for('static', filename='img/nav-text-v1.png') }}" alt="Sayyed EdVantage — Empowering Students for Success">
     </a>
-    <div class="nav-links" id="navLinks">
-      <form class="nav-search" action="{{ url_for('main.catalog') }}" method="get" role="search">
-        <input type="search" name="q" placeholder="Search courses, skills, or jobs…" aria-label="Search courses">
-        <button type="submit" aria-label="Search">🔍</button>
-      </form>
-      <div class="drawer-cta">
-        <a class="btn btn-gold btn-block" href="tel:+917977867884">📞 +91 79778 67884</a>
-        <a class="btn btn-outline-w btn-block" href="{{ url_for('crm.enquiry') }}">{{ t('enquire') }}</a>
-        {% if current_user.is_authenticated %}
-          {% if current_user.role == 'student' %}
-            <a class="btn btn-ghost btn-block" href="{{ url_for('student.dashboard') }}">{{ t('dashboard') }}</a>
-          {% elif current_user.role == 'faculty' %}
-            <a class="btn btn-ghost btn-block" href="{{ url_for('faculty.dashboard') }}">{{ t('dashboard') }}</a>
-          {% elif current_user.role == 'employer' %}
-            <a class="btn btn-ghost btn-block" href="{{ url_for('career.employer_dashboard') }}">Dashboard</a>
-          {% else %}
-            <a class="btn btn-ghost btn-block" href="{{ url_for('admin.dashboard') }}">{{ t('dashboard') }}</a>
-          {% endif %}
-          <a class="btn btn-ghost btn-block" href="{{ url_for('auth.logout') }}">{{ t('logout') }}</a>
-        {% else %}
-          <a class="btn btn-ghost btn-block" href="{{ url_for('auth.login') }}">{{ t('login') }}</a>
-          <a class="btn btn-gold btn-block" href="{{ url_for('auth.register') }}">Join Free</a>
-        {% endif %}
-      </div>
-    </div>
     <div class="nav-inline">
       <button class="search-toggle" id="searchToggle" aria-label="Search">🔍</button>
       {% if current_user.is_authenticated %}
@@ -91,7 +66,6 @@
         <a class="btn btn-gold btn-sm nav-cta-btn" href="{{ url_for('auth.register') }}">Join Free</a>
       {% endif %}
     </div>
-    <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
   </div>
   <div class="nav-search-row" id="navSearchRow">
     <form action="{{ url_for('main.catalog') }}" method="get" role="search">
@@ -99,7 +73,6 @@
       <button class="btn btn-gold btn-sm" type="submit">Search</button>
     </form>
   </div>
-  <div class="nav-scrim" id="navScrim"></div>
 </nav>
 {% endblock %}{# /topnav #}
 
@@ -152,14 +125,9 @@ function dismissAnnouncement(id) {
       }
     } catch (e) {}
   }
-  var t = document.getElementById("navToggle"), links = document.getElementById("navLinks"),
-      scrim = document.getElementById("navScrim"),
-      sTg = document.getElementById("searchToggle"), sRow = document.getElementById("navSearchRow");
-  function closeNav(){ if (links) links.classList.remove("open"); if (scrim) scrim.classList.remove("on"); }
-  if (t && links) { t.addEventListener("click", function(){ links.classList.toggle("open"); if (scrim) scrim.classList.toggle("on", links.classList.contains("open")); }); }
-  if (scrim) { scrim.addEventListener("click", closeNav); }
+  var sTg = document.getElementById("searchToggle"), sRow = document.getElementById("navSearchRow");
   if (sTg && sRow) { sTg.addEventListener("click", function(){ sRow.classList.toggle("open"); if (sRow.classList.contains("open")) { var i = sRow.querySelector("input"); if (i) i.focus(); } }); }
-  document.addEventListener("keydown", function(e){ if (e.key === "Escape") closeNav(); });
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape" && sRow) sRow.classList.remove("open"); });
 })();
 </script>
 <style>
