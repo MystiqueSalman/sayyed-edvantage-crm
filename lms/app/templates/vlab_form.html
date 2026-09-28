@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{% if scenario %}Edit{% else %}New{% endif %} virtual lab scenario{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🖥️ {% if scenario %}Edit{% else %}New{% endif %} virtual lab scenario</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('vlabs.manage_list') }}">← Scenarios</a></div>
+<div class="panel" style="max-width:780px">
+  <form method="post">
+    <label>Title</label>
+    <input type="text" name="title" required maxlength="160" value="{{ scenario.title if scenario else '' }}">
+    <label>Course <span style="color:var(--muted)">(optional)</span></label>
+    <select name="course_id">
+      <option value="">— any —</option>
+      {% for c in courses %}<option value="{{ c.id }}" {% if scenario and scenario.course_id == c.id %}selected{% endif %}>{{ c.title }}</option>{% endfor %}
+    </select>
+    <label>Description</label>
+    <textarea name="description" rows="2">{{ scenario.description if scenario else '' }}</textarea>
+    <label>Scenario JSON <span style="color:var(--muted)">(canned filesystem + ordered tasks)</span></label>
+    <textarea name="scenario_json" rows="18" spellcheck="false" style="font-family:ui-monospace,monospace; font-size:.85rem">{{ scenario.scenario_json if scenario else example }}</textarea>
+    <details style="margin:8px 0; color:var(--muted); font-size:.85rem">
+      <summary style="cursor:pointer">Format help</summary>
+      <ul>
+        <li><code>fs</code>: nested object — keys are files (string content) or folders (nested object).</li>
+        <li><code>tasks</code>: list of <code>{"instruction": "...", "validate": {...}}</code>.</li>
+        <li><code>validate</code> may use <code>{"command": "pwd"}</code> (exact command) and/or <code>{"contains": ["text"]}</code> (must appear in that command's output).</li>
+        <li>Supported commands: help, pwd, ls, cd, cat, echo, mkdir, touch, clear, whoami, date, ping, ip.</li>
+      </ul>
+    </details>
+    <label><input type="checkbox" name="is_published" value="1" style="width:auto" {% if not scenario or scenario.is_published %}checked{% endif %}> Published (visible to students)</label>
+    <p style="margin-top:12px"><button class="btn btn-gold" type="submit">Save</button></p>
+  </form>
+</div>
+{% endblock %}

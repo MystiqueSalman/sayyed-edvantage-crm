@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Bulk enrollment — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📥 Bulk Enrollment (CSV)</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<p style="color:var(--muted); font-size:.9rem">Upload a CSV with header <code>name,email,course</code> — course is the course slug (or numeric ID). New users are created as students with a temporary password; existing users are reused. Already-enrolled rows are skipped.</p>
+<div class="panel" style="max-width:640px; margin-bottom:22px">
+  <form method="post" enctype="multipart/form-data">
+    <label>CSV file</label>
+    <input type="file" name="csv" accept=".csv" required>
+    <p style="margin-top:12px"><button class="btn btn-gold" type="submit">Upload &amp; enroll</button></p>
+  </form>
+  <details style="margin-top:10px; color:var(--muted); font-size:.85rem">
+    <summary style="cursor:pointer">Available course slugs</summary>
+    <ul>{% for c in courses %}<li><code>{{ c.slug }}</code> — {{ c.title }}</li>{% endfor %}</ul>
+  </details>
+</div>
+{% if result %}
+<div class="panel" style="max-width:640px">
+  <h3 style="margin-top:0">Results</h3>
+  <p>✅ Users created: <b>{{ result.users }}</b> · Enrollments created: <b>{{ result.enrollments }}</b> · Rows skipped: <b>{{ result.errors|length }}</b></p>
+  {% if result.errors %}
+  <table class="tbl">
+    <tr><th>Row</th><th>Reason</th></tr>
+    {% for n, msg in result.errors %}<tr><td>{{ n }}</td><td>{{ msg }}</td></tr>{% endfor %}
+  </table>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

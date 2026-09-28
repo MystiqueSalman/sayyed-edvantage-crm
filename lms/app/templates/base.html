@@ -22,6 +22,10 @@
 {% if head_snippet %}{{ head_snippet|safe }}{% endif %}
 {% endif %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+{# Phase 12 §21.3: tenant color overrides — only emitted when configured #}
+{% if brand.primary_color or brand.accent_color %}<style>
+:root{ {% if brand.primary_color %}--gold:{{ brand.primary_color }};{% endif %} {% if brand.accent_color %}--blue:{{ brand.accent_color }};{% endif %} }
+</style>{% endif %}
 </head>
 <body>
 {% if announcement %}
@@ -35,17 +39,23 @@
 <nav class="nav">
   <div class="nav-inner">
     <a class="brand" href="{{ url_for('main.index') }}">
+      {% if brand.is_custom and brand.logo_file %}
+      <img class="brand-logo" src="{{ url_for('saas.brand_file', filename=brand.logo_file) }}" alt="{{ brand.brand_name }}" style="height:44px;width:auto">
+      {% else %}
       <img class="brand-logo" src="{{ url_for('static', filename='img/logo.png') }}" alt="Sayyed EdVantage logo">
       <img src="{{ url_for('static', filename='img/nav-text-v1.png') }}" alt="Sayyed EdVantage — Empowering Students for Success" style="height:44px;width:auto;display:block">
+      {% endif %}
+      {% if brand.is_custom and not brand.logo_file %}<span class="brand-name" style="font-weight:800;color:var(--text)">{{ brand.brand_name }}</span>{% endif %}
     </a>
     <div class="nav-links">
-      <a href="{{ url_for('main.catalog') }}">Courses</a>
-      <a href="{{ url_for('growth.jobs') }}">Jobs</a>
-      <a href="{{ url_for('crm.enquiry') }}">Enquire</a>
+      <a href="{{ url_for('saas.switch_lang', code='en') }}" title="English" style="{% if lang != 'hi' %}font-weight:800;color:var(--gold){% endif %}">EN</a><span style="color:var(--muted)">|</span><a href="{{ url_for('saas.switch_lang', code='hi') }}" title="हिंदी" style="{% if lang == 'hi' %}font-weight:800;color:var(--gold){% endif %}">हिं</a>
+      <a href="{{ url_for('main.catalog') }}">{{ t('courses') }}</a>
+      <a href="{{ url_for('growth.jobs') }}">{{ t('jobs') }}</a>
+      <a href="{{ url_for('crm.enquiry') }}">{{ t('enquire') }}</a>
       {% if current_user.is_authenticated %}
         <a href="{{ url_for('notify.notifications') }}" class="notif-bell" title="Notifications" aria-label="Notifications">🔔{% if notif_unread %}<span class="notif-count">{{ notif_unread }}</span>{% endif %}</a>
         {% if current_user.role == 'student' %}
-          <a href="{{ url_for('student.dashboard') }}">Dashboard</a>
+          <a href="{{ url_for('student.dashboard') }}">{{ t('dashboard') }}</a>
           <a href="{{ url_for('tutor.tutor_home') }}">🤖 AI Tutor</a>
           <a href="{{ url_for('tutor.planner') }}">🗓 Planner</a>
           <a href="{{ url_for('ops.calendar') }}">📅 Calendar</a>
@@ -54,21 +64,25 @@
           <a href="{{ url_for('game.achievements') }}">🏆 Achievements</a>
           <a href="{{ url_for('student.wishlist') }}">❤ Wishlist</a>
           <a href="{{ url_for('growth.my_referrals') }}">🎁 Refer & Earn</a>
+          <a href="{{ url_for('labs.lab_list') }}">💻 Labs</a>
+          <a href="{{ url_for('vlabs.vlab_list') }}">🖥 Virtual Labs</a>
         {% elif current_user.role == 'employer' %}
           <a href="{{ url_for('career.employer_dashboard') }}">🏢 Employer Dashboard</a>
         {% elif current_user.role == 'faculty' %}
-          <a href="{{ url_for('faculty.dashboard') }}">Dashboard</a>
+          <a href="{{ url_for('faculty.dashboard') }}">{{ t('dashboard') }}</a>
           <a href="{{ url_for('ops.calendar') }}">📅 Calendar</a>
           <a href="{{ url_for('ops.batch_list') }}">👥 Batches</a>
+          <a href="{{ url_for('labs.manage_list') }}">💻 Coding Labs</a>
+          <a href="{{ url_for('vlabs.manage_list') }}">🖥 Virtual Labs</a>
         {% elif current_user.role == 'counsellor' %}
           <a href="{{ url_for('crm.leads') }}">CRM</a>
         {% else %}
-          <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+          <a href="{{ url_for('admin.dashboard') }}">{{ t('dashboard') }}</a>
         {% endif %}
         <span class="role-tag">{{ current_user.role }}</span>
-        <a href="{{ url_for('auth.logout') }}">Logout</a>
+        <a href="{{ url_for('auth.logout') }}">{{ t('logout') }}</a>
       {% else %}
-        <a href="{{ url_for('auth.login') }}">Login</a>
+        <a href="{{ url_for('auth.login') }}">{{ t('login') }}</a>
         <a href="{{ url_for('auth.register') }}" class="btn btn-gold btn-sm">Join Free</a>
         <a href="{{ url_for('career.employer_signup') }}">For Employers</a>
       {% endif %}
@@ -91,7 +105,7 @@
 </div>
 
 <footer>
-  Sayyed EdVantage LMS · Empowering Students for Success · Mumbai, India
+  {{ brand.brand_name }} LMS · {{ t('tagline') }} · {{ t('location') }}
 </footer>
 <script>
 if ("serviceWorker" in navigator) {

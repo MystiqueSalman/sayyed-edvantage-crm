@@ -37,6 +37,16 @@
   <p style="margin-top:20px"><a class="btn btn-ghost" href="{{ url_for('student.quiz', quiz_id=module_quiz.id) }}">📝 Take the module quiz: {{ module_quiz.title }}</a></p>
   {% endif %}
 
+  {# Phase 12: published coding labs attached to this lesson #}
+  {% if lesson.lab_exercises %}
+  <div class="panel" style="margin-top:20px">
+    <h3 style="margin-top:0">💻 Practice in the coding lab</h3>
+    {% for ex in lesson.lab_exercises if ex.is_published %}
+    <p style="margin-bottom:6px"><a class="btn btn-blue btn-sm" href="{{ url_for('labs.lab_detail', exercise_id=ex.id) }}">▶ {{ ex.title }}</a></p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
   <div style="display:flex; gap:10px; margin-top:26px; flex-wrap:wrap">
     {% if prev_lesson %}<a class="btn btn-ghost" href="{{ url_for('student.lesson', lesson_id=prev_lesson.id) }}">← Previous</a>{% endif %}
     {% if not done %}

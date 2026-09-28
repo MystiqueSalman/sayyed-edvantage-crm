@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Tenants — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🏢 Tenants (Multi-tenancy)</h2><div class="line"></div>
+  <a class="btn btn-gold btn-sm" href="{{ url_for('saas.tenant_new') }}">+ New tenant</a>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<p style="color:var(--muted); font-size:.9rem">Each tenant is a branded academy on the platform. Rows with no tenant (legacy data) belong to the default <b>Sayyed EdVantage</b> tenant and keep working exactly as before.</p>
+<div class="panel" style="overflow-x:auto">
+<table class="tbl">
+  <tr><th>ID</th><th>Name</th><th>Slug</th><th>Status</th><th>Tenant users</th><th>Created</th><th></th></tr>
+  {% for t in tenants %}
+  <tr>
+    <td>{{ t.id }}</td>
+    <td><b>{{ t.name }}</b>{% if t.slug == 'sayyed-edvantage' %} <span class="tag gold">default</span>{% endif %}</td>
+    <td><code>{{ t.slug }}</code></td>
+    <td>{% if t.active %}🟢 Active{% else %}⚪ Inactive{% endif %}</td>
+    <td>{{ counts[t.id]['users'] }}</td>
+    <td>{{ t.created_at.strftime('%d %b %Y') if t.created_at }}</td>
+    <td>
+      {% if t.slug != 'sayyed-edvantage' %}
+      <form class="inline-form" method="post" action="{{ url_for('saas.tenant_toggle', tenant_id=t.id) }}">
+        <button class="btn btn-ghost btn-sm" type="submit">{{ 'Deactivate' if t.active else 'Activate' }}</button>
+      </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

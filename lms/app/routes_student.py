@@ -154,13 +154,23 @@ def dashboard():
                      .join(Challenge).filter(Challenge.is_active.is_(True))
                      .all())
     my_challenges = [e for e in my_challenges if e.challenge.is_live][:3]
+    # Phase 12: rules-based adaptive "recommended next" (§21.5)
+    p12_recs = []
+    try:
+        from .adaptive import recommendations_for_student as _p12recs
+        for e in enrollments[:2]:
+            p12_recs.extend(_p12recs(current_user.id, e.course_id)[:2])
+        p12_recs = p12_recs[:3]
+    except Exception:
+        p12_recs = []
     return render_template("dashboard.html", enrollments=enrollments,
                            pending=pending, certs=certs, live_sessions=live_sessions,
                            now=now, onboarding=_onboarding_for(current_user),
                            weak_topics=weak_topics, plan_items=plan_items,
                            game_profile=game_profile,
                            recent_badges=recent_badges,
-                           my_challenges=my_challenges)
+                           my_challenges=my_challenges,
+                           p12_recs=p12_recs)
 
 
 @student_bp.route("/lesson/<int:lesson_id>")

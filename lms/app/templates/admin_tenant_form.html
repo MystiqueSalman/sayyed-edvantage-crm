@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}New tenant — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🏢 New tenant</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('saas.tenant_list') }}">← Tenants</a></div>
+<div class="panel" style="max-width:560px">
+  <form method="post">
+    <label>Tenant name</label>
+    <input type="text" name="name" required maxlength="160" placeholder="e.g. Acme Academy">
+    <label>Slug <span style="color:var(--muted)">(URL-safe, unique)</span></label>
+    <input type="text" name="slug" required maxlength="80" placeholder="e.g. acme-academy">
+    <p><button class="btn btn-gold" type="submit">Create tenant</button></p>
+  </form>
+</div>
+{% endblock %}

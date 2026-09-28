@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Manage virtual labs{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🖥️ Virtual Lab Scenarios</h2><div class="line"></div>
+  <a class="btn btn-gold btn-sm" href="{{ url_for('vlabs.manage_new') }}">+ New scenario</a></div>
+<div class="panel" style="overflow-x:auto">
+<table class="tbl">
+  <tr><th>Title</th><th>Course</th><th>Tasks</th><th>Published</th><th>Completions</th><th></th></tr>
+  {% for sc in scenarios %}
+  <tr>
+    <td><b>{{ sc.title }}</b></td>
+    <td>{{ sc.course.title if sc.course else '—' }}</td>
+    <td>{{ sc.tasks|length }}</td>
+    <td>{% if sc.is_published %}🟢{% else %}⚪{% endif %}</td>
+    <td>{{ sc.progress_rows|selectattr('completed')|list|length }}</td>
+    <td style="white-space:nowrap">
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('vlabs.manage_edit', scenario_id=sc.id) }}">Edit</a>
+      <a class="btn btn-blue btn-sm" href="{{ url_for('vlabs.vlab_terminal', scenario_id=sc.id) }}">Preview</a>
+      <form class="inline-form" method="post" action="{{ url_for('vlabs.manage_delete', scenario_id=sc.id) }}" onsubmit="return confirm('Delete this scenario?')">
+        <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="6" style="color:var(--muted)">No scenarios yet.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

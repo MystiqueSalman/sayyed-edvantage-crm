@@ -11,6 +11,9 @@
     <input type="password" name="password" required>
     <p><button class="btn btn-gold" type="submit" style="width:100%; margin-top:14px">Login</button></p>
   </form>
+  <div style="display:flex; align-items:center; gap:10px; margin:16px 0; color:var(--muted); font-size:.8rem"><span style="flex:1; border-top:1px solid var(--card-brd)"></span>OR<span style="flex:1; border-top:1px solid var(--card-brd)"></span></div>
+  {# Phase 12 §21.7: Google OAuth stub — disabled until the full flow is implemented #}
+  <button class="btn btn-ghost" type="button" disabled title="Coming soon — Google sign-in is not yet enabled" style="width:100%; opacity:.55; cursor:not-allowed">🔵 Continue with Google <span class="tag gold">coming soon</span></button>
   <p style="color:var(--muted); font-size:.9rem">New here? <a href="{{ url_for('auth.register') }}">Create a free student account</a></p>
   <details style="margin-top:18px; color:var(--muted); font-size:.85rem">
     <summary style="cursor:pointer; color:var(--gold-lt)">Demo accounts (Phase 1 testing)</summary>

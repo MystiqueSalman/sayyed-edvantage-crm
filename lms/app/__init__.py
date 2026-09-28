@@ -92,10 +92,26 @@ def create_app():
                 head_snippet = _AS.get("analytics.head_snippet", "")
         except Exception:
             pass
+        # Phase 12: i18n + white-label branding (§21.2/§21.3) — guarded so a
+        # missing tenants table (mid-migration) never breaks rendering.
+        from . import i18n as _I18N  # noqa: E402
+        try:
+            from . import saas as _SAAS  # noqa: E402
+            lang = _I18N.get_lang()
+            brand = _SAAS.get_brand()
+            tenant = _SAAS.get_current_tenant()
+        except Exception:
+            lang, tenant = _I18N.get_lang(), None
+            brand = {"brand_name": "Sayyed EdVantage",
+                     "tagline": "Empowering Students for Success",
+                     "primary_color": "", "accent_color": "", "logo_file": "",
+                     "is_custom": False}
         return {"now": datetime.utcnow(), "payments_live": app.config["PAYMENTS_LIVE"],
                 "announcement": announcement, "notif_unread": notif_unread,
                 "ga4_id": ga4_id, "gtm_id": gtm_id,
-                "meta_pixel_id": meta_pixel_id, "head_snippet": head_snippet}
+                "meta_pixel_id": meta_pixel_id, "head_snippet": head_snippet,
+                "t": _I18N.t, "lang": lang, "brand": brand,
+                "current_tenant": tenant}
 
     @app.errorhandler(403)
     def forbidden(_e):
@@ -122,6 +138,9 @@ def create_app():
     from .routes_hardening import hardening_bp, notify_bp  # noqa: E402  (Phase 10)
     from .api_v1 import api_v1_bp  # noqa: E402  (Phase 10: REST API)
     from .routes_marketing import marketing_bp  # noqa: E402  (Phase 11)
+    from .routes_saas import saas_bp  # noqa: E402  (Phase 12: SaaS/enterprise)
+    from .routes_labs import labs_bp  # noqa: E402  (Phase 12: coding labs)
+    from .routes_vlabs import vlabs_bp  # noqa: E402  (Phase 12: virtual labs)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -140,6 +159,9 @@ def create_app():
     app.register_blueprint(notify_bp)
     app.register_blueprint(api_v1_bp)
     app.register_blueprint(marketing_bp)
+    app.register_blueprint(saas_bp)
+    app.register_blueprint(labs_bp)
+    app.register_blueprint(vlabs_bp)
 
     # Phase 10: file logging (monitoring page tails this file) + request stats.
     _setup_file_logging(app)
@@ -194,6 +216,20 @@ def create_app():
             _H10.ensure_hardening_defaults()
         except Exception:
             db.session.rollback()
+        # Phase 12: default tenant + branding settings (guarded).
+        from . import saas as _S12  # noqa: E402
+        try:
+            _S12.ensure_saas_defaults()
+        except Exception:
+            db.session.rollback()
+        # Phase 12: example coding lab + virtual lab scenario (guarded).
+        from .routes_labs import ensure_lab_examples as _L12  # noqa: E402
+        from .routes_vlabs import ensure_vlab_examples as _V12  # noqa: E402
+        try:
+            _L12()
+            _V12()
+        except Exception:
+            db.session.rollback()
 
     _start_reminder_scheduler(app)
     _start_backup_scheduler(app)
@@ -246,6 +282,17 @@ def _ensure_schema_patches(app):
         # Phase 9 — faculty & operations
         ("quizzes", "deadline",
          "ALTER TABLE quizzes ADD COLUMN deadline DATE"),
+        # Phase 12 — SaaS multi-tenancy (NULL = default tenant)
+        ("users", "tenant_id",
+         "ALTER TABLE users ADD COLUMN tenant_id INTEGER REFERENCES tenants(id)"),
+        ("courses", "tenant_id",
+         "ALTER TABLE courses ADD COLUMN tenant_id INTEGER REFERENCES tenants(id)"),
+        ("enrollments", "tenant_id",
+         "ALTER TABLE enrollments ADD COLUMN tenant_id INTEGER REFERENCES tenants(id)"),
+        ("leads", "tenant_id",
+         "ALTER TABLE leads ADD COLUMN tenant_id INTEGER REFERENCES tenants(id)"),
+        ("batches", "tenant_id",
+         "ALTER TABLE batches ADD COLUMN tenant_id INTEGER REFERENCES tenants(id)"),
         ("questions", "qtype",
          "ALTER TABLE questions ADD COLUMN qtype VARCHAR(20) DEFAULT 'mcq_single'"),
         ("questions", "difficulty",

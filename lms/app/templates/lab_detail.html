@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{{ exercise.title }} — Coding Lab{% endblock %}
+{% block content %}
+<div class="section-title"><h2>💻 {{ exercise.title }}</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('labs.lab_list') }}">← All labs</a></div>
+<p style="color:var(--muted); font-size:.9rem">{{ exercise.lesson.module.course.title }} · {{ exercise.lesson.title }}</p>
+{% if exercise.instructions %}<div class="panel"><div>{{ exercise.instructions|safe }}</div></div>{% endif %}
+<div class="two-col">
+  <div class="panel">
+    <h3 style="margin-top:0">Your code</h3>
+    <textarea id="code" rows="16" spellcheck="false" style="width:100%; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.9rem; background:#0a1628; color:#e8eef7; border:1px solid var(--card-brd); border-radius:8px; padding:10px">{{ exercise.starter_code }}</textarea>
+    <p style="margin-top:10px">
+      <button class="btn btn-blue btn-sm" id="runBtn" type="button">▶ Run</button>
+      <button class="btn btn-gold btn-sm" id="checkBtn" type="button" style="margin-left:8px">✓ Check answer</button>
+    </p>
+    <p style="color:var(--muted); font-size:.8rem">Sandboxed: 5s limit, no network/file access, unsafe imports blocked.</p>
+  </div>
+  <div class="panel">
+    <h3 style="margin-top:0">Output</h3>
+    <pre id="output" style="min-height:200px; background:#0a1628; border:1px solid var(--card-brd); border-radius:8px; padding:10px; white-space:pre-wrap; font-size:.88rem">Press Run to execute your code…</pre>
+    <div id="verdict" style="margin-top:8px; font-weight:700"></div>
+  </div>
+</div>
+{% if attempts %}
+<div class="panel" style="margin-top:18px">
+  <h3 style="margin-top:0">Your recent attempts</h3>
+  <table class="tbl">
+    <tr><th>When</th><th>Result</th><th>Output (first 120 chars)</th></tr>
+    {% for a in attempts %}
+    <tr><td>{{ a.created_at.strftime('%d %b %H:%M') }}</td>
+      <td>{% if a.passed %}<span class="tag green">✓ passed</span>{% else %}<span class="tag red">not passed</span>{% endif %}</td>
+      <td><code>{{ a.output[:120] }}</code></td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+<script>
+(function () {
+  var codeEl = document.getElementById("code"),
+      outEl = document.getElementById("output"),
+      verdictEl = document.getElementById("verdict");
+  function post(url, onDone) {
+    outEl.textContent = "Running…";
+    verdictEl.textContent = "";
+    fetch(url, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({code: codeEl.value})
+    }).then(function (r) { return r.json(); }).then(onDone)
+      .catch(function () { outEl.textContent = "Network error — try again."; });
+  }
+  document.getElementById("runBtn").addEventListener("click", function () {
+    post("{{ url_for('labs.lab_run', exercise_id=exercise.id) }}", function (d) {
+      outEl.textContent = d.output || d.error || "(no output)";
+    });
+  });
+  document.getElementById("checkBtn").addEventListener("click", function () {
+    post("{{ url_for('labs.lab_check', exercise_id=exercise.id) }}", function (d) {
+      outEl.textContent = d.output || d.error || "(no output)";
+      if (!d.ok) { verdictEl.textContent = "⚠ " + (d.error || "run failed"); verdictEl.style.color = "#e0a458"; }
+      else if (d.passed) { verdictEl.textContent = "✅ Correct — matches expected output!"; verdictEl.style.color = "#4ade80"; }
+      else { verdictEl.textContent = "❌ Output doesn't match yet — keep trying."; verdictEl.style.color = "#f87171"; }
+    });
+  });
+})();
+</script>
+{% endblock %}

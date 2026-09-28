@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% block title %}{{ scenario.title }} — Virtual Lab{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🖥️ {{ scenario.title }}</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('vlabs.vlab_list') }}">← All labs</a></div>
+{% if scenario.description %}<p style="color:var(--muted)">{{ scenario.description }}</p>{% endif %}
+<p style="color:var(--muted); font-size:.85rem">Simulated terminal — practice freely. Type <code>help</code> for commands. Nothing here touches a real server.</p>
+<div class="two-col">
+  <div class="panel" style="padding:0; overflow:hidden">
+    <div id="term" style="background:#050b14; color:#d7e3f4; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.88rem; padding:14px; height:420px; overflow-y:auto; line-height:1.5"></div>
+    <div style="display:flex; background:#050b14; border-top:1px solid var(--card-brd); padding:10px 14px; align-items:center">
+      <span id="prompt" style="color:#4ade80; font-family:ui-monospace,monospace; font-size:.88rem; white-space:nowrap">student@lab:~$&nbsp;</span>
+      <input id="cmd" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"
+             style="flex:1; background:transparent; border:0; color:#d7e3f4; font-family:ui-monospace,monospace; font-size:.88rem; outline:none">
+    </div>
+  </div>
+  <div>
+    <div class="panel">
+      <h3 style="margin-top:0">📋 Tasks</h3>
+      <ol id="tasks" style="margin:0; padding-left:20px"></ol>
+      <p style="margin-top:12px"><button class="btn btn-gold btn-sm" id="finishBtn" type="button" disabled>Finish lab</button></p>
+      {% if progress and progress.completed %}<p><span class="tag green">✓ completed</span></p>{% endif %}
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+  var SCENARIO = {{ scenario_json|safe }};
+  var fs = JSON.parse(JSON.stringify(SCENARIO.fs || {}));  // working copy
+  var tasks = SCENARIO.tasks || [];
+  var cwd = ["home", "student"];
+  var done = {};
+  var log = [];
+  var term = document.getElementById("term"),
+      cmdEl = document.getElementById("cmd"),
+      promptEl = document.getElementById("prompt"),
+      tasksEl = document.getElementById("tasks"),
+      finishBtn = document.getElementById("finishBtn");
+
+  function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+  function print(html, cls) {
+    var d = document.createElement("div");
+    if (cls) d.style.color = cls;
+    d.innerHTML = html;
+    term.appendChild(d);
+    term.scrollTop = term.scrollHeight;
+  }
+  function promptPath() { return "/" + cwd.join("/"); }
+  function refreshPrompt() {
+    var p = promptPath().replace(/^\/home\/student/, "~");
+    promptEl.innerHTML = esc("student@lab:" + p + "$&nbsp;");
+  }
+  // resolve a path string to {node, parts, ok, err}
+  function resolve(pathStr) {
+    var parts = (pathStr.charAt(0) === "/") ? [] :
+                (pathStr === "~" || pathStr.indexOf("~/") === 0) ? ["home", "student"] :
+                cwd.slice();
+    var toks = pathStr.split("/").filter(function (t) { return t && t !== "."; });
+    if (pathStr === "~") toks = [];
+    else if (pathStr.indexOf("~/") === 0) toks = pathStr.slice(2).split("/").filter(Boolean);
+    for (var i = 0; i < toks.length; i++) {
+      var t = toks[i];
+      if (t === "..") { if (parts.length) parts.pop(); continue; }
+      parts.push(t);
+    }
+    var node = fs;
+    for (var j = 0; j < parts.length; j++) {
+      if (node && typeof node === "object" && parts[j] in node) node = node[parts[j]];
+      else return {ok: false, err: "no such file or directory: " + pathStr, parts: parts};
+    }
+    return {ok: true, node: node, parts: parts};
+  }
+  function parentOf(parts) {
+    var node = fs;
+    for (var i = 0; i < parts.length - 1; i++) node = node[parts[i]];
+    return {parent: node, name: parts[parts.length - 1]};
+  }
+
+  var COMMANDS = {
+    help: function () {
+      return "Commands: help, pwd, ls [path], cd &lt;path&gt;, cat &lt;file&gt;, echo &lt;text&gt; [&gt; file], mkdir &lt;dir&gt;, touch &lt;file&gt;, clear, whoami, date, ping &lt;host&gt;, ip";
+    },
+    pwd: function () { return promptPath(); },
+    whoami: function () { return "student"; },
+    date: function () { return new Date().toString(); },
+    clear: function () { term.innerHTML = ""; return null; },
+    ls: function (args) {
+      var r = resolve(args[0] || ".");
+      if (!r.ok) return "ls: " + r.err;
+      if (typeof r.node === "string") return esc(args[0]);
+      var names = Object.keys(r.node);
+      return names.length ? esc(names.map(function (n) {
+        return (typeof r.node[n] === "object" ? n + "/" : n);
+      }).join("  ")) : "(empty)";
+    },
+    cd: function (args) {
+      if (!args[0]) return null;
+      var r = resolve(args[0]);
+      if (!r.ok) return "cd: " + r.err;
+      if (typeof r.node === "string") return "cd: not a directory: " + args[0];
+      cwd = r.parts; refreshPrompt(); return null;
+    },
+    cat: function (args) {
+      if (!args[0]) return "cat: missing file";
+      var r = resolve(args[0]);
+      if (!r.ok) return "cat: " + r.err;
+      if (typeof r.node === "object") return "cat: " + args[0] + ": is a directory";
+      return esc(r.node);
+    },
+    mkdir: function (args) {
+      if (!args[0]) return "mkdir: missing name";
+      var r = resolve(args[0]);
+      if (r.ok) return "mkdir: already exists: " + args[0];
+      var pp = parentOf(r.parts);
+      if (!pp.parent || typeof pp.parent !== "object" || Array.isArray(pp.parent))
+        return "mkdir: cannot create in " + args[0];
+      pp.parent[pp.name] = {};
+      return null;
+    },
+    touch: function (args) {
+      if (!args[0]) return "touch: missing file";
+      var r = resolve(args[0]);
+      if (r.ok && typeof r.node === "string") return null;
+      if (r.ok) return "touch: is a directory: " + args[0];
+      var pp = parentOf(r.parts);
+      if (!pp.parent || typeof pp.parent !== "object")
+        return "touch: cannot create " + args[0];
+      pp.parent[pp.name] = "";
+      return null;
+    },
+    echo: function (args, raw) {
+      var m = raw.match(/^echo\s+(.*?)\s*>\s*(\S+)\s*$/);
+      if (m) {
+        var r = resolve(m[2]);
+        var pp = parentOf(r.parts);
+        if (!pp.parent || typeof pp.parent !== "object")
+          return "echo: cannot write " + m[2];
+        pp.parent[pp.name] = m[1];
+        return null;
+      }
+      return esc(raw.replace(/^echo\s+/, ""));
+    },
+    ping: function (args) {
+      var h = args[0] || "example.com";
+      return ["PING " + h + " (simulated):",
+        "64 bytes from " + h + ": icmp_seq=1 ttl=64 time=0.42 ms",
+        "64 bytes from " + h + ": icmp_seq=2 ttl=64 time=0.38 ms",
+        "--- " + h + " ping statistics ---",
+        "2 packets transmitted, 2 received, 0% packet loss"].join("\n");
+    },
+    ip: function () {
+      return ["1: lo: &lt;LOOPBACK&gt; mtu 65536",
+        "    inet 127.0.0.1/8 scope host lo",
+        "2: eth0: &lt;BROADCAST&gt; mtu 1500",
+        "    inet 10.0.2.15/24 (simulated)"].join("\n");
+    }
+  };
+  COMMANDS.ifconfig = COMMANDS.ip;
+
+  function renderTasks() {
+    tasksEl.innerHTML = "";
+    tasks.forEach(function (t, i) {
+      var li = document.createElement("li");
+      li.style.marginBottom = "6px";
+      li.innerHTML = (done[i] ? "✅ " : "⬜ ") + esc(t.instruction);
+      if (done[i]) li.style.color = "var(--muted)";
+      tasksEl.appendChild(li);
+    });
+    var allDone = tasks.length && tasks.every(function (_, i) { return done[i]; });
+    finishBtn.disabled = !allDone;
+  }
+
+  function checkTask(rawCmd, output) {
+    for (var i = 0; i < tasks.length; i++) {
+      if (done[i]) continue;
+      var v = tasks[i].validate || {}, ok = true;
+      if (v.command) {
+        var norm = function (s) { return s.trim().replace(/\s+/g, " "); };
+        if (norm(rawCmd) !== norm(v.command)) ok = false;
+      }
+      if (ok && v.contains) {
+        for (var j = 0; j < v.contains.length; j++) {
+          if (output.indexOf(v.contains[j]) === -1) { ok = false; break; }
+        }
+      }
+      if (ok) {
+        done[i] = true;
+        print("🎉 Task " + (i + 1) + " complete!", "#4ade80");
+        renderTasks();
+      }
+      break;  // only the current (first incomplete) task is checked
+    }
+  }
+
+  function run(raw) {
+    var line = raw.trim();
+    print(esc("student@lab:" + promptPath().replace(/^\/home\/student/, "~") + "$ ") + esc(raw), "#4ade80");
+    log.push("$ " + raw);
+    if (!line) return;
+    var sp = line.indexOf(" ");
+    var name = (sp === -1 ? line : line.slice(0, sp)).toLowerCase();
+    var rest = sp === -1 ? "" : line.slice(sp + 1);
+    var args = rest.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || [];
+    args = args.map(function (a) { return a.replace(/^["']|["']$/g, ""); });
+    var out;
+    if (name === "sudo") out = "Nice try 🙂 — no sudo in the simulation.";
+    else if (name === "exit" || name === "logout") out = "There is no escape… this terminal loves you. (Use Finish lab when done.)";
+    else if (COMMANDS[name]) { try { out = COMMANDS[name](args, line); } catch (e) { out = name + ": error"; } }
+    else out = name + ": command not found (try 'help')";
+    if (out !== null && out !== undefined) {
+      print(out === "" ? "&nbsp;" : String(out).replace(/\n/g, "<br>"));
+      log.push(String(out).slice(0, 2000));
+    }
+    checkTask(line, out || "");
+  }
+
+  cmdEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { run(cmdEl.value); cmdEl.value = ""; }
+  });
+  finishBtn.addEventListener("click", function () {
+    fetch("{{ url_for('vlabs.vlab_complete', scenario_id=scenario.id) }}", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({log: log.join("\n")})
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.ok) {
+        print("🏁 Lab complete — progress saved!", "#4ade80");
+        finishBtn.disabled = true;
+      }
+    });
+  });
+
+  print("Welcome to the <b>{{ scenario.title|e }}</b> virtual lab.");
+  print("Complete each task in order, then press <b>Finish lab</b>.");
+  renderTasks();
+  refreshPrompt();
+  setTimeout(function () { cmdEl.focus(); }, 100);
+  document.getElementById("term").addEventListener("click", function () { cmdEl.focus(); });
+})();
+</script>
+{% endblock %}

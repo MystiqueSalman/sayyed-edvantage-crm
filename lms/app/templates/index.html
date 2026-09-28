@@ -4,12 +4,11 @@
 <div class="hero">
   <div class="hero-bg" style="background-image:url('{{ url_for('static', filename='img/banners/hero.png') }}')"></div>
   <div class="hero-inner">
-    <div class="kicker">Admissions Open · Live Online Classes</div>
-    <h1>Master the Skills That Get You Hired.</h1>
-    <p>Data Science, AI &amp; Generative AI, Python, Data Analytics, Linux, DevOps and Ethical Hacking —
-       taught live by industry mentors, with recordings, quizzes, assignments and certificates.</p>
+    <div class="kicker">{{ t('hero_kicker') }}</div>
+    <h1>{{ t('hero_title') }}</h1>
+    <p>{{ t('hero_sub') }}</p>
     <p>
-      <a class="btn btn-gold" href="{{ url_for('main.catalog') }}">Explore Courses</a>
+      <a class="btn btn-gold" href="{{ url_for('main.catalog') }}">{{ t('explore_courses') }}</a>
     </p>
   </div>
 </div>

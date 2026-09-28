@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Adaptive insights — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🧠 Adaptive Learning — Class Insights</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<p style="color:var(--muted); font-size:.9rem">Per-module average quiz scores across the class (latest attempt per student per quiz). Modules below 60% are flagged weak — the same rule that drives each student's “Recommended next”.</p>
+<div class="panel" style="margin-bottom:22px">
+  <form method="get" style="display:flex; gap:10px; align-items:end">
+    <div style="flex:1"><label>Course</label>
+      <select name="course_id">
+        <option value="">— choose a course —</option>
+        {% for c in courses %}<option value="{{ c.id }}" {% if course and course.id == c.id %}selected{% endif %}>{{ c.title }}</option>{% endfor %}
+      </select></div>
+    <button class="btn btn-gold btn-sm" type="submit">Analyze</button>
+  </form>
+</div>
+{% if course %}
+<div class="panel" style="overflow-x:auto">
+  <h3 style="margin-top:0">{{ course.title }}</h3>
+  {% if aggregates %}
+  <table class="tbl">
+    <tr><th>Module (topic)</th><th>Students</th><th>Class avg</th><th>Weak students</th><th>Status</th></tr>
+    {% for a in aggregates %}
+    <tr>
+      <td>{{ a.module_title }}</td>
+      <td>{{ a.students }}</td>
+      <td>{{ a.class_avg }}%</td>
+      <td>{{ a.weak_students }}</td>
+      <td>{% if a.weak %}<span class="tag red">⚠ weak</span>{% else %}<span class="tag green">healthy</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p style="color:var(--muted)">No submitted quiz attempts yet for this course.</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

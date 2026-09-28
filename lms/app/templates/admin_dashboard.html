@@ -51,6 +51,13 @@
        <a class="btn btn-ghost btn-sm" href="{{ url_for('hardening.templates') }}">📝 Templates</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('hardening.monitoring') }}">📡 Monitoring</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('main.developers') }}">🛠 Developer Docs</a></p>
+    <p><a class="btn btn-gold btn-sm" href="{{ url_for('saas.tenant_list') }}">🏢 Tenants</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('saas.branding') }}">🎨 Branding</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('saas.bulk_enroll') }}">📥 Bulk Enroll</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('saas.adaptive_admin') }}">🧠 Adaptive Insights</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('saas.integrations') }}">🔌 Integrations</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('labs.manage_list') }}">💻 Coding Labs</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('vlabs.manage_list') }}">🖥 Virtual Labs</a></p>
     {% else %}
     <p style="color:var(--muted); font-size:.88rem">User management and coupons are admin-only.</p>
     {% endif %}

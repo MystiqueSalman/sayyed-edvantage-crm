@@ -30,10 +30,23 @@
   </div>
 </div></div>
 
+{# Phase 12: rules-based adaptive "recommended next" (§21.5) #}
+{% if p12_recs %}
+<div class="section-title"><h2>🎯 Recommended Next</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('saas.recommended') }}">View all →</a></div>
+<div class="card" style="margin-bottom:18px"><div class="body">
+  {% for r in p12_recs %}
+  <div style="margin-bottom:8px">🎯 <b>{{ r.course_title }}</b> — {{ r.module_title }}
+    <small style="color:var(--muted)">({{ r.avg }}%)</small>
+    {% if r.lesson_id %} <a href="{{ url_for('student.lesson', lesson_id=r.lesson_id) }}">{{ r.lesson_title }} →</a>{% endif %}
+  </div>
+  {% endfor %}
+</div></div>
+{% endif %}
+
 {% if live_sessions %}
 <div class="section-title"><h2>🔴 Upcoming Live Classes</h2><div class="line"></div></div>
-{% for s in live_sessions %}
-<div class="live-card">
+{% for s in live_sessions %}<div class="live-card">
   <div><span class="live-dot"></span><b>{{ s.title }}</b>
     <span style="color:var(--muted)">· {{ s.course.title }}</span></div>
   <div style="margin:8px 0; color:var(--muted); font-size:.92rem">

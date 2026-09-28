@@ -374,7 +374,7 @@ with app.app_context():
 with app.app_context():
     head = db.session.execute(
         db.text("SELECT version_num FROM alembic_version")).fetchone()[0]
-    check("migration head is Phase 11", head == "f11a9c0d3e7b", head)
+    check("migration head is Phase 12", head == "9c1d2e3f4a5b", head)
 
 print(f"\n==== Phase 11: {passed} passed, {failed} failed ====")
 if notes:

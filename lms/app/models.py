@@ -29,6 +29,8 @@ class User(UserMixin, db.Model):
     company = db.Column(db.String(160), default="")  # Phase 7: employer company
     referral_code = db.Column(db.String(20), unique=True, nullable=True,
                               index=True)  # Phase 3: my referral code
+    tenant_id = db.Column(db.Integer, db.ForeignKey("tenants.id"),
+                          nullable=True, index=True)  # Phase 12: NULL = default tenant
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     enrollments = db.relationship("Enrollment", backref="user", cascade="all, delete-orphan")
@@ -71,6 +73,8 @@ class Course(db.Model):
     theme = db.Column(db.String(40), default="blue")  # accent theme key
     instructor_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     ai_tutor_enabled = db.Column(db.Boolean, default=True)  # Phase 5: per-course tutor toggle
+    tenant_id = db.Column(db.Integer, db.ForeignKey("tenants.id"),
+                          nullable=True, index=True)  # Phase 12: NULL = default tenant
     meta_title = db.Column(db.String(160), default="")  # Phase 10 §20.6: SEO
     meta_description = db.Column(db.String(300), default="")  # Phase 10 §20.6: SEO
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -152,6 +156,8 @@ class Enrollment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    tenant_id = db.Column(db.Integer, db.ForeignKey("tenants.id"),
+                          nullable=True, index=True)  # Phase 12: NULL = default tenant
     status = db.Column(db.String(20), default=STATUS_PENDING)
     paid = db.Column(db.Boolean, default=False)
     amount_paid = db.Column(db.Integer, default=0)  # INR actually paid
@@ -773,6 +779,8 @@ class Lead(db.Model):
     phone = db.Column(db.String(20), nullable=False, default="", index=True)
     email = db.Column(db.String(160), default="")
     source = db.Column(db.String(20), default=SOURCE_WEBSITE)
+    tenant_id = db.Column(db.Integer, db.ForeignKey("tenants.id"),
+                          nullable=True, index=True)  # Phase 12: NULL = default tenant
     course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=True)
     campaign_id = db.Column(db.Integer, db.ForeignKey("campaigns.id"),  # Phase 11
                              nullable=True)
@@ -876,6 +884,8 @@ class Batch(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(160), nullable=False)
     course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    tenant_id = db.Column(db.Integer, db.ForeignKey("tenants.id"),
+                          nullable=True, index=True)  # Phase 12: NULL = default tenant
     faculty_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
     schedule_text = db.Column(db.String(200), default="")
     start_date = db.Column(db.Date, nullable=True)
@@ -1899,3 +1909,125 @@ class EmailCampaign(db.Model):
     sent_at = db.Column(db.DateTime, nullable=True)
 
     template = db.relationship("MessageTemplate")
+
+
+# ================================================================ Phase 12 —
+# Advanced scale/SaaS (§21): multi-tenancy, white-labeling, coding labs,
+# virtual labs. All additive: existing rows keep tenant_id NULL (= default
+# Sayyed EdVantage tenant) and every query behaves exactly as before.
+
+class Tenant(db.Model):
+    """A SaaS tenant (a branded academy on the platform)."""
+    __tablename__ = "tenants"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(160), nullable=False)
+    slug = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    settings = db.relationship("TenantSetting", backref="tenant",
+                               uselist=False, cascade="all, delete-orphan")
+
+
+class TenantSetting(db.Model):
+    """Per-tenant white-label branding. Empty values = platform defaults."""
+    __tablename__ = "tenant_settings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    tenant_id = db.Column(db.Integer, db.ForeignKey("tenants.id"),
+                          nullable=False, unique=True, index=True)
+    brand_name = db.Column(db.String(160), default="")   # "" = Sayyed EdVantage
+    tagline = db.Column(db.String(300), default="")      # "" = default tagline
+    primary_color = db.Column(db.String(20), default="")  # gold override, e.g. #D4AF37
+    accent_color = db.Column(db.String(20), default="")    # blue override
+    logo_file = db.Column(db.String(200), default="")  # uploads/branding/<file>
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow,
+                           onupdate=datetime.utcnow)
+
+
+class LabExercise(db.Model):
+    """A coding-lab exercise attached to a lesson (faculty-authored)."""
+    __tablename__ = "lab_exercises"
+
+    id = db.Column(db.Integer, primary_key=True)
+    lesson_id = db.Column(db.Integer, db.ForeignKey("lessons.id"),
+                          nullable=False, index=True)
+    title = db.Column(db.String(160), nullable=False)
+    instructions = db.Column(db.Text, default="")
+    starter_code = db.Column(db.Text, default="")
+    expected_output = db.Column(db.Text, default="")  # normalized before compare
+    is_published = db.Column(db.Boolean, default=True)
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    lesson = db.relationship("Lesson", backref="lab_exercises")
+    attempts = db.relationship("LabAttempt", backref="exercise",
+                               cascade="all, delete-orphan")
+
+
+class LabAttempt(db.Model):
+    """One student run/check of a lab exercise."""
+    __tablename__ = "lab_attempts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    exercise_id = db.Column(db.Integer, db.ForeignKey("lab_exercises.id"),
+                            nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"),
+                        nullable=False, index=True)
+    code = db.Column(db.Text, default="")
+    output = db.Column(db.Text, default="")
+    passed = db.Column(db.Boolean, default=False)  # check vs expected_output
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship("User", backref="lab_attempts")
+
+
+class VLabScenario(db.Model):
+    """A simulated terminal lab scenario (faculty-authored JSON)."""
+    __tablename__ = "vlab_scenarios"
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(160), nullable=False)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"),
+                          nullable=True, index=True)
+    description = db.Column(db.Text, default="")
+    # JSON: {"fs": {name: subdir-or-null...}, "tasks": [{"instruction": str,
+    #          "validate": {"contains": [...]|null, "command": str|null}}, ...]}
+    scenario_json = db.Column(db.Text, default="{}")
+    is_published = db.Column(db.Boolean, default=True)
+    created_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    course = db.relationship("Course", backref="vlab_scenarios")
+
+    @property
+    def scenario(self):
+        import json
+        try:
+            data = json.loads(self.scenario_json or "{}")
+            return data if isinstance(data, dict) else {}
+        except Exception:
+            return {}
+
+    @property
+    def tasks(self):
+        return self.scenario.get("tasks", []) or []
+
+
+class VLabProgress(db.Model):
+    """Student completion record for a virtual-lab scenario."""
+    __tablename__ = "vlab_progress"
+
+    id = db.Column(db.Integer, primary_key=True)
+    scenario_id = db.Column(db.Integer, db.ForeignKey("vlab_scenarios.id"),
+                            nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"),
+                        nullable=False, index=True)
+    completed = db.Column(db.Boolean, default=False)
+    log = db.Column(db.Text, default="")  # transcript of commands run
+    completed_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    scenario = db.relationship("VLabScenario", backref="progress_rows")
+    user = db.relationship("User", backref="vlab_progress")

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{% if exercise %}Edit{% else %}New{% endif %} lab exercise{% endblock %}
+{% block content %}
+<div class="section-title"><h2>💻 {% if exercise %}Edit{% else %}New{% endif %} lab exercise</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('labs.manage_list') }}">← Labs</a></div>
+<div class="panel" style="max-width:720px">
+  <form method="post">
+    <label>Lesson</label>
+    <select name="lesson_id" required>
+      {% for l in lessons %}
+      <option value="{{ l.id }}" {% if exercise and exercise.lesson_id == l.id %}selected{% endif %}>{{ l.module.course.title }} → {{ l.module.title }} → {{ l.title }}</option>
+      {% endfor %}
+    </select>
+    <label>Title</label>
+    <input type="text" name="title" required maxlength="160" value="{{ exercise.title if exercise else '' }}">
+    <label>Instructions <span style="color:var(--muted)">(HTML allowed)</span></label>
+    <textarea name="instructions" rows="3">{{ exercise.instructions if exercise else '' }}</textarea>
+    <label>Starter code</label>
+    <textarea name="starter_code" rows="8" spellcheck="false" style="font-family:ui-monospace,monospace">{{ exercise.starter_code if exercise else '' }}</textarea>
+    <label>Expected output <span style="color:var(--muted)">(compared after whitespace normalization; empty = any successful run passes)</span></label>
+    <textarea name="expected_output" rows="4" spellcheck="false" style="font-family:ui-monospace,monospace">{{ exercise.expected_output if exercise else '' }}</textarea>
+    <label><input type="checkbox" name="is_published" value="1" style="width:auto" {% if not exercise or exercise.is_published %}checked{% endif %}> Published (visible to students)</label>
+    <p style="margin-top:12px"><button class="btn btn-gold" type="submit">Save</button></p>
+  </form>
+</div>
+{% endblock %}

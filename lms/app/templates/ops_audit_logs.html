@@ -10,6 +10,7 @@
   <input type="text" name="actor" placeholder="Filter actor email" value="{{ actor }}" style="max-width:220px">
   <button class="btn btn-ghost btn-sm" type="submit">Filter</button>
   {% if action or actor %}<a class="btn btn-ghost btn-sm" href="{{ url_for('ops.audit_logs') }}">Clear</a>{% endif %}
+  <a class="btn btn-gold btn-sm" href="{{ url_for('saas.audit_export') }}?action={{ action }}&actor={{ actor }}">⬇ Export CSV</a>
 </form>
 
 <div class="card"><div class="body" style="padding:0;overflow-x:auto">

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Virtual Labs — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🖥️ Virtual Labs</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('student.dashboard') }}">← Dashboard</a></div>
+<p style="color:var(--muted); font-size:.9rem">Practice Linux, DevOps and security skills in a simulated terminal — right in your browser. Nothing here touches a real server.</p>
+{% if scenarios %}
+{% for sc in scenarios %}
+<div class="lesson-row">
+  <span style="flex:1"><b>{{ sc.title }}</b>
+    {% if sc.id in done_ids %}<span class="tag green">✓ completed</span>{% endif %}<br>
+    <small style="color:var(--muted)">{% if sc.course %}{{ sc.course.title }} · {% endif %}{{ sc.tasks|length }} tasks</small></span>
+  <a class="btn btn-gold btn-sm" href="{{ url_for('vlabs.vlab_terminal', scenario_id=sc.id) }}">Open terminal →</a>
+</div>
+{% endfor %}
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No lab scenarios published yet — check back soon.</p></div>
+{% endif %}
+{% endblock %}

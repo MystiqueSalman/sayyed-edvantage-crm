@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Recommended for you — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎯 Recommended Next</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('student.dashboard') }}">← Dashboard</a></div>
+<p style="color:var(--muted); font-size:.9rem">Based on your quiz performance — topics where you're scoring below 60%.</p>
+{% if recs %}
+{% for r in recs %}
+<div class="panel" style="margin-bottom:14px">
+  <h3 style="margin-top:0">{{ r.course_title }} <span style="color:var(--muted); font-weight:400">· {{ r.module_title }}</span></h3>
+  <p style="color:var(--muted)">{{ r.reason }}</p>
+  <p style="margin-bottom:0">
+    {% if r.lesson_id %}<a class="btn btn-blue btn-sm" href="{{ url_for('student.lesson', lesson_id=r.lesson_id) }}">Re-watch: {{ r.lesson_title }}</a>{% endif %}
+    {% if r.quiz_id %}<a class="btn btn-ghost btn-sm" href="{{ url_for('student.quiz', quiz_id=r.quiz_id) }}" style="margin-left:8px">Retry quiz: {{ r.quiz_title }}</a>{% endif %}
+  </p>
+</div>
+{% endfor %}
+{% else %}
+<div class="panel"><p style="color:var(--muted)">You're doing great — no weak topics right now. Keep it up! 🎉</p></div>
+{% endif %}
+{% endblock %}

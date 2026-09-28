@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Manage coding labs{% endblock %}
+{% block content %}
+<div class="section-title"><h2>💻 Coding Labs</h2><div class="line"></div>
+  <a class="btn btn-gold btn-sm" href="{{ url_for('labs.manage_new') }}">+ New exercise</a></div>
+<div class="panel" style="overflow-x:auto">
+<table class="tbl">
+  <tr><th>Title</th><th>Lesson</th><th>Published</th><th>Attempts</th><th></th></tr>
+  {% for ex in exercises %}
+  <tr>
+    <td><b>{{ ex.title }}</b></td>
+    <td>{{ ex.lesson.module.course.title }} → {{ ex.lesson.title }}</td>
+    <td>{% if ex.is_published %}🟢{% else %}⚪{% endif %}</td>
+    <td>{{ ex.attempts|length }}</td>
+    <td style="white-space:nowrap">
+      <a class="btn btn-ghost btn-sm" href="{{ url_for('labs.manage_edit', exercise_id=ex.id) }}">Edit</a>
+      <a class="btn btn-blue btn-sm" href="{{ url_for('labs.lab_detail', exercise_id=ex.id) }}">Preview</a>
+      <form class="inline-form" method="post" action="{{ url_for('labs.manage_delete', exercise_id=ex.id) }}" onsubmit="return confirm('Delete this exercise?')">
+        <button class="btn btn-danger btn-sm" type="submit">Delete</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" style="color:var(--muted)">No exercises yet.</td></tr>
+  {% endfor %}
+</table>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Coding Labs — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>💻 Coding Labs</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('student.dashboard') }}">← Dashboard</a></div>
+<p style="color:var(--muted); font-size:.9rem">Write Python right in your browser and run it safely. Exercises with an expected output can auto-check your solution.</p>
+{% if exercises %}
+{% for ex in exercises %}
+<div class="lesson-row">
+  <span style="flex:1"><b>{{ ex.title }}</b><br>
+    <small style="color:var(--muted)">{{ ex.lesson.module.course.title }} · {{ ex.lesson.title }}</small></span>
+  <a class="btn btn-gold btn-sm" href="{{ url_for('labs.lab_detail', exercise_id=ex.id) }}">Open lab →</a>
+</div>
+{% endfor %}
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No lab exercises published yet — check back soon.</p></div>
+{% endif %}
+{% endblock %}

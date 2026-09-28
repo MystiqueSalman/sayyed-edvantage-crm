@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Branding — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🎨 White-label Branding</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<p style="color:var(--muted); font-size:.9rem">Leave every field empty to keep the default Sayyed EdVantage brand pixel-identical. Overrides apply to the current (default) tenant.</p>
+<div class="panel" style="max-width:640px">
+  <form method="post" enctype="multipart/form-data">
+    <label>Brand name <span style="color:var(--muted)">(empty = “Sayyed EdVantage”)</span></label>
+    <input type="text" name="brand_name" maxlength="160" value="{{ settings.brand_name if settings else '' }}" placeholder="Sayyed EdVantage">
+    <label>Tagline <span style="color:var(--muted)">(empty = “Empowering Students for Success”)</span></label>
+    <input type="text" name="tagline" maxlength="300" value="{{ settings.tagline if settings else '' }}" placeholder="Empowering Students for Success">
+    <div class="two-col">
+      <div><label>Primary color <span style="color:var(--muted)">(gold override, #RRGGBB)</span></label>
+        <input type="text" name="primary_color" maxlength="7" value="{{ settings.primary_color if settings else '' }}" placeholder="#D4AF37"></div>
+      <div><label>Accent color <span style="color:var(--muted)">(blue override, #RRGGBB)</span></label>
+        <input type="text" name="accent_color" maxlength="7" value="{{ settings.accent_color if settings else '' }}" placeholder="#2E9BFF"></div>
+    </div>
+    <label>Logo <span style="color:var(--muted)">(png/jpg/webp/svg — empty = built-in brand)</span></label>
+    {% if settings and settings.logo_file %}
+    <p><img src="{{ url_for('saas.brand_file', filename=settings.logo_file) }}" alt="tenant logo" style="max-height:60px; background:#0a1628; padding:6px; border-radius:8px"></p>
+    {% endif %}
+    <input type="file" name="logo" accept=".png,.jpg,.jpeg,.webp,.svg">
+    {% if settings and settings.logo_file %}
+    <label style="margin-top:8px"><input type="checkbox" name="clear_logo" value="1" style="width:auto"> Remove custom logo</label>
+    {% endif %}
+    <p style="margin-top:14px"><button class="btn btn-gold" type="submit">Save branding</button></p>
+  </form>
+</div>
+<div class="panel" style="max-width:640px">
+  <h3 style="margin-top:0">Live preview</h3>
+  <p>Brand: <b>{{ brand.brand_name }}</b> · Tagline: {{ brand.tagline }}</p>
+  {% if brand.primary_color %}<p>Primary: <span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:{{ brand.primary_color }};vertical-align:middle"></span> <code>{{ brand.primary_color }}</code></p>{% endif %}
+  {% if brand.accent_color %}<p>Accent: <span style="display:inline-block;width:18px;height:18px;border-radius:4px;background:{{ brand.accent_color }};vertical-align:middle"></span> <code>{{ brand.accent_color }}</code></p>{% endif %}
+</div>
+{% endblock %}
