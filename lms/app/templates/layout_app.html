@@ -110,7 +110,7 @@
 (function(){
   var sb = document.getElementById('sidebar'), sc = document.getElementById('sideScrim'),
       tg = document.getElementById('sideToggle');
-  function showTg(){ if (tg) tg.style.display = (window.innerWidth <= 900) ? 'block' : 'none'; }
+  function showTg(){ if (tg) tg.style.display = (window.innerWidth <= 1024) ? 'block' : 'none'; }
   showTg(); window.addEventListener('resize', showTg);
   function close(){ sb.classList.remove('open'); sc.classList.remove('on'); }
   if (tg) tg.addEventListener('click', function(){ sb.classList.add('open'); sc.classList.add('on'); });

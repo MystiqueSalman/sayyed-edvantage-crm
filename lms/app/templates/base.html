@@ -21,7 +21,7 @@
 {% if meta_pixel_id %}<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','{{ meta_pixel_id }}');fbq('track','PageView');</script>{% endif %}
 {% if head_snippet %}{{ head_snippet|safe }}{% endif %}
 {% endif %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=4">
 {# Phase 12 §21.3: tenant color overrides — only emitted when configured #}
 {% if brand.primary_color or brand.accent_color %}<style>
 :root{ {% if brand.primary_color %}--gold:{{ brand.primary_color }};{% endif %} {% if brand.accent_color %}--blue:{{ brand.accent_color }};{% endif %} }
@@ -41,9 +41,8 @@
   <div class="nav-inner">
     <a class="brand" href="{{ url_for('main.index') }}" aria-label="Sayyed EdVantage home">
       <img class="brand-logo" src="{{ url_for('static', filename='img/logo-badge-circle.png') }}" alt="Sayyed EdVantage logo">
-      <img src="{{ url_for('static', filename='img/nav-text-v1.png') }}" alt="Sayyed EdVantage — Empowering Students for Success" style="height:44px;width:auto;display:block">
+      <img class="brand-text" src="{{ url_for('static', filename='img/nav-text-v1.png') }}" alt="Sayyed EdVantage — Empowering Students for Success">
     </a>
-    <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
     <div class="nav-links" id="navLinks">
       <a href="{{ url_for('main.index') }}" class="{% if request.path == '/' %}on{% endif %}">{{ t('home') if t else 'Home' }}</a>
       <span class="nav-drop">
@@ -69,28 +68,58 @@
         <input type="search" name="q" placeholder="Search courses, skills, or jobs…" aria-label="Search courses">
         <button type="submit" aria-label="Search">🔍</button>
       </form>
-      <span class="nav-cta">
-        <a class="btn btn-gold btn-sm" href="tel:+917977877884" title="Call Sayyed EdVantage">📞 +91 79778 77884</a>
-        <a class="btn btn-outline-w btn-sm" href="{{ url_for('crm.enquiry') }}">{{ t('enquire') }}</a>
-      </span>
+      <div class="drawer-cta">
+        <a class="btn btn-gold btn-block" href="tel:+917977877884">📞 +91 79778 77884</a>
+        <a class="btn btn-outline-w btn-block" href="{{ url_for('crm.enquiry') }}">{{ t('enquire') }}</a>
+        {% if current_user.is_authenticated %}
+          {% if current_user.role == 'student' %}
+            <a class="btn btn-ghost btn-block" href="{{ url_for('student.dashboard') }}">{{ t('dashboard') }}</a>
+          {% elif current_user.role == 'faculty' %}
+            <a class="btn btn-ghost btn-block" href="{{ url_for('faculty.dashboard') }}">{{ t('dashboard') }}</a>
+          {% elif current_user.role == 'employer' %}
+            <a class="btn btn-ghost btn-block" href="{{ url_for('career.employer_dashboard') }}">Dashboard</a>
+          {% else %}
+            <a class="btn btn-ghost btn-block" href="{{ url_for('admin.dashboard') }}">{{ t('dashboard') }}</a>
+          {% endif %}
+          <a class="btn btn-ghost btn-block" href="{{ url_for('auth.logout') }}">{{ t('logout') }}</a>
+        {% else %}
+          <a class="btn btn-ghost btn-block" href="{{ url_for('auth.login') }}">{{ t('login') }}</a>
+          <a class="btn btn-gold btn-block" href="{{ url_for('auth.register') }}">Join Free</a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="nav-inline">
+      <button class="search-toggle" id="searchToggle" aria-label="Search">🔍</button>
       {% if current_user.is_authenticated %}
         <a href="{{ url_for('notify.notifications') }}" class="notif-bell" title="Notifications" aria-label="Notifications">🔔{% if notif_unread %}<span class="notif-count">{{ notif_unread }}</span>{% endif %}</a>
+      {% endif %}
+      <a class="btn btn-gold btn-sm nav-cta-btn" href="tel:+917977877884" title="Call Sayyed EdVantage">📞 <span class="ph-num">+91 79778 77884</span></a>
+      <a class="btn btn-outline-w btn-sm nav-cta-btn" href="{{ url_for('crm.enquiry') }}">{{ t('enquire') }}</a>
+      {% if current_user.is_authenticated %}
         {% if current_user.role == 'student' %}
-          <a href="{{ url_for('student.dashboard') }}">{{ t('dashboard') }}</a>
+          <a class="nav-auth-link" href="{{ url_for('student.dashboard') }}">{{ t('dashboard') }}</a>
         {% elif current_user.role == 'faculty' %}
-          <a href="{{ url_for('faculty.dashboard') }}">{{ t('dashboard') }}</a>
+          <a class="nav-auth-link" href="{{ url_for('faculty.dashboard') }}">{{ t('dashboard') }}</a>
         {% elif current_user.role == 'employer' %}
-          <a href="{{ url_for('career.employer_dashboard') }}">Dashboard</a>
+          <a class="nav-auth-link" href="{{ url_for('career.employer_dashboard') }}">Dashboard</a>
         {% else %}
-          <a href="{{ url_for('admin.dashboard') }}">{{ t('dashboard') }}</a>
+          <a class="nav-auth-link" href="{{ url_for('admin.dashboard') }}">{{ t('dashboard') }}</a>
         {% endif %}
-        <a href="{{ url_for('auth.logout') }}">{{ t('logout') }}</a>
+        <a class="nav-auth-link" href="{{ url_for('auth.logout') }}">{{ t('logout') }}</a>
       {% else %}
-        <a href="{{ url_for('auth.login') }}">{{ t('login') }}</a>
-        <a href="{{ url_for('auth.register') }}" class="btn btn-gold btn-sm">Join Free</a>
+        <a class="nav-auth-link" href="{{ url_for('auth.login') }}">{{ t('login') }}</a>
+        <a class="btn btn-gold btn-sm nav-cta-btn" href="{{ url_for('auth.register') }}">Join Free</a>
       {% endif %}
     </div>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
   </div>
+  <div class="nav-search-row" id="navSearchRow">
+    <form action="{{ url_for('main.catalog') }}" method="get" role="search">
+      <input type="search" name="q" placeholder="Search courses, skills, or jobs…" aria-label="Search courses">
+      <button class="btn btn-gold btn-sm" type="submit">Search</button>
+    </form>
+  </div>
+  <div class="nav-scrim" id="navScrim"></div>
 </nav>
 {% endblock %}{# /topnav #}
 
@@ -175,8 +204,14 @@ function dismissAnnouncement(id) {
       }
     } catch (e) {}
   }
-  var t = document.getElementById("navToggle"), links = document.getElementById("navLinks");
-  if (t && links) { t.addEventListener("click", function(){ links.classList.toggle("open"); }); }
+  var t = document.getElementById("navToggle"), links = document.getElementById("navLinks"),
+      scrim = document.getElementById("navScrim"),
+      sTg = document.getElementById("searchToggle"), sRow = document.getElementById("navSearchRow");
+  function closeNav(){ if (links) links.classList.remove("open"); if (scrim) scrim.classList.remove("on"); }
+  if (t && links) { t.addEventListener("click", function(){ links.classList.toggle("open"); if (scrim) scrim.classList.toggle("on", links.classList.contains("open")); }); }
+  if (scrim) { scrim.addEventListener("click", closeNav); }
+  if (sTg && sRow) { sTg.addEventListener("click", function(){ sRow.classList.toggle("open"); if (sRow.classList.contains("open")) { var i = sRow.querySelector("input"); if (i) i.focus(); } }); }
+  document.addEventListener("keydown", function(e){ if (e.key === "Escape") closeNav(); });
 })();
 </script>
 <style>
