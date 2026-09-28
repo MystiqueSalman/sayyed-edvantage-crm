@@ -72,8 +72,6 @@ img{max-width:100%}
 .nav-inline>a:not(.btn){color:#c3cfe4; font-weight:600; font-size:.92rem; padding:9px 10px;
   border-radius:9px; white-space:nowrap}
 .nav-inline>a:not(.btn):hover{color:#fff; background:rgba(255,255,255,.07)}
-.nav-toggle{display:none; background:none; border:1px solid rgba(255,255,255,.25);
-  color:#fff; border-radius:9px; font-size:1.25rem; padding:6px 11px; cursor:pointer; flex:0 0 auto}
 .search-toggle{display:none; background:none; border:1px solid rgba(255,255,255,.25);
   color:#fff; border-radius:9px; font-size:1.1rem; padding:6px 11px; cursor:pointer; flex:0 0 auto}
 /* expandable search row (narrow screens) */
@@ -83,9 +81,6 @@ img{max-width:100%}
 .nav-search-row input{flex:1; min-width:0; background:rgba(255,255,255,.09);
   border:1px solid rgba(255,255,255,.14); border-radius:999px; padding:10px 18px; color:#fff; font-size:.9rem}
 .nav-search-row input::placeholder{color:#8fa0bd}
-.nav-scrim{display:none}
-/* drawer-only CTA block (small screens): full-width buttons, never clipped */
-.drawer-cta{display:none}
 
 /* ---------------- buttons ---------------- */
 .btn{display:inline-flex; align-items:center; justify-content:center; gap:8px;
@@ -533,38 +528,17 @@ pre{max-width:100%; overflow-x:auto}
 .feat-grid{grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr))}
 
 /* ---------------- responsive ---------------- */
-/* UI15: the public navbar collapses into the drawer at 1600px so the full
-   link group + CTAs never squeeze the desktop page into horizontal scroll */
+/* UI15: public navbar has no drawer — logo + inline CTAs only, at every width.
+   The search toggle opens the expandable search row on narrow screens. */
 @media(max-width:1600px){
-  .nav-links{position:fixed; top:0; right:-340px; width:320px; max-width:88vw; height:100dvh;
-    background:#0a1a33; flex-direction:column; align-items:stretch; justify-content:flex-start;
-    gap:4px; padding:76px 20px 24px; margin:0; flex:none;
-    transition:right .25s; overflow-y:auto; z-index:80; box-shadow:-20px 0 60px rgba(0,0,0,.4)}
-  .nav-links.open{right:0}
-  .nav-links>a{padding:12px 14px; width:100%}
-  .nav-drop{width:100%}
-  .nav-drop>a{display:block; padding:12px 14px; color:#c3cfe4; font-weight:600; font-size:.92rem}
-  .nav-drop-menu{position:static; display:block; min-width:0; background:transparent;
-    border:0; box-shadow:none; padding:0 0 0 10px}
-  .nav-drop-menu a{color:#c3cfe4; font-size:.88rem}
-  .nav-drop-menu a:hover{background:rgba(255,255,255,.07); color:#fff}
-  .nav-lang{padding:10px 14px}
-  .nav-search{display:flex; max-width:none; flex:none; margin:8px 0; width:100%}
-  .nav-toggle{display:block}
   .search-toggle{display:block}
-  .nav-scrim{display:block; position:fixed; inset:0; background:rgba(8,19,39,.55); z-index:79;
-    opacity:0; pointer-events:none; transition:opacity .25s}
-  .nav-scrim.on{opacity:1; pointer-events:auto}
 }
 @media(max-width:1100px){
   .dash-grid{grid-template-columns:1fr}
   .stat-cards{grid-template-columns:repeat(2,1fr)}
 }
-/* UI15: CTAs move into the drawer (full-width, never clipped); app sidebar collapses */
+/* UI15: CTAs stay inline at every width (no drawer); app sidebar collapses */
 @media(max-width:1024px){
-  .nav-cta-btn, .nav-auth-link{display:none}
-  .drawer-cta{display:flex; flex-direction:column; gap:10px; margin-top:14px}
-  .drawer-cta .btn{width:100%}
   .sidebar{position:fixed; left:-270px; top:0; transition:left .25s; box-shadow:20px 0 60px rgba(0,0,0,.35)}
   .sidebar.open{left:0}
   .side-scrim{display:block; position:fixed; inset:0; background:rgba(8,19,39,.55); z-index:54;
@@ -582,6 +556,9 @@ pre{max-width:100%; overflow-x:auto}
 @media(max-width:640px){
   .brand-logo{width:38px; height:38px}
   .brand-text{height:32px}
+  .nav-inline{gap:6px}
+  .nav-inline .btn{padding:8px 10px; font-size:.82rem}
+  .nav-inline .ph-num{display:none}
   .topbar .tsearch{display:none}
   .two-col{grid-template-columns:1fr}
   .stat-cards{grid-template-columns:1fr 1fr}
