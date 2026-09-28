@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Chat-Lead Diagnostics — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>💬 Chat-Lead Diagnostics</h2><div class="line"></div>
+  <a href="{{ url_for('admin.dashboard') }}">← Admin dashboard</a></div>
+<p style="color:var(--muted); font-size:.85rem">Website-chat leads are marked
+  <span class="code-pill">source = "{{ source_marker }}"</span> at creation. Errors below come
+  from the hardened <span class="code-pill">/api/chat</span> capture path (Phase 13 Stream 6);
+  the table keeps the most recent 30 days.</p>
+
+<div class="panel">
+  <h3 style="margin-top:0">Most recent website-chat leads ({{ leads|length }})</h3>
+  <table>
+    <tr><th>ID</th><th>Created</th><th>Name</th><th>Phone</th><th>Course</th>
+        <th>Status</th><th>Score</th><th>Follow-up</th></tr>
+    {% for l in leads %}
+    <tr><td><a href="{{ url_for('crm.lead_detail', lead_id=l.id) }}">#{{ l.id }}</a></td>
+      <td style="font-size:.8rem; color:var(--muted)">{{ l.created_at.strftime('%d %b %H:%M:%S') if l.created_at else '—' }}</td>
+      <td>{{ l.name or '—' }}</td>
+      <td><span class="code-pill">{{ l.phone or '—' }}</span></td>
+      <td>{{ l.course.title if l.course else '—' }}</td>
+      <td>{{ l.status_label }}</td>
+      <td><span class="tag {% if l.score == 'hot' %}gold{% elif l.score == 'warm' %}green{% endif %}">{{ l.score }}</span></td>
+      <td style="font-size:.8rem">{{ l.follow_up_date or '—' }}</td></tr>
+    {% else %}<tr><td colspan="8" style="color:var(--muted)">No website-chat leads yet.
+      Share a name + number in the chat widget and one should appear here.</td></tr>{% endfor %}
+  </table>
+</div>
+
+<div class="panel">
+  <h3 style="margin-top:0">Most recent capture errors ({{ errors|length }})</h3>
+  <table>
+    <tr><th>Time</th><th>Stage</th><th>Phone / ID</th><th>Error</th><th>Context</th></tr>
+    {% for e in errors %}
+    <tr><td style="font-size:.8rem; color:var(--muted)">{{ e.created_at.strftime('%d %b %H:%M:%S') if e.created_at else '—' }}</td>
+      <td><span class="ev-tag">{{ e.stage or '—' }}</span></td>
+      <td><span class="code-pill">{{ e.lead_email_or_phone or '—' }}</span></td>
+      <td style="font-size:.78rem; max-width:320px; word-break:break-word">{{ e.error or '—' }}</td>
+      <td style="font-size:.78rem; color:var(--muted); max-width:220px; word-break:break-word">{{ e.payload_summary or '—' }}</td></tr>
+    {% else %}<tr><td colspan="5" style="color:var(--muted)">No capture errors recorded — the write path is healthy.</td></tr>{% endfor %}
+  </table>
+</div>
+{% endblock %}

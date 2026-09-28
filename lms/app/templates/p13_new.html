@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}✉️ New message — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>✉️ New message</h2><div class="line"></div></div>
+<div class="card"><div class="body">
+  <form method="post" action="{{ url_for('social13.new_conversation') }}">
+    <label style="display:block;margin-bottom:10px">Student
+      <select name="student_id" required style="width:100%;padding:8px;margin-top:4px">
+        <option value="">— choose a student —</option>
+        {% for s in students %}<option value="{{ s.id }}">{{ s.name }} ({{ s.email }})</option>{% endfor %}
+      </select>
+    </label>
+    <label style="display:block;margin-bottom:10px">Subject
+      <input type="text" name="subject" maxlength="160" style="width:100%;padding:8px;margin-top:4px" placeholder="e.g. Doubt in Module 2">
+    </label>
+    <label style="display:block;margin-bottom:10px">Message
+      <textarea name="body" rows="5" required style="width:100%;padding:8px;margin-top:4px" placeholder="Write your message…"></textarea>
+    </label>
+    <button class="btn btn-gold" type="submit">Send</button>
+    <a class="btn btn-ghost" href="{{ url_for('social13.inbox') }}">Cancel</a>
+  </form>
+</div></div>
+{% endblock %}

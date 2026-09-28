@@ -50,7 +50,7 @@
   <div><span class="live-dot"></span><b>{{ s.title }}</b>
     <span style="color:var(--muted)">· {{ s.course.title }}</span></div>
   <div style="margin:8px 0; color:var(--muted); font-size:.92rem">
-    🕒 {{ s.starts_at.strftime('%d %b %Y, %I:%M %p') }} · {{ s.duration_min }} min
+    🕒 {% set _st = to_user_tz(s.starts_at, current_user) %}{{ _st.strftime('%d %b %Y, %I:%M %p') }} {{ _st.strftime('%Z') }} · {{ s.duration_min }} min
     {% if s.is_joinable(now) %}
       <span class="tag green" style="margin-left:10px">LIVE NOW / JOINABLE</span>
     {% else %}

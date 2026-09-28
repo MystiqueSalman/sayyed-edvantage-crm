@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Pay with Stripe — {{ enrollment.course.title }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:560px; margin:30px auto">
+  <h2>Pay with Stripe</h2>
+  <p style="color:var(--muted)">{{ enrollment.course.title }}</p>
+  {% if test_mode %}
+  <p class="flash info">🧪 <b>Stripe TEST MODE</b> — no real money moves. Use card <code>4242 4242 4242 4242</code>.</p>
+  {% endif %}
+
+  {% if schedule %}
+  <h4>Your installment plan</h4>
+  <table>
+    <tr style="color:var(--muted);text-align:left"><th>#</th><th>Amount</th><th>Due</th><th>Status</th></tr>
+    {% for i in schedule %}
+    <tr><td>{{ i.installment_no }}</td><td>₹{{ "{:,}".format(i.amount_inr) }}</td>
+      <td>{{ i.due_date.strftime('%d %b %Y') }}</td><td>{{ i.status }}</td></tr>
+    {% endfor %}
+  </table>
+  {% if next_installment %}
+  <p>Paying now: <b>installment #{{ next_installment.installment_no }} — ₹{{ "{:,}".format(next_installment.amount_inr) }}</b></p>
+  {% endif %}
+  {% elif plans %}
+  <form method="post">
+    <h4>How would you like to pay?</h4>
+    <label style="display:block;margin:8px 0"><input type="radio" name="plan_choice" value="full" checked>
+      Pay in full — <b>₹{{ "{:,}".format(enrollment.amount_paid) }}</b></label>
+    {% for p in plans %}
+    <label style="display:block;margin:8px 0"><input type="radio" name="plan_choice" value="plan:{{ p.id }}">
+      {{ p.name }} — {{ p.num_installments }} installments, total ₹{{ "{:,}".format(p.total_amount) }}
+      <small style="color:var(--muted)">(first due today: ₹{{ "{:,}".format(p.amounts[0] if p.amounts else 0) }})</small></label>
+    {% endfor %}
+    <p><button class="btn btn-gold" type="submit" style="width:100%">Continue to Stripe →</button></p>
+  </form>
+  {% else %}
+  <div class="fee" style="font-size:2rem; margin:14px 0">₹{{ "{:,}".format(enrollment.amount_paid) }}</div>
+  <form method="post">
+    <input type="hidden" name="plan_choice" value="full">
+    <p><button class="btn btn-gold" type="submit" style="width:100%">Pay ₹{{ "{:,}".format(enrollment.amount_paid) }} with Stripe →</button></p>
+  </form>
+  {% endif %}
+
+  {% if schedule and next_installment %}
+  <form method="post">
+    <input type="hidden" name="plan_choice" value="full">
+    <p><button class="btn btn-gold" type="submit" style="width:100%">Pay installment #{{ next_installment.installment_no }} (₹{{ "{:,}".format(next_installment.amount_inr) }}) →</button></p>
+  </form>
+  {% endif %}
+  <p style="text-align:center"><a class="btn btn-ghost btn-sm" href="{{ url_for('main.checkout', enrollment_id=enrollment.id) }}">← Back to standard checkout</a></p>
+</div>
+{% endblock %}

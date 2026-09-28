@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Timezone Settings{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:560px; margin:30px auto">
+  <h2>🕒 Timezone</h2>
+  <p style="color:var(--muted)">Live-class times are shown in your timezone.</p>
+  {% if error %}<p class="flash danger">{{ error }}</p>{% endif %}
+  <form method="post">
+    <label>Your timezone</label>
+    <select name="timezone">
+      {% for tz in choices %}
+      <option value="{{ tz }}" {% if tz == prefs.timezone %}selected{% endif %}>{{ tz }}</option>
+      {% endfor %}
+    </select>
+    <p style="color:var(--muted);font-size:.85rem">Current: <b>{{ prefs.timezone }}</b></p>
+    <p><button class="btn btn-gold" type="submit">Save</button></p>
+  </form>
+</div>
+{% endblock %}

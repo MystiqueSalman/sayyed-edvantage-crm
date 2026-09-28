@@ -1,5 +1,6 @@
 """Auth: login / logout / student self-registration."""
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import (Blueprint, flash, redirect, render_template, request,
+                   session, url_for)
 from flask_login import login_user, logout_user, current_user
 
 from . import db
@@ -19,6 +20,17 @@ def _landing_for(user):
         return url_for("career.employer_dashboard")
     if user.role == "faculty":
         return url_for("faculty.dashboard")
+    # Phase 13: extended roles get a safe, always-200 landing.
+    if user.role == "super_admin":
+        return url_for("admin.dashboard")
+    if user.role == "finance_officer":
+        return url_for("ops.finance")
+    if user.role == "placement_officer":
+        return url_for("growth.jobs")
+    if user.role == "content_manager":
+        return url_for("main.catalog")
+    # parent: no dedicated UI yet (parent-progress UI is a follow-up);
+    # student dashboard is the safe default.
     return url_for("student.dashboard")
 
 
@@ -31,6 +43,16 @@ def login():
         password = request.form.get("password", "")
         user = User.query.filter_by(email=email).first()
         if user and user.is_active and user.check_password(password):
+            # Phase 13: MFA gate — after the password verifies, users with
+            # TOTP enabled are held at /auth/mfa-verify instead of logging
+            # in. Safe no-op when the MFA tables don't exist yet.
+            try:
+                from . import auth13 as _A13  # noqa: E402
+                _mfa_redirect = _A13.mfa_gate(user)
+            except Exception:
+                _mfa_redirect = None
+            if _mfa_redirect is not None:
+                return _mfa_redirect
             login_user(user)
             # Phase 8: daily login points (once per Asia/Kolkata day)
             from . import gamification as G
@@ -40,7 +62,15 @@ def login():
             nxt = request.args.get("next")
             return redirect(nxt or _landing_for(user))
         flash("Invalid email or password.", "danger")
-    return render_template("login.html")
+    # Phase 13: the login template shows a Google button (enabled) or a
+    # disabled "coming soon" note based on this flag.
+    try:
+        from . import auth13 as _A13  # noqa: E402
+        _google_oauth_configured = _A13.google_oauth_configured()
+    except Exception:
+        _google_oauth_configured = False
+    return render_template("login.html",
+                           google_oauth_configured=_google_oauth_configured)
 
 
 @auth_bp.route("/logout")

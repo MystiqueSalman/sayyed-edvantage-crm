@@ -227,89 +227,13 @@ def chat():
     reply, flags = agent_reply(message, conv)
     db.session.add(ChatMessage(conversation_id=conv.id, role="assistant", text=reply))
 
-    # --- lead capture & intent handling (fail-safe) ---
-    try:
-        lead = conv.lead or None
-        if flags.get("phone"):
-            phone = flags["phone"]
-            if lead is not None and not (lead.phone or "").strip():
-                # Same visitor, same conversation: attach the number to the
-                # already-linked lead instead of spawning a second lead.
-                other = Lead.query.filter(Lead.phone == phone,
-                                          Lead.id != lead.id).first()
-                if other is not None:
-                    # Number already belongs to another lead — adopt that lead
-                    # so the transcript follows the phone-identified person.
-                    lead.log("system",
-                             f"Visitor shared number {phone}; chat moved to "
-                             f"existing lead #{other.id}.")
-                    conv.lead_id = other.id
-                    lead = other
-                else:
-                    lead.phone = phone
-                    lead.log("system",
-                             f"Visitor shared number {phone} in AI chat.")
-            if lead is None or (lead.phone or "").strip() != phone:
-                note = "Shared number in AI chat."
-                _course = (Course.query.get(flags["course_id"])
-                           if flags.get("course_id") else None)
-                if _course:
-                    note += f" Interested: {_course.title}."
-                lead = create_lead(name=flags.get("name") or "Chat visitor",
-                                   phone=phone, source=Lead.SOURCE_CHAT,
-                                   course_id=flags.get("course_id"),
-                                   note=note)
-                # create_lead dedups by phone: adopt whichever lead owns the
-                # number so the transcript stays with the right person.
-                conv.lead_id = lead.id
-            if flags.get("name") and (lead.name or "") in ("Chat visitor", ""):
-                lead.name = flags["name"]
-                lead.log("system", "Visitor name updated to "
-                                   f"{flags['name']} via AI chat.")
-            _apply_chat_course(lead, flags.get("course_id"))
-            lead.follow_up_date = date.today()
-            lead.log("system", "AI chat flagged HIGH-INTENT (phone shared).")
-            lead.score = Lead.SCORE_HOT
-        elif flags.get("name") and lead and (lead.name or "") in ("Chat visitor", ""):
-            lead.name = flags["name"]
-            lead.log("system", "Visitor name updated to "
-                               f"{flags['name']} via AI chat.")
-        if flags.get("fee_asked"):
-            conv.fee_asks = (conv.fee_asks or 0) + 1
-        if flags.get("high_intent") or (conv.fee_asks or 0) >= 2:
-            if lead is None:
-                note = "High-intent chat visitor (no phone yet)."
-                _course = (Course.query.get(flags["course_id"])
-                           if flags.get("course_id") else None)
-                if _course:
-                    note += f" Interested: {_course.title}."
-                lead = create_lead(name=flags.get("name") or "Chat visitor",
-                                   source=Lead.SOURCE_CHAT,
-                                   course_id=flags.get("course_id"),
-                                   note=note)
-                if not conv.lead_id:
-                    conv.lead_id = lead.id
-            if flags.get("name") and (lead.name or "") in ("Chat visitor", ""):
-                lead.name = flags["name"]
-                lead.log("system", "Visitor name updated to "
-                                   f"{flags['name']} via AI chat.")
-            _apply_chat_course(lead, flags.get("course_id"))
-            lead.log("system", "AI chat flagged HIGH-INTENT.")
-            lead.score = Lead.SCORE_HOT
-            if not lead.follow_up_date:
-                lead.follow_up_date = date.today()
-        if lead:
-            refresh_score(lead)
-        # Sync the website-chat transcript onto the lead timeline
-        # (one entry per conversation, refreshed each message).
-        if conv.lead_id:
-            try:
-                _sync_chat_transcript(conv)
-            except Exception:
-                pass
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
+    # --- lead capture & intent handling (Phase 13 Stream 6: hardened) ---
+    # capture_chat_lead() never raises: it validates name/phone/course first,
+    # commits the lead row in a tight transaction, and logs every failure
+    # server-side with a "CHAT-LEAD" prefix plus a LeadCaptureLog13 row
+    # (visible at /admin/diagnostics/chat-leads).
+    from .parked13 import capture_chat_lead
+    capture_chat_lead(conv, flags)
     return jsonify({"reply": reply, "conversation_id": conv.id})
 
 

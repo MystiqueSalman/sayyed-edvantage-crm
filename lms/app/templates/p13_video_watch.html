@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson.title }} — {{ course.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('student.lesson', lesson_id=lesson.id) }}">← Back to lesson</a></p>
+<div class="panel">
+  <div><span class="tag">VIDEO</span> <span class="tag green">🔒 signed link</span></div>
+  <h2 style="margin:.5em 0">{{ lesson.title }}</h2>
+  {# The raw video URL is never rendered into this page's source: the player
+     loads through the same-origin signed stream URL, which 302s to storage. #}
+  <div class="video-wrap"><iframe src="{{ stream_url }}" allowfullscreen></iframe></div>
+  {% if allow_download %}
+  <p style="margin-top:12px"><a class="btn btn-blue btn-sm" href="{{ stream_url }}?download=1">⬇ Download video</a></p>
+  {% endif %}
+  <p style="color:var(--muted); font-size:.85rem">This is a personal, time-limited link. Sharing it will not work for other accounts.</p>
+</div>
+{% endblock %}

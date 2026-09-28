@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}💬 {{ conv.subject }} — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>💬 {{ conv.subject }}</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('social13.inbox') }}">← Inbox</a></div>
+<div style="color:var(--muted);font-size:.9rem;margin-bottom:14px">
+  {{ conv.student.name }} ↔ {{ conv.faculty.name }}{% if conv.archived %} · <span class="tag">archived</span>{% endif %}
+</div>
+
+{% for m in msgs %}
+<div class="card" style="margin-bottom:8px;{% if m.sender_id == current_user.id %}border-left:3px solid var(--gold){% endif %}"><div class="body">
+  <div style="font-size:.8rem;color:var(--muted)">{{ m.sender.name }} · {{ m.created_at.strftime('%d %b %Y, %H:%M') }}{% if m.read_at and m.sender_id == current_user.id %} · ✓ seen{% endif %}</div>
+  <div style="margin-top:4px;white-space:pre-wrap">{{ m.body }}</div>
+</div></div>
+{% endfor %}
+
+{% if can_reply and not conv.archived %}
+<div class="card" style="margin-top:16px"><div class="body">
+  <form method="post" action="{{ url_for('social13.reply', conv_id=conv.id) }}">
+    <textarea name="body" rows="3" required style="width:100%;padding:8px" placeholder="Write a reply…"></textarea>
+    <div style="margin-top:8px"><button class="btn btn-gold" type="submit">Reply</button></div>
+  </form>
+</div></div>
+{% endif %}
+
+{% if not conv.archived and (can_reply or is_admin) %}
+<form method="post" action="{{ url_for('social13.archive', conv_id=conv.id) }}" style="margin-top:12px">
+  <button class="btn btn-ghost btn-sm" type="submit">🗄 Archive conversation</button>
+</form>
+{% endif %}
+{% endblock %}

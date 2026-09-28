@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}🏆 Leaderboard — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🏆 Leaderboard</h2><div class="line"></div></div>
+
+<div style="margin-bottom:16px">
+  <a class="btn btn-sm {% if tab == 'platform' %}btn-gold{% else %}btn-ghost{% endif %}" href="{{ url_for('social13.leaderboard', tab='platform') }}">🌍 Platform</a>
+  <a class="btn btn-sm {% if tab == 'course' %}btn-gold{% else %}btn-ghost{% endif %}" href="{{ url_for('social13.leaderboard', tab='course') }}">📚 Course</a>
+  <a class="btn btn-sm {% if tab == 'batch' %}btn-gold{% else %}btn-ghost{% endif %}" href="{{ url_for('social13.leaderboard', tab='batch') }}">👥 Batch</a>
+</div>
+
+{% if tab == 'course' %}
+<form method="get" action="{{ url_for('social13.leaderboard') }}" style="margin-bottom:14px">
+  <input type="hidden" name="tab" value="course">
+  <select name="course_id" onchange="this.form.submit()" style="padding:8px">
+    <option value="">— choose a course —</option>
+    {% for c in courses %}<option value="{{ c.id }}" {% if course and course.id == c.id %}selected{% endif %}>{{ c.title }}</option>{% endfor %}
+  </select>
+</form>
+{% elif tab == 'batch' %}
+<form method="get" action="{{ url_for('social13.leaderboard') }}" style="margin-bottom:14px">
+  <input type="hidden" name="tab" value="batch">
+  <select name="batch_id" onchange="this.form.submit()" style="padding:8px">
+    <option value="">— choose a batch —</option>
+    {% for b in batches %}<option value="{{ b.id }}" {% if batch and batch.id == b.id %}selected{% endif %}>{{ b.name }} ({{ b.course.title if b.course }})</option>{% endfor %}
+  </select>
+</form>
+{% endif %}
+
+{% if tab == 'course' and not course %}
+<div class="card"><div class="body" style="color:var(--muted)">Pick a course above to see its leaderboard.</div></div>
+{% elif tab == 'batch' and not batch %}
+<div class="card"><div class="body" style="color:var(--muted)">Pick a batch above to see its leaderboard.</div></div>
+{% else %}
+<div class="card"><div class="body" style="padding:0">
+<table style="width:100%;border-collapse:collapse">
+  <thead><tr style="text-align:left;border-bottom:1px solid var(--border)">
+    <th style="padding:10px 12px">Rank</th><th style="padding:10px 12px">Name</th>
+    <th style="padding:10px 12px">Points</th><th style="padding:10px 12px">Badges</th>
+  </tr></thead>
+  <tbody>
+  {% for r in rows %}
+  <tr style="border-bottom:1px solid var(--border)">
+    <td style="padding:10px 12px;font-weight:800">{% if r.rank == 1 %}🥇{% elif r.rank == 2 %}🥈{% elif r.rank == 3 %}🥉{% else %}{{ r.rank }}{% endif %}</td>
+    <td style="padding:10px 12px">{{ r.display_name }}</td>
+    <td style="padding:10px 12px">⭐ {{ r.points }}</td>
+    <td style="padding:10px 12px">🏅 {{ r.badges }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if not rows %}<div style="padding:16px;color:var(--muted)">No points on this board yet.</div>{% endif %}
+</div></div>
+{% endif %}
+
+{% if prefs is not none %}
+<div class="card" style="margin-top:16px"><div class="body">
+  <form method="post" action="{{ url_for('social13.leaderboard_privacy') }}">
+    <label style="display:flex;gap:8px;align-items:center">
+      <input type="checkbox" name="opt_out" value="1" {% if prefs.leaderboard_opt_out %}checked{% endif %}>
+      Hide me from the public leaderboard
+    </label>
+    <button class="btn btn-ghost btn-sm" type="submit" style="margin-top:8px">Save privacy</button>
+  </form>
+</div></div>
+{% endif %}
+{% endblock %}

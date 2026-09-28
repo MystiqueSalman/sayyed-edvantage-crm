@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}SQL Lab{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🗄️ SQL Lab</h2><div class="line"></div></div>
+<div class="panel">
+  <p style="color:var(--muted)">Practice real SQL in your browser. Each exercise builds a fresh in-memory
+    database — only read-only <span class="code-pill">SELECT</span> / <span class="code-pill">WITH</span>
+    queries are allowed (5s limit per query).</p>
+  {% for ex in exercises %}
+  <div class="lesson-row">
+    <span>🗄️</span>
+    <span><b>{{ ex.title }}</b><br><small style="color:var(--muted)">{{ ex.description|striptags|truncate(120) }}</small></span>
+    <span style="margin-left:auto"><a class="btn btn-blue btn-sm" href="{{ url_for('learn13.sql_detail', exercise_id=ex.id) }}">Practice →</a></span>
+  </div>
+  {% else %}
+  <p style="color:var(--muted)">No SQL exercises published yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

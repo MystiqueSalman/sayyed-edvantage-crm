@@ -4,6 +4,20 @@
 <p><a href="{{ url_for('main.course_detail', slug=course.slug) }}">← View course page</a></p>
 <div class="section-title"><h2>Manage: {{ course.title }}</h2><div class="line"></div></div>
 
+{# Phase 13 Stream 2: course versioning — snapshot the current structure.
+   Hidden until the learn13 blueprint is registered (p13_enabled). #}
+{% if p13_enabled is defined %}
+<div class="panel" style="margin-bottom:18px">
+  <h3 style="margin-top:0">📌 Course Versions</h3>
+  <p style="color:var(--muted)">Snapshot the current module/lesson structure. New enrollments are linked to the latest published version.</p>
+  <form method="post" action="{{ url_for('learn13.course_version_publish', course_id=course.id) }}" style="display:flex; gap:8px; flex-wrap:wrap">
+    <input type="text" name="note" placeholder="Version note (optional)" style="flex:1; min-width:200px" maxlength="300">
+    <button class="btn btn-gold btn-sm" type="submit">Publish version</button>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('learn13.course_versions', course_id=course.id) }}">Version history</a>
+  </form>
+</div>
+{% endif %}
+
 <div class="panel">
   <h3>Modules &amp; Lessons
     <a class="btn btn-gold btn-sm" style="margin-left:12px" href="{{ url_for('manage.module_new', course_id=course.id) }}">+ Module</a></h3>
@@ -71,7 +85,7 @@
   <h3>🔴 Live Classes (Jitsi) <a class="btn btn-gold btn-sm" style="margin-left:10px" href="{{ url_for('manage.live_new', course_id=course.id) }}">+ Schedule</a></h3>
   {% for s in course.live_sessions %}
   <div class="lesson-row"><span>🔴</span>
-    <span><b>{{ s.title }}</b> <span style="color:var(--muted)">· {{ s.starts_at.strftime('%d %b %Y, %I:%M %p') }} · {{ s.duration_min }} min</span>
+    <span><b>{{ s.title }}</b> <span style="color:var(--muted)">· {% set _st = to_user_tz(s.starts_at, current_user) %}{{ _st.strftime('%d %b %Y, %I:%M %p') }} {{ _st.strftime('%Z') }} · {{ s.duration_min }} min</span>
       <br><small style="color:var(--muted)">meet.jit.si/{{ s.room_name }}{% if s.recording_url %} · <a href="{{ s.recording_url }}" target="_blank">recording</a>{% endif %}</small></span>
     <span style="margin-left:auto; display:flex; gap:8px">
       <a class="btn btn-ghost btn-sm" href="{{ s.join_url }}" target="_blank">Open Room</a>

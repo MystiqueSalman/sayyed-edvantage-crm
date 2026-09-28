@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Currency Settings — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>💱 Currency Display</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+<p style="color:var(--muted);font-size:.9rem;max-width:700px">Catalog and course pages show INR as the primary price and the selected currency as a secondary <b>estimate</b> (marked ≈). INR is always the source of truth — checkout and payments only ever charge INR. These rates are <b>admin-editable estimates</b>, not live forex.</p>
+<div class="panel" style="max-width:640px">
+  <form method="post">
+    <label>Display currency</label>
+    <select name="currency_display">
+      {% for c in currencies %}
+      <option value="{{ c }}" {% if c == display %}selected{% endif %}>{{ c }}</option>
+      {% endfor %}
+    </select>
+    <h4 style="margin-top:18px">Exchange estimates (1 unit = ₹)</h4>
+    <table>
+      {% for r in rates %}
+      <tr>
+        <td><b>{{ r.code }}</b></td>
+        <td><input type="text" name="rate_{{ r.code }}" value="{{ r.rate_to_inr }}" style="width:110px" {% if r.code == 'INR' %}disabled{% endif %}></td>
+        <td><input type="text" name="symbol_{{ r.code }}" value="{{ r.symbol }}" style="width:70px" maxlength="12" title="symbol"></td>
+      </tr>
+      {% endfor %}
+    </table>
+    <p><button class="btn btn-gold" type="submit">Save</button></p>
+  </form>
+</div>
+{% endblock %}

@@ -238,6 +238,14 @@ def _tutor_system_prompt(course, corpus, mem):
     completed = ", ".join(mem.get("completed_lessons") or []) or "none yet"
     weak = ", ".join(w.get("title", "") for w in (mem.get("weak_topics") or [])) or "none identified"
     recent = "; ".join(mem.get("recent_questions") or []) or "none"
+    # Phase 13: long-term student memory profile (weak areas, strengths,
+    # preferences). Guarded — the tutor must work mid-migration too.
+    p13_profile = ""
+    try:
+        from .memory13 import memory_context_text as _mctx
+        p13_profile = _mctx(mem.get("_user_id")) or ""
+    except Exception:
+        p13_profile = ""
     return f"""You are the Sayyed EdVantage AI TUTOR for the course "{course.title}" — an academic tutor for an enrolled Indian IT-training student. Tagline: "Empowering Students for Success."
 
 COURSE MATERIALS (the ONLY source of truth — never invent syllabus content):
@@ -248,6 +256,7 @@ STUDENT MEMORY:
 - Weak topics (from quizzes): {weak}
 - Recent questions: {recent}
 - Notes: {mem.get('summary') or 'none'}
+{p13_profile}
 
 BINDING RULES:
 - Answer ONLY from the COURSE MATERIALS above. Every factual claim must be traceable to a lesson. Cite lessons explicitly, e.g. "Based on the lesson 'Python Basics'…".

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Data Science Lab{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📊 Data Science Lab</h2><div class="line"></div></div>
+<div class="panel">
+  <p style="color:var(--muted)">Guided, step-by-step data exercises in your browser — powered by the same
+    safe Python sandbox as the coding labs. Datasets are provided as text; parse them with
+    <span class="code-pill">csv.reader(DATASET_CSV.splitlines())</span>.</p>
+  {% for ex in exercises %}
+  <div class="lesson-row">
+    <span>📊</span>
+    <span><b>{{ ex.title }}</b> <span style="color:var(--muted)">· {{ (ex.steps or [])|length }} steps</span><br>
+      <small style="color:var(--muted)">{{ ex.description|striptags|truncate(140) }}</small></span>
+    <span style="margin-left:auto"><a class="btn btn-blue btn-sm" href="{{ url_for('learn13.ds_detail', exercise_id=ex.id) }}">Start →</a></span>
+  </div>
+  {% else %}
+  <p style="color:var(--muted)">No Data Science exercises published yet.</p>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}SQL Lab — {{ ex.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('learn13.sql_list') }}">← SQL Lab</a></p>
+<div class="panel">
+  <h2 style="margin-top:0">🗄️ {{ ex.title }}</h2>
+  <div style="line-height:1.7">{{ ex.description|safe }}</div>
+  {% if ex.hint %}<p><button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById('p13hint').style.display='block';this.style.display='none'">💡 Show hint</button></p>
+  <p id="p13hint" style="display:none; color:var(--gold-lt)">{{ ex.hint }}</p>{% endif %}
+  <label>Your query (read-only SELECT/WITH)</label>
+  <textarea id="p13q" rows="8" class="curl" style="width:100%">SELECT </textarea>
+  <p><button class="btn btn-gold" type="button" onclick="p13run()">▶ Run &amp; check</button></p>
+  <div id="p13out"></div>
+</div>
+<div class="panel">
+  <h3 style="margin-top:0">Recent attempts</h3>
+  {% for a in attempts %}
+  <div class="lesson-row"><span>{{ "✅" if a.passed else "❌" }}</span>
+    <span class="code-pill" style="max-width:60%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ a.sql_query|truncate(80) }}</span>
+    <span style="margin-left:auto; color:var(--muted); font-size:.8rem">{{ a.created_at.strftime('%d %b %H:%M') }}</span></div>
+  {% else %}<p style="color:var(--muted)">No attempts yet.</p>{% endfor %}
+</div>
+<script>
+async function p13run() {
+  const out = document.getElementById('p13out');
+  out.innerHTML = '<p style="color:var(--muted)">Running…</p>';
+  const fd = new FormData();
+  fd.append('query', document.getElementById('p13q').value);
+  const r = await fetch("{{ url_for('learn13.sql_run', exercise_id=ex.id) }}", {method: 'POST', body: fd});
+  const j = await r.json();
+  if (!j.ok) { out.innerHTML = '<p class="flash error">Request failed.</p>'; return; }
+  let html = j.passed
+    ? '<p class="flash success">✅ Correct! Your result matches the expected answer.</p>'
+    : '<p class="flash error">❌ ' + (j.error || 'Not correct yet.') + '</p>';
+  if (j.columns && j.columns.length) {
+    html += '<table><tr>' + j.columns.map(c => '<th>' + c + '</th>').join('') + '</tr>';
+    (j.rows || []).forEach(row => { html += '<tr>' + row.map(v => '<td>' + (v === null ? 'NULL' : v) + '</td>').join('') + '</tr>'; });
+    html += '</table>';
+  }
+  out.innerHTML = html;
+}
+</script>
+{% endblock %}

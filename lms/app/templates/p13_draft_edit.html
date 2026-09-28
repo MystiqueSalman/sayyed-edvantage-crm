@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Edit AI draft — {{ draft.topic }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('ai13.draft_detail', draft_id=draft.id) }}">← Draft</a></p>
+<div class="section-title"><h2>Edit draft <span class="tag">{{ draft.kind }}</span></h2><div class="line"></div></div>
+<div class="flash warning">🤖 AI-generated draft — review before use. Editing never publishes anything.</div>
+<div class="panel">
+  <form method="post">
+    <div><label>Topic</label><input type="text" name="topic" value="{{ draft.topic }}" maxlength="200"></div>
+    <div><label>Content</label><textarea name="content" rows="20" style="width:100%">{{ draft.content }}</textarea></div>
+    <p><button class="btn btn-gold" type="submit">Save (stays a draft)</button></p>
+  </form>
+</div>
+{% endblock %}

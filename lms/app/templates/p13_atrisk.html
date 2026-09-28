@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}⚠️ At-risk students{% endblock %}
+{% block content %}
+<div class="section-title"><h2>⚠️ At-risk students</h2><div class="line"></div>
+  <a href="{{ url_for('crm.leads') }}">← CRM</a></div>
+<div class="flash warning"><b>Staff-only guarantee:</b> {{ guarantee }}</div>
+<div class="panel">
+  <form method="post" action="{{ url_for('ai13.at_risk_recompute') }}" style="display:inline">
+    <button class="btn btn-gold btn-sm" type="submit">🔄 Recompute flags now</button>
+  </form>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ai13.at_risk', show='open') }}" style="margin-left:8px">Open</a>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ai13.at_risk', show='resolved') }}" style="margin-left:4px">Resolved</a>
+  <p style="color:var(--muted); margin-bottom:0">Rules: attendance below 60% · missed assignment deadlines · quiz average dropped more than 15 points (last 3 vs first 3 attempts). Recomputing never messages students.</p>
+</div>
+{% for f in flags %}
+<div class="panel" style="margin-bottom:12px">
+  <h3 style="margin-top:0">{{ f.user.name or f.user.email }} <span style="color:var(--muted); font-size:.85rem">{{ f.user.email }}{% if f.resolved %} · resolved {{ f.resolved_at.strftime('%d %b %Y') if f.resolved_at }}{% endif %}</span></h3>
+  <ul>
+    {% for r in f.reasons %}<li><code>{{ r }}</code></li>{% endfor %}
+  </ul>
+  <p style="color:var(--muted); font-size:.85rem">Flagged {{ f.created_at.strftime('%d %b %Y %H:%M') if f.created_at }}</p>
+  {% if not f.resolved %}
+  <form method="post" action="{{ url_for('ai13.at_risk_resolve', flag_id=f.id) }}" style="display:inline">
+    <button class="btn btn-blue btn-sm" type="submit">✔ Mark resolved</button>
+  </form>
+  {% endif %}
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No {{ show }} flags. 🎉</p></div>
+{% endfor %}
+{% endblock %}

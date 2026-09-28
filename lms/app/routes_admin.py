@@ -11,6 +11,7 @@ from . import db
 from .decorators import admin_required, manager_or_admin
 from .models import (Announcement, Assignment, Certificate, Course, EmailSettings,
                      Enrollment, QuizAttempt, Submission, User, ROLES)
+from .roles13 import EXTENDED_ROLES  # Phase 13: new roles in the user admin
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -45,7 +46,8 @@ def users():
         email = request.form.get("email", "").strip().lower()
         role = request.form.get("role", "student")
         password = request.form.get("password", "")
-        if not name or not email or len(password) < 6 or role not in ROLES:
+        if not name or not email or len(password) < 6 or (
+                role not in ROLES and role not in EXTENDED_ROLES):
             flash("All fields required (password min 6 chars, valid role).", "danger")
         elif User.query.filter_by(email=email).first():
             flash("Email already registered.", "danger")
@@ -57,7 +59,8 @@ def users():
             flash(f"User {email} created as {role}.", "success")
         return redirect(url_for("admin.users"))
     all_users = User.query.order_by(User.created_at.desc()).all()
-    return render_template("admin_users.html", users=all_users, roles=ROLES,
+    return render_template("admin_users.html", users=all_users,
+                           roles=ROLES + EXTENDED_ROLES,
                            current_id=current_user.id)
 
 
@@ -83,14 +86,15 @@ def user_toggle(user_id):
 def user_role(user_id):
     user = User.query.get_or_404(user_id)
     role = request.form.get("role", "")
-    if role in ROLES and user.id != current_user.id:
-        old = user.role
-        user.role = role
-        db.session.commit()
-        from . import operations as _OPS  # Phase 9: audit log
-        _OPS.audit(current_user, "user.role_change", "user", user.id,
-                   f"{user.email}: {old} -> {role}", request.remote_addr)
-        flash(f"{user.email} is now {role}.", "success")
+    if role in ROLES or role in EXTENDED_ROLES:
+        if user.id != current_user.id:
+            old = user.role
+            user.role = role
+            db.session.commit()
+            from . import operations as _OPS  # Phase 9: audit log
+            _OPS.audit(current_user, "user.role_change", "user", user.id,
+                       f"{user.email}: {old} -> {role}", request.remote_addr)
+            flash(f"{user.email} is now {role}.", "success")
     return redirect(url_for("admin.users"))
 
 

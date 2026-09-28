@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if plan else 'New' }} Installment Plan — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🗓 {{ 'Edit' if plan else 'New' }} Installment Plan</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('money13.installment_plans') }}">← Plans</a></div>
+<div class="panel" style="max-width:640px">
+  <form method="post">
+    <label>Course</label>
+    <select name="course_id">
+      {% for c in courses %}
+      <option value="{{ c.id }}" {% if plan and plan.course_id == c.id %}selected{% endif %}>{{ c.title }} (₹{{ "{:,}".format(c.fee) }})</option>
+      {% endfor %}
+    </select>
+    <label>Plan name</label>
+    <input type="text" name="name" maxlength="120" value="{{ plan.name if plan }}" placeholder="e.g. 3-month easy plan" required>
+    <label>Number of installments (1–24)</label>
+    <input type="number" name="num_installments" min="1" max="24" value="{{ plan.num_installments if plan else 3 }}" required>
+    <label>Per-installment amounts in ₹ (comma-separated, must match count above)</label>
+    <input type="text" name="amounts" value="{{ plan.amounts|join(', ') if plan and plan.amounts }}" placeholder="e.g. 20000, 15000, 15000" required>
+    <label>Days after enrollment each installment is due (comma-separated)</label>
+    <input type="text" name="due_days" value="{{ plan.due_days|join(', ') if plan and plan.due_days }}" placeholder="e.g. 0, 30, 60" required>
+    <label style="display:block;margin:10px 0"><input type="checkbox" name="active" value="1" {% if not plan or plan.active %}checked{% endif %}> Active (students can pick it)</label>
+    <p><button class="btn btn-gold" type="submit">Save plan</button></p>
+  </form>
+  <p style="color:var(--muted);font-size:.85rem">Tip: make the amounts add up to the course fee. The first installment (day 0) is collected immediately and activates the enrollment.</p>
+</div>
+{% endblock %}

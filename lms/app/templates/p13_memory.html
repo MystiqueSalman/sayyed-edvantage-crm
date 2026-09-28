@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}🧠 My learning memory{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🧠 My learning memory</h2><div class="line"></div>
+  <a href="{{ url_for('student.dashboard') }}">← Dashboard</a></div>
+<p style="color:var(--muted)">Your cross-course learning profile, recomputed from your actual activity — completed lessons, quiz results and weak-topic analysis. This helps the AI tutor personalise its answers.</p>
+<div class="panel">
+  <form method="post" action="{{ url_for('ai13.student_memory_refresh') }}">
+    <button class="btn btn-gold btn-sm" type="submit">🔄 Refresh my profile</button>
+  </form>
+  <p style="color:var(--muted); font-size:.85rem">Last updated: {{ mem.updated_at.strftime('%d %b %Y %H:%M') if mem.updated_at else 'never' }}</p>
+</div>
+<div class="panel">
+  <h3>✅ Completed topics ({{ (mem.completed_topics or [])|length }})</h3>
+  {% if mem.completed_topics %}<ul>{% for t in mem.completed_topics[:30] %}<li>{{ t }}</li>{% endfor %}</ul>
+  {% else %}<p style="color:var(--muted)">No completed lessons yet.</p>{% endif %}
+</div>
+<div class="panel">
+  <h3>🎯 Weak topics ({{ (mem.weak_topics or [])|length }})</h3>
+  {% if mem.weak_topics %}<ul>{% for w in mem.weak_topics %}<li>{{ w.course }} — <b>{{ w.topic }}</b>{% if w.avg %} (quiz avg {{ w.avg }}%){% endif %}{% if w.misses %} ({{ w.misses }} wrong answers){% endif %}</li>{% endfor %}</ul>
+  {% else %}<p style="color:var(--muted)">No weak topics identified — keep it up! 🎉</p>{% endif %}
+</div>
+<div class="panel">
+  <h3>💪 Strengths ({{ (mem.strengths or [])|length }})</h3>
+  {% if mem.strengths %}<ul>{% for s in mem.strengths %}<li>{{ s }}</li>{% endfor %}</ul>
+  {% else %}<p style="color:var(--muted)">Strengths will appear as your module averages cross 80%.</p>{% endif %}
+</div>
+<div class="panel">
+  <h3>⚙️ Preferences</h3>
+  <p>Pace: {{ (mem.preferences or {}).get('pace') or 'not set' }} · Language: {{ (mem.preferences or {}).get('language') or 'not set' }}</p>
+</div>
+{% endblock %}

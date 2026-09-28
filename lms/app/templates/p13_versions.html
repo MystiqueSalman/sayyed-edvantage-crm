@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Version History — {{ course.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('manage.course_home', course_id=course.id) }}">← Manage course</a></p>
+<div class="section-title"><h2>📌 Version History — {{ course.title }}</h2><div class="line"></div></div>
+<div class="panel">
+  <h3 style="margin-top:0">Published versions</h3>
+  {% for v in versions %}
+  <div class="lesson-row">
+    <span>📌</span>
+    <span><b>v{{ v.version_no }}</b> <span style="color:var(--muted)">· {{ v.created_at.strftime('%d %b %Y, %H:%M') }}</span><br>
+      <small style="color:var(--muted)">{{ v.note or '—' }} · {{ (v.snapshot.modules or [])|length }} modules</small></span>
+    <span style="margin-left:auto"><a class="btn btn-ghost btn-sm" href="{{ url_for('learn13.course_versions', course_id=course.id, view=v.id) }}">View snapshot</a></span>
+  </div>
+  {% else %}
+  <p style="color:var(--muted)">No versions published yet. Publish one from the course-manage page.</p>
+  {% endfor %}
+</div>
+{% if view_version %}
+<div class="panel">
+  <h3 style="margin-top:0">Snapshot — v{{ view_version.version_no }} <small style="color:var(--muted)">{{ view_version.created_at.strftime('%d %b %Y, %H:%M') }}</small></h3>
+  {% if diff %}
+  <h4>Changes vs previous version</h4>
+  {% set d = diff %}
+  {% if not d.added_modules and not d.removed_modules and not d.added_lessons and not d.removed_lessons and not d.changed_lessons %}
+  <p style="color:var(--muted)">No structural changes vs the previous version.</p>
+  {% else %}
+  <ul>
+    {% for t in d.added_modules %}<li style="color:#7ee2a8">+ Module: {{ t }}</li>{% endfor %}
+    {% for t in d.removed_modules %}<li style="color:#ff9a9a">− Module: {{ t }}</li>{% endfor %}
+    {% for t in d.added_lessons %}<li style="color:#7ee2a8">+ Lesson: {{ t }}</li>{% endfor %}
+    {% for t in d.removed_lessons %}<li style="color:#ff9a9a">− Lesson: {{ t }}</li>{% endfor %}
+    {% for t in d.changed_lessons %}<li style="color:var(--gold-lt)">~ {{ t }}</li>{% endfor %}
+  </ul>
+  {% endif %}
+  {% endif %}
+  <h4>Structure</h4>
+  {% for m in view_version.snapshot.modules or [] %}
+  <p><b>{{ m.title }}</b></p>
+  <ul>{% for l in m.lessons or [] %}<li>{{ l.title }} <span style="color:var(--muted)">({{ l.kind }})</span></li>{% endfor %}</ul>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

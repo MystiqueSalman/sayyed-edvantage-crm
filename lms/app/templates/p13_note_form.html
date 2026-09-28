@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}My Notes — {{ lesson.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('learn13.notes_list') }}">← All my notes</a></p>
+<div class="panel" style="max-width:720px; margin:20px auto">
+  <h2 style="margin-top:0">📝 My notes</h2>
+  <p style="color:var(--muted)">{{ course.title }} · {{ lesson.module.title }} · {{ lesson.title }}<br>
+    <small>Private — only you can see these notes.</small></p>
+  <form method="post">
+    <label>Title</label>
+    <input type="text" name="title" value="{{ note.title if note }}" maxlength="160" placeholder="e.g. Key formulas from this lesson">
+    <label>Notes</label>
+    <textarea name="body" rows="14" placeholder="Write your private notes here…">{{ note.body if note }}</textarea>
+    <p><button class="btn btn-gold" type="submit" style="margin-top:12px">Save Note</button>
+    <a class="btn btn-ghost" href="{{ url_for('learn13.notes_list') }}" style="margin-left:10px">Cancel</a></p>
+  </form>
+  {% if note %}
+  <form method="post" action="{{ url_for('learn13.lesson_note_delete', lesson_id=lesson.id) }}"
+        onsubmit="return confirm('Delete this note?')">
+    <button class="btn btn-danger btn-sm" type="submit">Delete note</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

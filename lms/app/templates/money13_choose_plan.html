@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Choose a payment plan — {{ course.title }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:600px; margin:30px auto">
+  <h2>{{ course.title }}</h2>
+  <p style="color:var(--muted)">Full fee: <b>₹{{ "{:,}".format(course.fee) }}</b> + GST</p>
+  {% if existing %}
+  <p class="flash info">You already have an installment schedule for this course — <a href="{{ url_for('money13.billing') }}">view it here</a>.</p>
+  {% elif not plans %}
+  <p class="flash info">No installment plans are available for this course right now — please pay in full.</p>
+  <p><a class="btn btn-gold" href="{{ url_for('money13.stripe_pay_course', course_id=course.id) }}">Continue to payment →</a></p>
+  {% else %}
+  {% if not stripe_ok %}
+  <p class="flash info">⚠ Online payment is not configured yet — installment plans need it. Please contact support or pay in full via the standard checkout.</p>
+  {% endif %}
+  {% for p in plans %}
+  <div class="card" style="margin-bottom:12px"><div class="body">
+    <h3 style="margin:0 0 6px">{{ p.name }}</h3>
+    <p style="color:var(--muted);font-size:.9rem;margin:0 0 10px">
+      {{ p.num_installments }} installments · total ₹{{ "{:,}".format(p.total_amount) }}<br>
+      {% for a in p.amounts %}<span class="tag">₹{{ "{:,}".format(a) }} · day {{ p.due_days[loop.index0] if p.due_days and loop.index0 < p.due_days|length else '?' }}</span> {% endfor %}
+    </p>
+    <form method="post" action="{{ url_for('money13.enroll_with_plan', plan_id=p.id) }}">
+      <button class="btn btn-gold" type="submit" {% if not stripe_ok %}disabled{% endif %}>Enroll with this plan →</button>
+    </form>
+  </div></div>
+  {% endfor %}
+  <p style="text-align:center"><a class="btn btn-ghost btn-sm" href="{{ url_for('main.enroll', slug=course.slug) }}">← Pay in full instead</a></p>
+  {% endif %}
+</div>
+{% endblock %}

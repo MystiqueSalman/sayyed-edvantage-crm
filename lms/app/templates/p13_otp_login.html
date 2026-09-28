@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Sign in with Email Code — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:440px; margin:40px auto">
+  <h2>Sign in with an email code</h2>
+  {% if step == "email" %}
+  <p style="color:var(--muted)">Enter your account email — we'll send a 6-digit code (valid 10 minutes).</p>
+  <form method="post">
+    <input type="hidden" name="stage" value="email">
+    <label>Email</label>
+    <input type="email" name="email" required autofocus>
+    <p><button class="btn btn-gold" type="submit" style="width:100%; margin-top:14px">Send code</button></p>
+  </form>
+  {% else %}
+  <p style="color:var(--muted)">Code sent to <b>{{ email }}</b>. Enter it below.</p>
+  <form method="post">
+    <input type="hidden" name="stage" value="code">
+    <input type="hidden" name="email" value="{{ email }}">
+    <label>6-digit code</label>
+    <input type="text" name="code" required autofocus inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
+           style="font-size:1.5rem; letter-spacing:.35rem; text-align:center">
+    <p><button class="btn btn-gold" type="submit" style="width:100%; margin-top:14px">Verify &amp; sign in</button></p>
+  </form>
+  <p style="text-align:center"><a href="{{ url_for('auth13.otp_login') }}">← Use a different email</a></p>
+  {% endif %}
+  <p style="text-align:center"><a href="{{ url_for('auth.login') }}">← Back to password sign in</a></p>
+</div>
+{% endblock %}

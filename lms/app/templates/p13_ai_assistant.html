@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}🤖 AI Content Assistant{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🤖 AI Content Assistant</h2><div class="line"></div>
+  <a href="{{ url_for('faculty.dashboard') }}">← Faculty dashboard</a></div>
+<div class="panel">
+  <p style="color:var(--muted)">Draft lesson outlines, quiz questions and assignment briefs with AI. Prompts are grounded in your course's <b>real</b> modules and lessons — the AI never invents syllabus content. Everything is saved as a <b>draft</b>; nothing is published automatically.</p>
+  <form method="post" action="{{ url_for('ai13.ai_assistant') }}">
+    <div class="two-col">
+      <div><label>Course</label>
+        <select name="course_id" required>
+          {% for c in courses %}<option value="{{ c.id }}">{{ c.title }}</option>{% endfor %}
+        </select></div>
+      <div><label>Kind</label>
+        <select name="kind" required>
+          {% for k in kinds %}<option value="{{ k }}">{{ k }}</option>{% endfor %}
+        </select></div>
+    </div>
+    <div><label>Topic</label><input type="text" name="topic" maxlength="200" required placeholder="e.g. Python list comprehensions"></div>
+    <p><button class="btn btn-gold" type="submit">✨ Generate draft</button></p>
+  </form>
+</div>
+<div class="section-title"><h2>📝 My AI drafts</h2><div class="line"></div></div>
+{% for d in drafts %}
+<div class="panel" style="margin-bottom:12px">
+  <div class="flash warning">🤖 AI-generated draft — review before use. Drafts are never auto-published.</div>
+  <h3 style="margin-top:0"><span class="tag">{{ d.kind }}</span> {{ d.topic }} <span style="color:var(--muted); font-size:.85rem">{{ d.course.title if d.course else '' }}</span></h3>
+  <p style="color:var(--muted); font-size:.85rem">Created {{ d.created_at.strftime('%d %b %Y %H:%M') if d.created_at }} · status: {{ d.status }}</p>
+  <p>
+    <a class="btn btn-blue btn-sm" href="{{ url_for('ai13.draft_detail', draft_id=d.id) }}">View</a>
+    <a class="btn btn-ghost btn-sm" href="{{ url_for('ai13.draft_edit', draft_id=d.id) }}">Edit</a>
+    <form method="post" action="{{ url_for('ai13.draft_delete', draft_id=d.id) }}" style="display:inline" onsubmit="return confirm('Delete this draft?')"><button class="btn btn-ghost btn-sm" type="submit">Delete</button></form>
+  </p>
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No drafts yet.</p></div>
+{% endfor %}
+{% endblock %}

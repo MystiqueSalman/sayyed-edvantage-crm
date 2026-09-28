@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}AI draft — {{ draft.topic }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('ai13.ai_assistant') }}">← AI assistant</a></p>
+<div class="section-title"><h2><span class="tag">{{ draft.kind }}</span> {{ draft.topic }}</h2><div class="line"></div></div>
+<div class="flash warning">🤖 AI-generated draft — review before use. Drafts are never auto-published.</div>
+{% if draft.kind == 'quiz-draft' %}
+<div class="panel">
+  <p style="color:var(--muted)">{{ quiz_import_note }}</p>
+  <textarea readonly rows="18" style="width:100%" id="quizcopy">{{ draft.content }}</textarea>
+  <p><button class="btn btn-blue btn-sm" type="button" onclick="var t=document.getElementById('quizcopy');t.select();document.execCommand('copy');this.textContent='Copied ✓'">📋 Copy text</button>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('ai13.draft_edit', draft_id=draft.id) }}">Edit</a></p>
+</div>
+{% else %}
+<div class="panel">
+  <div style="white-space:pre-wrap">{{ draft.content }}</div>
+  <p><a class="btn btn-ghost btn-sm" href="{{ url_for('ai13.draft_edit', draft_id=draft.id) }}">Edit</a></p>
+</div>
+{% endif %}
+{% endblock %}

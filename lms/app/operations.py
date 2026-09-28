@@ -10,6 +10,8 @@ from .models import (Assignment, AuditLog, Batch, BatchMember, Challenge,
                      Coupon, Course, Enrollment, Invoice, InvoiceSetting,
                      LiveSession, Module, Project, Quiz, Refund,
                      RolePermission, SessionAttendance, User)
+from .roles13 import (ROLE_CONTENT_MANAGER, ROLE_FINANCE_OFFICER, ROLE_PARENT,
+                      ROLE_PLACEMENT_OFFICER, ROLE_SUPER_ADMIN)
 
 # ---------------------------------------------------------------- audit logs (§18.6)
 
@@ -180,6 +182,9 @@ PERMISSION_MODULES = [
     "jobs", "employers", "leads", "applications", "referrals",
     "gamification", "challenges", "career", "certificates", "reports",
     "calendar", "marketing", "settings",
+    # Phase 13: parent accounts get read-only access to this scope
+    # (their child's learning progress), nothing else.
+    "progress",
 ]
 
 # (module, action) pairs denied per role; everything else follows the grant.
@@ -223,6 +228,37 @@ def _default_for(role, module):
             return {"view": True, "create": True, "edit": True,
                     "delete": False}
         return {a: False for a in ("view", "create", "edit", "delete")}
+    # ---- Phase 13 extended roles ----------------------------------------
+    if role == ROLE_SUPER_ADMIN:
+        return {a: True for a in ("view", "create", "edit", "delete")}
+    if role == ROLE_FINANCE_OFFICER:
+        if module in {"finance", "invoices", "refunds", "enrollments"}:
+            return {a: True for a in ("view", "create", "edit", "delete")}
+        if module in {"dashboard", "reports", "calendar"}:
+            return {"view": True, "create": False, "edit": False,
+                    "delete": False}
+        return {a: False for a in ("view", "create", "edit", "delete")}
+    if role == ROLE_PLACEMENT_OFFICER:
+        if module in {"jobs", "employers", "applications", "career"}:
+            return {a: True for a in ("view", "create", "edit", "delete")}
+        if module in {"dashboard", "calendar"}:
+            return {"view": True, "create": False, "edit": False,
+                    "delete": False}
+        return {a: False for a in ("view", "create", "edit", "delete")}
+    if role == ROLE_CONTENT_MANAGER:
+        if module in {"courses", "lessons", "quizzes", "question_bank",
+                      "assignments", "projects", "discussions",
+                      "announcements", "challenges", "certificates"}:
+            return {a: True for a in ("view", "create", "edit", "delete")}
+        if module in {"dashboard", "calendar"}:
+            return {"view": True, "create": False, "edit": False,
+                    "delete": False}
+        return {a: False for a in ("view", "create", "edit", "delete")}
+    if role == ROLE_PARENT:
+        if module == "progress":
+            return {"view": True, "create": False, "edit": False,
+                    "delete": False}
+        return {a: False for a in ("view", "create", "edit", "delete")}
     # counsellor and unknown roles: nothing by default
     return {a: False for a in ("view", "create", "edit", "delete")}
 
@@ -232,7 +268,10 @@ def ensure_permission_defaults():
     from .models import (ROLE_ADMIN, ROLE_COUNSELLOR, ROLE_EMPLOYER,
                          ROLE_FACULTY, ROLE_MANAGER, ROLE_STUDENT)
     for role in (ROLE_ADMIN, ROLE_MANAGER, ROLE_FACULTY, ROLE_STUDENT,
-                 ROLE_COUNSELLOR, ROLE_EMPLOYER):
+                 ROLE_COUNSELLOR, ROLE_EMPLOYER,
+                 # Phase 13: seed the extended roles too
+                 ROLE_PARENT, ROLE_PLACEMENT_OFFICER, ROLE_FINANCE_OFFICER,
+                 ROLE_CONTENT_MANAGER, ROLE_SUPER_ADMIN):
         for module in PERMISSION_MODULES:
             row = RolePermission.query.filter_by(
                 role=role, module=module).first()
@@ -254,7 +293,7 @@ def has_permission(user, module, action):
     """
     if user is None or not getattr(user, "is_authenticated", False):
         return False
-    if user.role == "admin":
+    if user.role in ("admin", ROLE_SUPER_ADMIN):
         return True
     row = RolePermission.query.filter_by(
         role=user.role, module=module).first()

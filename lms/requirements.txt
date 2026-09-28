@@ -5,4 +5,6 @@ Flask-Migrate==4.0.7
 reportlab==4.2.0
 gunicorn==23.0.0
 requests==2.31.0
+pyotp==2.10.0  # Phase 13: TOTP MFA (setup + verify)
 psycopg2-binary==2.9.10  # postgres driver (only needed when DATABASE_URL points to Postgres)
+stripe==15.6.1  # Phase 13: Stripe checkout + webhooks

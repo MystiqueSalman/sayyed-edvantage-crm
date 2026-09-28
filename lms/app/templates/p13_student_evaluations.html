@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}📝 AI project evaluations{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📝 AI project evaluations</h2><div class="line"></div>
+  <a href="{{ url_for('student.projects') }}">← My projects</a></div>
+<p style="color:var(--muted)">Only evaluations <b>reviewed and approved by faculty</b> appear here. AI scores are never shown without faculty approval.</p>
+{% for e in evals %}
+<div class="panel" style="margin-bottom:14px">
+  <h3 style="margin-top:0">✅ {{ e.submission.project.title }} <span style="color:var(--muted); font-size:.85rem">(rubric: {{ e.rubric.name if e.rubric else '—' }})</span></h3>
+  <table>
+    <tr><th>Criterion</th><th>Score (0–10)</th></tr>
+    {% for c in (e.rubric.criteria if e.rubric else []) %}
+    <tr><td>{{ c.name }}</td><td>{{ (e.scores or {}).get(c.name, '—') }}</td></tr>
+    {% endfor %}
+  </table>
+  {% if e.feedback_text %}<p><b>Faculty feedback:</b> {{ e.feedback_text }}</p>{% endif %}
+  <p style="color:var(--muted); font-size:.85rem">Approved {{ e.reviewed_at.strftime('%d %b %Y') if e.reviewed_at }}</p>
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No approved AI evaluations yet.</p></div>
+{% endfor %}
+{% endblock %}

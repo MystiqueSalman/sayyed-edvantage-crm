@@ -3,7 +3,7 @@
 {% block content %}
 <div class="section-title"><h2>📝 Attendance — {{ session.title }}</h2><div class="line"></div>
   <a class="btn btn-ghost btn-sm" href="{{ url_for('ops.course_attendance', course_id=session.course_id) }}">📊 Course report</a></div>
-<p style="color:var(--muted);font-size:.9rem">{{ session.course.title }} · {{ session.starts_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+<p style="color:var(--muted);font-size:.9rem">{{ session.course.title }} · {% set _st = to_user_tz(session.starts_at, current_user) %}{{ _st.strftime('%d %b %Y, %I:%M %p') }} {{ _st.strftime('%Z') }}</p>
 
 <form method="post">
 <div class="card"><div class="body" style="padding:0">

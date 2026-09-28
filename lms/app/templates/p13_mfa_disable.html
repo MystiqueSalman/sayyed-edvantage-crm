@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Disable Two-Factor Authentication — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:440px; margin:40px auto">
+  <h2>Disable two-factor authentication</h2>
+  <p style="color:var(--muted)">This removes your authenticator secret and all backup codes. Confirm with your current password.</p>
+  <form method="post">
+    <label>Current password</label>
+    <input type="password" name="password" required autofocus>
+    <p><button class="btn" type="submit" style="width:100%; margin-top:14px; background:#7a2020; color:#fff">Disable 2FA</button></p>
+  </form>
+</div>
+{% endblock %}

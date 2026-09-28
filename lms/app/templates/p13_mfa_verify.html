@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Two-Factor Check — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:440px; margin:40px auto">
+  <h2>Two-factor check</h2>
+  <p style="color:var(--muted)">Enter the 6-digit code from your authenticator app — or one of your single-use backup codes.</p>
+  <form method="post">
+    <label>Code</label>
+    <input type="text" name="code" required autofocus inputmode="numeric"
+           style="font-size:1.5rem; letter-spacing:.35rem; text-align:center">
+    <p><button class="btn btn-gold" type="submit" style="width:100%; margin-top:14px">Verify &amp; sign in</button></p>
+  </form>
+  <p style="text-align:center"><a href="{{ url_for('auth.login') }}">← Cancel</a></p>
+</div>
+{% endblock %}

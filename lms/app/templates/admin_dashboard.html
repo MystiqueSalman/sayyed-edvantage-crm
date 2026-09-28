@@ -58,6 +58,12 @@
        <a class="btn btn-ghost btn-sm" href="{{ url_for('saas.integrations') }}">🔌 Integrations</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('labs.manage_list') }}">💻 Coding Labs</a>
        <a class="btn btn-ghost btn-sm" href="{{ url_for('vlabs.manage_list') }}">🖥 Virtual Labs</a></p>
+    <p><a class="btn btn-gold btn-sm" href="{{ url_for('auth13.oauth_settings') }}">🔐 Auth & Google OAuth</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('social13.inbox') }}">💬 Messages</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('money13.stripe_settings') }}">💳 Stripe</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('money13.installment_plans') }}">📆 Installments</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('money13.fx_rates') }}">💱 FX Rates</a>
+       <a class="btn btn-ghost btn-sm" href="{{ url_for('parked13.chat_leads_diagnostics') }}">🩺 Chat-Lead Diagnostics</a></p>
     {% else %}
     <p style="color:var(--muted); font-size:.88rem">User management and coupons are admin-only.</p>
     {% endif %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}AI evaluate — {{ sub.project.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('manage.project_submissions', project_id=sub.project_id) }}">← Submissions</a></p>
+<div class="section-title"><h2>🤖 AI evaluate — {{ sub.user.name or sub.user.email }}</h2><div class="line"></div></div>
+<div class="flash warning">🤖 AI-generated evaluation — requires faculty review before the student sees anything.</div>
+<div class="panel">
+  <p><b>Project:</b> {{ sub.project.title }} (max {{ sub.project.max_marks }} marks)</p>
+  {% if sub.notes %}<p><b>Student notes:</b> {{ sub.notes }}</p>{% endif %}
+  {% if sub.project_url %}<p><b>URL:</b> <a href="{{ sub.project_url }}" target="_blank" rel="noopener">{{ sub.project_url }}</a></p>{% endif %}
+  <form method="post">
+    <div><label>Rubric</label>
+      <select name="rubric_id" required>
+        {% for r in rubrics %}<option value="{{ r.id }}" {% if default_rubric and r.id == default_rubric.id %}selected{% endif %}>{{ r.name }}{% if r.project_id %} (attached){% endif %}</option>{% endfor %}
+      </select></div>
+    <p><button class="btn btn-gold" type="submit">✨ Run AI evaluation</button></p>
+  </form>
+</div>
+{% endblock %}

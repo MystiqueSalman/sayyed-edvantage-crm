@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Stripe Settings — Admin{% endblock %}
+{% block content %}
+<div class="section-title"><h2>💳 Stripe Settings</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
+{% if not configured %}
+<p class="flash info">⚠ <b>Stripe not configured.</b> Save your publishable + secret keys below to enable Stripe checkout. Until then the Stripe option stays hidden from students.</p>
+{% else %}
+<p class="flash success">✅ Stripe is configured{% if test_mode %} (TEST MODE — no real money moves){% else %} (LIVE){% endif %}.</p>
+{% endif %}
+<div class="panel" style="max-width:640px">
+  <form method="post">
+    <label>Stripe publishable key</label>
+    <input type="text" name="publishable_key" maxlength="200" value="{{ publishable_key }}" placeholder="pk_test_…" autocomplete="off">
+    <label>Stripe secret key {% if configured %}<small style="color:var(--muted)">(leave blank to keep current)</small>{% endif %}</label>
+    <input type="password" name="secret_key" maxlength="200" value="" placeholder="sk_test_…" autocomplete="off">
+    <label>Webhook endpoint secret {% if configured %}<small style="color:var(--muted)">(leave blank to keep current)</small>{% endif %}</label>
+    <input type="password" name="webhook_secret" maxlength="200" value="" placeholder="whsec_…" autocomplete="off">
+    <label style="display:block;margin:10px 0"><input type="checkbox" name="test_mode" value="1" {% if test_mode %}checked{% endif %}> Test mode (recommended until go-live)</label>
+    <p><button class="btn btn-gold" type="submit">Save</button></p>
+  </form>
+  <hr>
+  <h4>Webhook setup</h4>
+  <p style="color:var(--muted);font-size:.9rem">In the Stripe dashboard → Developers → Webhooks, add this endpoint and subscribe to <code>checkout.session.completed</code>:</p>
+  <p><code>{{ webhook_url }}</code></p>
+  <p style="color:var(--muted);font-size:.9rem">Copy the endpoint's signing secret into “Webhook endpoint secret” above. Webhook calls with a bad signature are rejected (400) and never touch enrollments.</p>
+</div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Backup Codes — Sayyed EdVantage LMS{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:520px; margin:40px auto">
+  <h2>✅ Two-factor authentication enabled</h2>
+  <p>Save these <b>10 backup codes</b> somewhere safe. Each works <b>once</b> if you lose access to your authenticator app. <b>This is the only time they're shown.</b></p>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:16px 0">
+    {% for c in codes %}
+    <code style="background:#0a1628; padding:10px; border-radius:8px; text-align:center; color:#d4af37">{{ c }}</code>
+    {% endfor %}
+  </div>
+  <p style="color:var(--muted)">Tip: print them or store them in a password manager — not in a screenshot on this device.</p>
+  <p><a class="btn btn-gold" href="{{ url_for('auth13.mfa_disable') }}">I've saved them — continue</a></p>
+</div>
+{% endblock %}

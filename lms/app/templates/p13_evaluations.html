@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}🧪 AI evaluation review queue{% endblock %}
+{% block content %}
+<div class="section-title"><h2>🧪 AI evaluation review queue</h2><div class="line"></div>
+  <a href="{{ url_for('faculty.dashboard') }}">← Faculty dashboard</a></div>
+<div class="flash warning">🤖 These are AI-generated evaluations. <b>Students cannot see them</b> until you approve — approving copies the scores and feedback to the student's submission.</div>
+<div class="section-title"><h2>⏳ Pending review ({{ pending|length }})</h2><div class="line"></div></div>
+{% for e in pending %}
+<div class="panel" style="margin-bottom:14px">
+  <h3 style="margin-top:0">{{ e.submission.user.name or e.submission.user.email }} — {{ e.submission.project.title }} <span style="color:var(--muted); font-size:.85rem">(rubric: {{ e.rubric.name if e.rubric else '—' }})</span></h3>
+  <form method="post" action="{{ url_for('ai13.evaluation_review', eval_id=e.id) }}">
+    <table>
+      <tr><th>Criterion</th><th>AI score (0–10)</th><th>Your score (0–10)</th></tr>
+      {% for c in (e.rubric.criteria if e.rubric else []) %}
+      <tr><td>{{ c.name }} <span style="color:var(--muted)">(w={{ c.weight }})</span></td>
+        <td>{{ (e.scores or {}).get(c.name, '—') }}</td>
+        <td><input type="number" name="score_{{ c.name }}" step="0.5" min="0" max="10" value="{{ (e.scores or {}).get(c.name, '') }}" style="width:90px"></td></tr>
+      {% endfor %}
+    </table>
+    <div><label>Feedback</label><textarea name="feedback" rows="4" style="width:100%">{{ e.feedback_text }}</textarea></div>
+    <p>
+      <button class="btn btn-gold btn-sm" type="submit" name="action" value="approve">✅ Approve & publish to student</button>
+      <button class="btn btn-ghost btn-sm" type="submit" name="action" value="reject" onclick="return confirm('Reject this AI evaluation?')">❌ Reject</button>
+    </p>
+  </form>
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No pending AI evaluations. 🎉</p></div>
+{% endfor %}
+<div class="section-title"><h2>📜 Decided</h2><div class="line"></div></div>
+{% for e in decided %}
+<div class="panel" style="margin-bottom:10px">
+  <p style="margin:0"><b>{{ e.submission.user.name or e.submission.user.email }}</b> — {{ e.submission.project.title }} ·
+  {% if e.status == 'approved' %}<span class="tag green">✅ approved</span>{% else %}<span class="tag">❌ rejected</span>{% endif %}
+  <span style="color:var(--muted); font-size:.85rem">reviewed {{ e.reviewed_at.strftime('%d %b %Y %H:%M') if e.reviewed_at }}</span></p>
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">Nothing decided yet.</p></div>
+{% endfor %}
+{% endblock %}

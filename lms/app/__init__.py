@@ -80,6 +80,14 @@ def create_app():
                 notif_unread = _H.unread_count(_cu.id)
         except Exception:
             notif_unread = 0
+        # Phase 13: unread direct-message count (§21.4) — guarded like above
+        dm_unread = 0
+        try:
+            from .social13 import unread_dm_count as _dmc  # noqa: E402
+            if _cu.is_authenticated:
+                dm_unread = _dmc(_cu.id)
+        except Exception:
+            dm_unread = 0
         # Phase 11: analytics IDs (§20.7) — public pages only, cheap PK lookups
         ga4_id = gtm_id = meta_pixel_id = head_snippet = ""
         try:
@@ -107,7 +115,8 @@ def create_app():
                      "primary_color": "", "accent_color": "", "logo_file": "",
                      "is_custom": False}
         return {"now": datetime.utcnow(), "payments_live": app.config["PAYMENTS_LIVE"],
-                "announcement": announcement, "notif_unread": notif_unread,
+                "announcement": announcement,
+                "notif_unread": notif_unread, "dm_unread": dm_unread,
                 "ga4_id": ga4_id, "gtm_id": gtm_id,
                 "meta_pixel_id": meta_pixel_id, "head_snippet": head_snippet,
                 "t": _I18N.t, "lang": lang, "brand": brand,
@@ -141,6 +150,12 @@ def create_app():
     from .routes_saas import saas_bp  # noqa: E402  (Phase 12: SaaS/enterprise)
     from .routes_labs import labs_bp  # noqa: E402  (Phase 12: coding labs)
     from .routes_vlabs import vlabs_bp  # noqa: E402  (Phase 12: virtual labs)
+    from .auth13 import auth13_bp  # noqa: E402  (Phase 13: auth & accounts)
+    from .learn13 import learn13_bp  # noqa: E402  (Phase 13: learning extras)
+    from .ai13 import ai13_bp  # noqa: E402  (Phase 13: AI extras)
+    from .social13 import social13_bp  # noqa: E402  (Phase 13: messaging/leaderboard)
+    from .money13 import money13_bp  # noqa: E402  (Phase 13: money/international)
+    from .parked13 import parked13_bp  # noqa: E402  (Phase 13: diagnostics)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -162,6 +177,12 @@ def create_app():
     app.register_blueprint(saas_bp)
     app.register_blueprint(labs_bp)
     app.register_blueprint(vlabs_bp)
+    app.register_blueprint(auth13_bp)
+    app.register_blueprint(learn13_bp)
+    app.register_blueprint(ai13_bp)
+    app.register_blueprint(social13_bp)
+    app.register_blueprint(money13_bp)
+    app.register_blueprint(parked13_bp)
 
     # Phase 10: file logging (monitoring page tails this file) + request stats.
     _setup_file_logging(app)
@@ -228,6 +249,12 @@ def create_app():
         try:
             _L12()
             _V12()
+        except Exception:
+            db.session.rollback()
+        # Phase 13: SQL + data-science lab seed exercises (guarded).
+        from .learn13 import ensure_learning13_defaults as _L13  # noqa: E402
+        try:
+            _L13()
         except Exception:
             db.session.rollback()
 

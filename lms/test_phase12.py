@@ -67,7 +67,7 @@ s_anon = requests.Session()
 with app.app_context():
     head = db.session.execute(
         db.text("SELECT version_num FROM alembic_version")).fetchone()[0]
-    check("migration head is Phase 12", head == "9c1d2e3f4a5b", head)
+    check("migration head is Phase 13", head == "p13f1a2b3c4d5", head)
 
 # ---------------------------------------------------------------- 2. tenant seed
 

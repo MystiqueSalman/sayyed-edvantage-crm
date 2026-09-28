@@ -17,15 +17,6 @@ cp .env.example .env        # optional; defaults work out of the box
 ./venv/bin/python run.py    # http://localhost:5000
 ```
 
-## Demo accounts (seeded)
-
-| Role    | Email                | Password   |
-|---------|----------------------|------------|
-| Admin   | admin@sayyed.in      | admin123   |
-| Manager | manager@sayyed.in    | manager123 |
-| Faculty | faculty@sayyed.in    | faculty123 |
-| Student | student@sayyed.in    | student123 |
-
 Manager can view/edit all content & records but **not** users, coupons or instructor
 assignment. Faculty manages only courses where they are the assigned instructor.
 

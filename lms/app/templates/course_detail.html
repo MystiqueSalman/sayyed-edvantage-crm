@@ -33,7 +33,8 @@
     </div>
     <h1 style="margin:.4em 0">{{ course.title }}</h1>
     <div>{{ course.description|safe }}</div>
-    <div class="fee" style="margin:12px 0">₹{{ "{:,}".format(course.fee) }} <small>+ GST</small></div>
+    {% set dp = display_price(course.fee) %}
+    <div class="fee" style="margin:12px 0">{{ dp.primary }} <small>+ GST</small>{% if dp.secondary %} <small style="color:var(--muted)">({{ dp.secondary }} est.)</small>{% endif %}</div>
     {% if rating_count %}<div class="stars" style="margin-bottom:10px">{{ "★" * (avg_rating|round|int) }}{{ "☆" * (5 - (avg_rating|round|int)) }} <small style="color:var(--muted)">{{ avg_rating }} · {{ rating_count }} review{{ 's' if rating_count != 1 }}</small></div>{% endif %}
     <p>
       {% if not current_user.is_authenticated %}
@@ -64,7 +65,7 @@
 <div class="live-card">
   <div><span class="live-dot"></span><b>{{ s.title }}</b></div>
   <div style="margin:8px 0; color:var(--muted); font-size:.92rem">
-    🕒 {{ s.starts_at.strftime('%d %b %Y, %I:%M %p') }} · {{ s.duration_min }} min
+    🕒 {% set _st = to_user_tz(s.starts_at, current_user) %}{{ _st.strftime('%d %b %Y, %I:%M %p') }} {{ _st.strftime('%Z') }} · {{ s.duration_min }} min
     {% if s.recording_url %} · <a href="{{ s.recording_url }}" target="_blank">Watch recording</a>{% endif %}
   </div>
   {% if current_user.is_authenticated and enrollment and enrollment.status != 'pending' and s.is_joinable(now) %}

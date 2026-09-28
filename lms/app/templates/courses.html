@@ -17,7 +17,8 @@
       <h3>{{ c.title }}</h3>
       {% if cnt %}<div class="stars">{{ "★" * (avg|round|int) }}{{ "☆" * (5 - (avg|round|int)) }} <small style="color:var(--muted)">{{ avg }} ({{ cnt }})</small></div>{% endif %}
       <p>{{ c.short_desc }}</p>
-      <div class="fee">₹{{ "{:,}".format(c.fee) }} <small>+ GST</small></div>
+      {% set dp = display_price(c.fee) %}
+      <div class="fee">{{ dp.primary }} <small>+ GST</small>{% if dp.secondary %} <small style="color:var(--muted)">({{ dp.secondary }} est.)</small>{% endif %}</div>
       <p style="display:flex; gap:8px; align-items:center">
         <a class="btn btn-gold btn-sm" href="{{ url_for('main.course_detail', slug=c.slug) }}">View Course</a>
         {% if current_user.is_authenticated and current_user.role == 'student' %}

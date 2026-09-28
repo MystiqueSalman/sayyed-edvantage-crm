@@ -16,6 +16,14 @@
     <textarea name="body" rows="6">{{ lesson.body if lesson }}</textarea>
     <label>Video embed URL (for VIDEO lessons — YouTube/Vimeo embed link)</label>
     <input type="text" name="video_url" value="{{ lesson.video_url if lesson }}" placeholder="https://www.youtube.com/embed/…">
+    {% if lesson and p13_enabled is defined %}
+    {# Phase 13 Stream 2: per-lesson signed-URL video policy editor #}
+    <div class="panel" style="margin:14px 0; padding:12px">
+      <b>🎬 Video security</b>
+      <span style="color:var(--muted); font-size:.9rem">Signed, expiring watch links — the raw URL is never exposed in page source.</span><br>
+      <a class="btn btn-ghost btn-sm" style="margin-top:8px" href="{{ url_for('learn13.video_policy_edit', lesson_id=lesson.id) }}">Edit video policy</a>
+    </div>
+    {% endif %}
     <label>PDF file (for PDF lessons)</label>
     <input type="file" name="pdf_file" accept=".pdf">
     {% if lesson and lesson.pdf_file %}<p style="color:var(--muted); font-size:.85rem">Current file: {{ lesson.pdf_file }} (upload a new one to replace)</p>{% endif %}

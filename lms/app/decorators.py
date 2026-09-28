@@ -18,8 +18,8 @@ def role_required(*roles):
 
 
 admin_required = role_required("admin")
-manager_or_admin = role_required("admin", "manager")
-content_manager_required = role_required("admin", "manager", "faculty")
+manager_or_admin = role_required("admin", "manager", "super_admin")  # Phase 13: super admin sees all
+content_manager_required = role_required("admin", "manager", "faculty", "content_manager")  # Phase 13
 
 
 def permission_required(module, action):

@@ -54,4 +54,25 @@ assert hmac.compare_digest(sig, request.headers["X-SE-Signature"])</pre>
   <h3 style="margin-top:0">Changelog</h3>
   <p><b>v1</b> — initial release: courses, enrollments, quiz attempts, leads (read/write), batches, payments, certificate verification; HMAC-signed webhooks for 6 events.</p>
 </div>
+
+<div class="panel">
+  <h3 style="margin-top:0">🎬 Video Security — signed lesson URLs</h3>
+  <p>Video lessons are served through short-lived, per-user signed URLs instead of raw embed links.
+    The lesson page embeds <span class="code-pill">/v/&lt;token&gt;</span>; the watch page's player loads
+    <span class="code-pill">/v/&lt;token&gt;/stream</span>, which 302-redirects to the stored video URL —
+    the raw URL never appears in page source.</p>
+  <p><b>Token format:</b> URL-safe base64 of
+    <span class="code-pill">&lt;lesson_id&gt;.&lt;user_id&gt;.&lt;exp_unix&gt;.&lt;sig_hex&gt;</span>,
+    where <span class="code-pill">sig_hex</span> = HMAC-SHA256(app <span class="code-pill">SECRET_KEY</span>,
+    <span class="code-pill">"&lt;lesson_id&gt;.&lt;user_id&gt;.&lt;exp_unix&gt;"</span>).
+    Tokens are bound to one lesson <i>and</i> one user — the watch route requires the logged-in user
+    to equal the token's user, and the user must be enrolled in the course (or be staff).</p>
+  <p><b>Expiry:</b> per-lesson <span class="code-pill">VideoPolicy13.token_expiry_hours</span>
+    (editable at <b>Manage course → lesson → Edit video policy</b>, 1–72h); lessons without a policy use the
+    <span class="code-pill">p13_video_default_expiry_hours</span> app setting (default 2h).
+    The same editor toggles the download button on the watch page (hidden by default).</p>
+  <p><b>Rotation:</b> changing the Flask <span class="code-pill">SECRET_KEY</span> instantly invalidates every
+    outstanding token (signature verification fails); fresh URLs are minted on the next lesson-page render.
+    No per-token revocation list is kept.</p>
+</div>
 {% endblock %}

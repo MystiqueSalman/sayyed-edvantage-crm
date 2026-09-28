@@ -292,7 +292,7 @@ def health():
     stats = _H.request_stats()
     return jsonify({
         "status": "ok" if ok else "degraded",
-        "version": "phase-12",
+        "version": "phase-13",
         "time": _dt.utcnow().isoformat() + "Z",
         "uptime_seconds": stats["uptime_seconds"],
         "checks": checks,

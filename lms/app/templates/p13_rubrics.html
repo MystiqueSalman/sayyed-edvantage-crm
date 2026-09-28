@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}📏 Evaluation Rubrics{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📏 Evaluation Rubrics</h2><div class="line"></div>
+  <a href="{{ url_for('faculty.dashboard') }}">← Faculty dashboard</a></div>
+<div class="panel">
+  <p style="color:var(--muted)">Rubrics drive the AI project evaluator: each criterion is scored <b>0–10</b> by the AI, and weights determine the final marks. Attach a rubric to a project for one-click "AI evaluate".</p>
+  <form method="post" action="{{ url_for('ai13.rubrics') }}">
+    <div class="two-col">
+      <div><label>Name</label><input type="text" name="name" maxlength="160" required placeholder="e.g. Capstone evaluation"></div>
+      <div><label>Course (optional)</label>
+        <select name="course_id"><option value="">—</option>{% for c in courses %}<option value="{{ c.id }}">{{ c.title }}</option>{% endfor %}</select></div>
+    </div>
+    <div><label>Project (optional — attach this rubric)</label>
+      <select name="project_id"><option value="">—</option>{% for p in projects %}<option value="{{ p.id }}">{{ p.title }}</option>{% endfor %}</select></div>
+    <div><label>Criteria — one per line as "Name : weight"</label>
+      <textarea name="criteria" rows="5" style="width:100%" required placeholder="Code quality : 3&#10;Completeness : 4&#10;Documentation : 2&#10;Presentation : 1"></textarea></div>
+    <p><button class="btn btn-gold" type="submit">Create rubric</button></p>
+  </form>
+</div>
+{% for r in rubrics %}
+<div class="panel" style="margin-bottom:12px">
+  <h3 style="margin-top:0">{{ r.name }} <span style="color:var(--muted); font-size:.85rem">{{ r.course.title if r.course else 'all courses' }}{% if r.project %} · attached to "{{ r.project.title }}"{% endif %}</span></h3>
+  <table>
+    <tr><th>Criterion</th><th>Weight</th></tr>
+    {% for c in r.criteria %}<tr><td>{{ c.name }}</td><td>{{ c.weight }}</td></tr>{% endfor %}
+  </table>
+  <form method="post" action="{{ url_for('ai13.rubric_delete', rubric_id=r.id) }}" style="display:inline" onsubmit="return confirm('Delete this rubric?')"><button class="btn btn-ghost btn-sm" type="submit">Delete</button></form>
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No rubrics yet.</p></div>
+{% endfor %}
+{% endblock %}

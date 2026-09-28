@@ -18,7 +18,11 @@
   <h2 style="margin:.5em 0">{{ lesson.title }}</h2>
 
   {% if lesson.kind == 'video' and lesson.video_url %}
-    <div class="video-wrap"><iframe src="{{ lesson.video_url }}" allowfullscreen></iframe></div>
+    {# Phase 13 Stream 2: prefer the signed, expiring watch URL when the
+       learn13 blueprint is registered; otherwise keep the raw embed URL
+       (existing behaviour preserved). #}
+    {% set _p13sv = p13_signed_url(lesson) if p13_signed_url is defined else '' %}
+    <div class="video-wrap"><iframe src="{{ _p13sv or lesson.video_url }}" allowfullscreen></iframe></div>
   {% elif lesson.kind == 'video' %}
     <p class="flash info">🎬 Video lesson — the recording/embed will appear here.</p>
   {% endif %}

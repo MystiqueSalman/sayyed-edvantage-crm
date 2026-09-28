@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}My Lesson Notes{% endblock %}
+{% block content %}
+<div class="section-title"><h2>📝 My Lesson Notes</h2><div class="line"></div></div>
+{% for course, items in grouped %}
+<div class="panel">
+  <h3 style="margin-top:0">{{ course.title }}</h3>
+  {% for note, lesson in items %}
+  <div class="lesson-row">
+    <span>📄</span>
+    <span><b>{{ note.title or lesson.title }}</b><br>
+      <small style="color:var(--muted)">{{ lesson.module.title }} · {{ lesson.title }} · updated {{ note.updated_at.strftime('%d %b %Y') }}</small></span>
+    <span style="margin-left:auto"><a class="btn btn-ghost btn-sm" href="{{ url_for('learn13.lesson_note', lesson_id=lesson.id) }}">Open</a></span>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="panel"><p style="color:var(--muted)">No notes yet. Open any lesson and use <b>📝 My notes</b> to start writing.</p></div>
+{% endfor %}
+{% endblock %}

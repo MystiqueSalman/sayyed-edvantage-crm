@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Video Policy — {{ lesson.title }}{% endblock %}
+{% block content %}
+<p><a href="{{ url_for('manage.lesson_edit', lesson_id=lesson.id) }}">← Back to lesson</a></p>
+<div class="panel" style="max-width:640px; margin:20px auto">
+  <h2 style="margin-top:0">🎬 Video security policy</h2>
+  <p style="color:var(--muted)">{{ course.title }} · {{ lesson.title }}</p>
+  <form method="post">
+    <label style="display:flex; gap:10px; align-items:center">
+      <input type="checkbox" name="allow_download" {% if policy and policy.allow_download %}checked{% endif %} style="width:auto">
+      Allow download button on the watch page
+    </label>
+    <label>Signed link expiry (hours, 1–72)</label>
+    <input type="number" name="token_expiry_hours" min="1" max="72"
+           value="{{ policy.token_expiry_hours if policy else default_expiry }}">
+    <p style="color:var(--muted); font-size:.85rem">When no policy is saved, the global default ({{ default_expiry }}h) applies and downloads stay hidden.</p>
+    <p><button class="btn btn-gold" type="submit" style="margin-top:12px">Save Policy</button></p>
+  </form>
+</div>
+{% endblock %}

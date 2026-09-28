@@ -12,17 +12,13 @@
     <p><button class="btn btn-gold" type="submit" style="width:100%; margin-top:14px">Login</button></p>
   </form>
   <div style="display:flex; align-items:center; gap:10px; margin:16px 0; color:var(--muted); font-size:.8rem"><span style="flex:1; border-top:1px solid var(--card-brd)"></span>OR<span style="flex:1; border-top:1px solid var(--card-brd)"></span></div>
-  {# Phase 12 §21.7: Google OAuth stub — disabled until the full flow is implemented #}
-  <button class="btn btn-ghost" type="button" disabled title="Coming soon — Google sign-in is not yet enabled" style="width:100%; opacity:.55; cursor:not-allowed">🔵 Continue with Google <span class="tag gold">coming soon</span></button>
+  {# Phase 13: Google OAuth — real flow, gated until admin configures it #}
+  {% if google_oauth_configured %}
+  <a class="btn btn-ghost" href="{{ url_for('auth13.google_login') }}" style="width:100%; box-sizing:border-box">🔵 Continue with Google</a>
+  {% else %}
+  <button class="btn btn-ghost" type="button" disabled title="Admin setup required" style="width:100%; opacity:.55; cursor:not-allowed">🔵 Continue with Google <span class="tag gold">coming soon</span></button>
+  {% endif %}
+  <p style="text-align:center; margin-top:10px"><a href="{{ url_for('auth13.otp_login') }}">Sign in with an email code instead</a> · <a href="{{ url_for('auth13.forgot_password') }}">Forgot password?</a></p>
   <p style="color:var(--muted); font-size:.9rem">New here? <a href="{{ url_for('auth.register') }}">Create a free student account</a></p>
-  <details style="margin-top:18px; color:var(--muted); font-size:.85rem">
-    <summary style="cursor:pointer; color:var(--gold-lt)">Demo accounts (Phase 1 testing)</summary>
-    <ul>
-      <li>Admin — admin@sayyed.in / admin123</li>
-      <li>Manager — manager@sayyed.in / manager123</li>
-      <li>Faculty — faculty@sayyed.in / faculty123</li>
-      <li>Student — student@sayyed.in / student123</li>
-    </ul>
-  </details>
 </div>
 {% endblock %}

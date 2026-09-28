@@ -21,6 +21,30 @@
   {% endfor %}
 </div>
 
+{% set od = p13_overdue or {'count': 0, 'rows': []} %}
+<div class="card" style="margin-bottom:20px;border:1px solid #7a2e2e"><div class="body">
+  <h3 style="margin-top:0">⏰ Overdue installments <span class="tag" style="background:#7a2e2e">{{ od.count }}</span></h3>
+  {% if od.rows %}
+  <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.85rem;min-width:640px">
+    <tr style="color:var(--muted);text-align:left"><th style="padding:8px">Due</th><th>Student</th><th>Course</th><th>#</th><th>Amount</th><th></th></tr>
+    {% for r in od.rows %}
+    <tr style="border-top:1px solid var(--line)">
+      <td style="padding:8px">{{ r.due_date.strftime('%d %b %Y') }}</td>
+      <td>{{ r.student }}<br><small style="color:var(--muted)">{{ r.email }}</small></td>
+      <td>{{ r.course }}</td><td>{{ r.installment_no }}</td>
+      <td>₹{{ "{:,}".format(r.amount_inr) }}</td>
+      <td><form method="post" action="{{ url_for('money13.installment_mark_paid', inst_id=r.id) }}" style="display:inline">
+        <input type="hidden" name="payment_ref" value="">
+        <button class="btn btn-ghost btn-sm" type="submit" onclick="this.form.payment_ref.value=prompt('Payment reference (optional):')||''">Mark paid</button>
+      </form></td>
+    </tr>
+    {% endfor %}
+  </table></div>
+  {% else %}
+  <p style="color:var(--muted);font-size:.9rem;margin:0">No overdue installments. Pending installments past their due date are flagged here automatically.</p>
+  {% endif %}
+</div></div>
+
 <div class="card" style="margin-bottom:20px"><div class="body">
   <h3 style="margin-top:0">Collections by month</h3>
   <canvas id="revChart" height="90"></canvas>
