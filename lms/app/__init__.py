@@ -149,6 +149,23 @@ def create_app():
         if os.environ.get("LMS_SKIP_CREATE_ALL") != "1":
             db.create_all()  # ensures tables exist (Alembic migrations for upgrades)
         _ensure_schema_patches(app)
+        # 2026-09-28: retire the stale "October batch / WELCOME10" site banner.
+        # Those claims were removed from the chatbot in Phase 5; the seeded
+        # announcement row was still showing on the live homepage.
+        try:
+            from .models import Announcement as _Ann  # noqa: E402
+            from sqlalchemy import or_ as _or  # noqa: E402
+            _stale = _Ann.query.filter(_Ann.active.is_(True)).filter(
+                _or(_Ann.title.ilike("%WELCOME10%"),
+                    _Ann.body.ilike("%WELCOME10%"),
+                    _Ann.title.ilike("%October batch%"),
+                    _Ann.body.ilike("%October batch%"))).all()
+            for _a in _stale:
+                _a.active = False
+            if _stale:
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
         # Phase 8: gamification defaults + one-time backfill (guarded).
         # Skipped when the gamification tables don't exist yet (e.g. while
         # `flask db upgrade` is still running the Phase 8 migration).
