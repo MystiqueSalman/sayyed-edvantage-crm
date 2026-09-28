@@ -139,44 +139,12 @@
 
 {% block footer %}
 <footer class="footer">
-  <div class="footer-grid">
-    <div>
-      <img class="lockup" src="{{ url_for('static', filename='img/brand-text-3d.png') }}" alt="Sayyed EdVantage — Empowering Students for Success">
-      <p style="font-size:.9rem; max-width:300px">Future-ready IT &amp; AI training with practical skills, expert faculty and placement support.</p>
-    </div>
-    <div>
-      <h4>Quick Links</h4>
-      <ul>
-        <li><a href="{{ url_for('main.index') }}">Home</a></li>
-        <li><a href="{{ url_for('main.about') }}">About Us</a></li>
-        <li><a href="{{ url_for('growth.jobs') }}">Placements</a></li>
-        <li><a href="{{ url_for('main.blogs') }}">Blogs</a></li>
-        <li><a href="{{ url_for('main.contact') }}">Contact</a></li>
-      </ul>
-    </div>
-    <div>
-      <h4>Popular Courses</h4>
-      <ul>
-        {% if nav_courses %}
-          {% for c in nav_courses[:5] %}
-          <li><a href="{{ url_for('main.course_detail', slug=c.slug) }}">{{ c.title }}</a></li>
-          {% endfor %}
-        {% else %}
-          <li><a href="{{ url_for('main.catalog') }}">Data Science</a></li>
-          <li><a href="{{ url_for('main.catalog') }}">AI &amp; Generative AI</a></li>
-          <li><a href="{{ url_for('main.catalog') }}">Python Programming</a></li>
-          <li><a href="{{ url_for('main.catalog') }}">Cyber Security</a></li>
-          <li><a href="{{ url_for('main.catalog') }}">DevOps</a></li>
-        {% endif %}
-      </ul>
-    </div>
-    <div>
-      <h4>Contact Us</h4>
-      <div class="contact-line">📞 <a href="tel:+917977877884">{{ contact_phone|default('+91 7977877884', true) }}</a></div>
-      <div class="contact-line">✉️ <a href="mailto:sayyededvantage@gmail.com">{{ contact_email|default('sayyededvantage@gmail.com', true) }}</a></div>
-      <div class="contact-line">📍 Mumbai, Maharashtra, India</div>
-      <p style="margin-top:14px"><a class="btn btn-gold btn-sm" href="{{ url_for('crm.enquiry') }}">Enquire for Admissions →</a></p>
-    </div>
+  <div class="footer-slim">
+    <a href="{{ url_for('main.index') }}">Home</a>
+    <a href="{{ url_for('main.about') }}">About Us</a>
+    <a href="{{ url_for('growth.jobs') }}">Placements</a>
+    <a href="{{ url_for('main.blogs') }}">Blogs</a>
+    <a href="{{ url_for('main.contact') }}">Contact</a>
   </div>
   <div class="footer-bottom">
     © {{ now.year }} Sayyed EdVantage · {{ t('tagline') }} · {{ t('location') }}

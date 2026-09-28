@@ -221,8 +221,9 @@ img{max-width:100%}
 
 /* ---------------- footer ---------------- */
 .footer{background:#081426; color:#aebdd6; margin-top:0}
-.footer-grid{max-width:1280px; margin:0 auto; padding:52px 24px 30px; display:grid;
-  grid-template-columns:1.4fr 1fr 1fr 1.2fr; gap:32px}
+.footer-slim{max-width:1280px; margin:0 auto; padding:30px 24px 6px; display:flex; flex-wrap:wrap; gap:8px 28px; justify-content:center}
+.footer-slim a{color:#aebdd6; font-size:.95rem}
+.footer-slim a:hover{color:var(--gold-lt)}
 .footer-brand img.lockup{height:52px; width:auto; margin-bottom:12px}
 .footer h4{color:#fff; margin:0 0 14px; font-size:1rem}
 .footer ul{list-style:none; margin:0; padding:0}
@@ -558,7 +559,6 @@ pre{max-width:100%; overflow-x:auto}
 @media(max-width:1100px){
   .dash-grid{grid-template-columns:1fr}
   .stat-cards{grid-template-columns:repeat(2,1fr)}
-  .footer-grid{grid-template-columns:1fr 1fr}
 }
 /* UI15: CTAs move into the drawer (full-width, never clipped); app sidebar collapses */
 @media(max-width:1024px){
@@ -587,7 +587,6 @@ pre{max-width:100%; overflow-x:auto}
   .stat-cards{grid-template-columns:1fr 1fr}
   .hero-inner{padding:56px 20px 48px}
   .band{padding:44px 0}
-  .footer-grid{grid-template-columns:1fr}
   .login-card{padding:30px 22px}
   .donut-wrap{flex-wrap:wrap}
   .batch-row{flex-wrap:wrap}
