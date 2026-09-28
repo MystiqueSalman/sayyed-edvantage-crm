@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "layout_app.html" %}
 {% block title %}Refer & Earn — Sayyed EdVantage LMS{% endblock %}
-{% block content %}
+{% block app_content %}
 <div class="section-title"><h2>🎁 Refer & Earn</h2><div class="line"></div>
   <a href="{{ url_for('student.dashboard') }}">← Dashboard</a></div>
 
@@ -10,7 +10,7 @@
 
 <div class="panel">
   <h3 style="margin-top:0">Your referral link</h3>
-  <p style="color:var(--muted)">Share this link — when a friend signs up and completes their first paid enrollment, you earn a <b style="color:var(--gold-lt)">{{ settings.reward_percent }}% discount coupon</b> automatically.</p>
+  <p style="color:var(--muted)">Share this link — when a friend signs up and completes their first paid enrollment, you earn a <b style="color:var(--gold-dk)">{{ settings.reward_percent }}% discount coupon</b> automatically.</p>
   <p>
     <input type="text" id="ref-link" value="{{ link }}" readonly onclick="this.select()"
            style="font-family:monospace">

@@ -1,0 +1,23 @@
+{% extends "layout_app.html" %}
+{% block title %}Partners — Admin{% endblock %}
+{% block app_content %}
+<div class="section-title"><h2>🤝 Partners</h2><div class="line"></div>
+  <a class="btn btn-gold btn-sm" href="{{ url_for('admin.partner_new') }}">+ New partner</a></div>
+<table>
+  <tr><th>Name</th><th>Website</th><th>Active</th><th>Order</th><th></th></tr>
+  {% for p in items|default([]) %}
+  <tr>
+    <td>{{ p.name }}</td><td>{% if p.website %}<a href="{{ p.website }}" target="_blank">{{ p.website }}</a>{% endif %}</td>
+    <td>{{ "🟢" if p.active else "⚪" }}</td><td>{{ p.sort_order }}</td>
+    <td style="white-space:nowrap">
+      <a class="btn btn-sm" href="{{ url_for('admin.partner_edit', p_id=p.id) }}">Edit</a>
+      <form method="post" action="{{ url_for('admin.partner_toggle', p_id=p.id) }}" style="display:inline">
+        <button class="btn btn-sm" type="submit">{{ "Deactivate" if p.active else "Activate" }}</button></form>
+      <form method="post" action="{{ url_for('admin.partner_delete', p_id=p.id) }}" style="display:inline"
+            onsubmit="return confirm('Delete this partner?')">
+        <button class="btn btn-sm" type="submit">Delete</button></form>
+    </td>
+  </tr>
+  {% else %}<tr><td colspan="5">No partners yet.</td></tr>{% endfor %}
+</table>
+{% endblock %}

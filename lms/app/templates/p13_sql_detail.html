@@ -6,7 +6,7 @@
   <h2 style="margin-top:0">🗄️ {{ ex.title }}</h2>
   <div style="line-height:1.7">{{ ex.description|safe }}</div>
   {% if ex.hint %}<p><button class="btn btn-ghost btn-sm" type="button" onclick="document.getElementById('p13hint').style.display='block';this.style.display='none'">💡 Show hint</button></p>
-  <p id="p13hint" style="display:none; color:var(--gold-lt)">{{ ex.hint }}</p>{% endif %}
+  <p id="p13hint" style="display:none; color:var(--gold-dk)">{{ ex.hint }}</p>{% endif %}
   <label>Your query (read-only SELECT/WITH)</label>
   <textarea id="p13q" rows="8" class="curl" style="width:100%">SELECT </textarea>
   <p><button class="btn btn-gold" type="button" onclick="p13run()">▶ Run &amp; check</button></p>

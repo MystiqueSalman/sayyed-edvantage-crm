@@ -1,0 +1,14 @@
+{% extends "layout_app.html" %}
+{% block title %}Announcements{% endblock %}
+{% block app_content %}
+<div class="section-title"><h2>📢 Announcements</h2><div class="line"></div></div>
+{% for a in announcements|default([]) %}
+<div class="panel" style="margin-bottom:14px">
+  <h3 style="margin-top:0">{{ a.title }}</h3>
+  <div>{{ a.body }}</div>
+  <small style="color:var(--muted)">{{ a.created_at.strftime('%d %b %Y') if a.created_at }}</small>
+</div>
+{% else %}
+<div class="panel"><p>No announcements right now.</p></div>
+{% endfor %}
+{% endblock %}

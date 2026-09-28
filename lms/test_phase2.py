@@ -117,7 +117,7 @@ r = s_stu.get(f"{BASE}/dashboard")
 check("dashboard live widget renders",
       "Upcoming Live Classes" in r.text and "Week 3 Doubt-Clearing" in r.text)
 check("dashboard shows joinable session button",
-      "Test Live NOW" in r.text and "Join Live Class" in r.text)
+      "Test Live NOW" in r.text and ">Join</a>" in r.text)
 
 # --- faculty (assigned) can schedule; faculty (unassigned) blocked ---
 r = s_fac.post(f"{BASE}/manage/course/{py_id}/live/new",
@@ -362,8 +362,9 @@ check("manager blocked from announcements (403)", r.status_code == 403)
 
 # ================================================================ SEARCH
 r = requests.get(f"{BASE}/courses", params={"q": "python"})
+grid = r.text[r.text.find('<div class="grid">'):]  # scope to results (nav lists all)
 check("search 'python' finds Python Programming, hides Linux",
-      "Python Programming" in r.text and "Linux Administration" not in r.text)
+      "Python Programming" in grid and "Linux Administration" not in grid)
 r = requests.get(f"{BASE}/courses", params={"q": "data"})
 check("search 'data' finds Data Science + Data Analytics",
       "Data Science" in r.text and "Data Analytics" in r.text)

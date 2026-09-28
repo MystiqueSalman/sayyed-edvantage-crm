@@ -14,7 +14,7 @@
     <label>Interested course</label>
     <select name="course_id">
       <option value="">— Not sure yet —</option>
-      {% for c in courses %}<option value="{{ c.id }}">{{ c.title }} (₹{{ "{:,}".format(c.fee) }})</option>{% endfor %}
+      {% for c in courses %}<option value="{{ c.id }}" {% if sel_course_id and sel_course_id == c.id|string %}selected{% endif %}>{{ c.title }} (₹{{ "{:,}".format(c.fee) }})</option>{% endfor %}
     </select>
     <label>Message</label>
     <textarea name="message" rows="3" maxlength="1000" placeholder="What would you like to know?"></textarea>

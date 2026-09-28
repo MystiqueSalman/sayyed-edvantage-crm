@@ -248,7 +248,8 @@ in_ctx(_seed)
 r = c_a.get("/leaderboard")
 check("leaderboard 200", r.status_code == 200, f"got {r.status_code}")
 body = r.data.decode()
-ia, ib, ic, idd = (body.find(nm) for nm in
+tbl = body[body.find("<table"):]  # ignore app-shell topbar (renders viewer name)
+ia, ib, ic, idd = (tbl.find(nm) for nm in
                    ("Aarav Student", "Bina Student", "Chetan Student", "Diya Student"))
 check("leaderboard order D>B>A>C",
       -1 not in (ia, ib, ic, idd) and idd < ib < ia < ic,
@@ -263,7 +264,8 @@ in_ctx(_optout_b)
 r = c_a.get("/leaderboard")
 body = r.data.decode()
 check("opted-out user absent", "Bina Student" not in body)
-ia, ic, idd = (body.find(nm) for nm in ("Aarav Student", "Chetan Student", "Diya Student"))
+tbl = body[body.find("<table"):]
+ia, ic, idd = (tbl.find(nm) for nm in ("Aarav Student", "Chetan Student", "Diya Student"))
 check("ranks reflow after opt-out", idd < ia < ic,
       f"pos D={idd} A={ia} C={ic}")
 check("top rank medal present", "🥇" in body)
@@ -308,10 +310,11 @@ def _batch():
 batch_id = in_ctx(_batch)
 r = c_a.get(f"/leaderboard?tab=batch&batch_id={batch_id}")
 body = r.data.decode()
+tbl = body[body.find("<table"):]  # ignore app-shell topbar (renders viewer name)
 check("batch tab 200", r.status_code == 200, f"got {r.status_code}")
-check("batch tab shows roster D", "Diya Student" in body)
-check("batch tab excludes non-roster A", "Aarav Student" not in body)
-check("opt-out honored on batch tab", "Bina Student" not in body)
+check("batch tab shows roster D", "Diya Student" in tbl)
+check("batch tab excludes non-roster A", "Aarav Student" not in tbl)
+check("opt-out honored on batch tab", "Bina Student" not in tbl)
 
 # 18. selector tabs render without selection
 r = c_a.get("/leaderboard?tab=course")

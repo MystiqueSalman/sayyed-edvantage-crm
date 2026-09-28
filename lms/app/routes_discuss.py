@@ -103,3 +103,12 @@ def thread_delete(discussion_id):
     db.session.commit()
     flash("Discussion deleted.", "info")
     return redirect(url_for("discuss.thread_list", slug=slug))
+
+
+@discuss_bp.route("/community")
+@login_required
+def community():
+    """UI14: cross-course community index — recent threads everywhere."""
+    threads = (Discussion.query.order_by(Discussion.created_at.desc())
+               .limit(20).all())
+    return render_template("community.html", threads=threads)

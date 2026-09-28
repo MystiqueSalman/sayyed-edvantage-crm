@@ -209,6 +209,8 @@ class LessonProgress(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     lesson_id = db.Column(db.Integer, db.ForeignKey("lessons.id"), nullable=False)
     completed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # UI14: real learning-time tracking, accumulated via the lesson heartbeat.
+    time_spent_sec = db.Column(db.Integer, default=0)
     __table_args__ = (db.UniqueConstraint("user_id", "lesson_id", name="uq_lesson_progress"),)
 
 

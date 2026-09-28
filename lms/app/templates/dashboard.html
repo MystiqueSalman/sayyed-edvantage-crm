@@ -1,197 +1,225 @@
-{% extends "base.html" %}
-{% block title %}My Learning — Sayyed EdVantage LMS{% endblock %}
-{% block content %}
-<div class="section-title"><h2>My Learning</h2><div class="line"></div>
-  <a class="btn btn-ghost btn-sm" href="{{ url_for('main.catalog') }}">+ Enroll in more</a>
-  <a class="btn btn-ghost btn-sm" href="{{ url_for('student.wishlist') }}">❤ Wishlist</a></div>
+{% extends "layout_app.html" %}
+{% block title %}Dashboard — Sayyed EdVantage{% endblock %}
+{% block app_content %}
+{% set dash = dash|default({'enrolled': 0, 'lessons_done': 0, 'hours': 0, 'certificates': 0, 'points': 0, 'streak': 0}, true) %}
+{% set course_cards = course_cards|default([], true) %}
+{% set assignment_cards = assignment_cards|default([], true) %}
+{% set announcements = announcements|default([], true) %}
+{% set overall_pct = overall_pct|default(0, true) %}
 
-{# Phase 8: gamification strip #}
-<div class="card" style="margin-bottom:18px"><div class="body">
-  <div style="display:flex;flex-wrap:wrap;gap:18px;align-items:center">
-    <div style="text-align:center"><div style="font-size:1.5rem">⭐</div>
-      <b style="color:var(--gold)">{{ game_profile.points_total or 0 }}</b><br>
-      <small style="color:var(--muted)">points</small></div>
-    <div style="text-align:center"><div style="font-size:1.5rem">🔥</div>
-      <b style="color:#ff8c42">{{ game_profile.current_streak or 0 }}</b><br>
-      <small style="color:var(--muted)">day streak (best {{ game_profile.longest_streak or 0 }})</small></div>
-    <div style="flex:1;min-width:200px">
-      <small style="color:var(--muted)">Latest badges</small><br>
-      {% if recent_badges %}
-        {% for ub in recent_badges %}<span title="{{ ub.badge.description }}" style="font-size:1.5rem;margin-right:6px">{{ ub.badge.icon }}</span>{% endfor %}
-      {% else %}<small style="color:var(--muted)">none yet</small>{% endif %}
-    </div>
-    <div style="flex:1;min-width:200px">
-      <small style="color:var(--muted)">Active challenges</small><br>
-      {% if my_challenges %}
-        {% for e in my_challenges %}<div><a href="{{ url_for('game.challenge_detail', challenge_id=e.challenge.id) }}">{{ e.challenge.title }}</a> <small style="color:var(--muted)">{{ e.progress|round(0) }}%</small></div>{% endfor %}
-      {% else %}<small style="color:var(--muted)">none — <a href="{{ url_for('game.challenge_list') }}">join one</a></small>{% endif %}
-    </div>
-    <a class="btn btn-gold btn-sm" href="{{ url_for('game.achievements') }}">🏆 Achievements</a>
-  </div>
-</div></div>
-
-{# Phase 12: rules-based adaptive "recommended next" (§21.5) #}
-{% if p12_recs %}
-<div class="section-title"><h2>🎯 Recommended Next</h2><div class="line"></div>
-  <a class="btn btn-ghost btn-sm" href="{{ url_for('saas.recommended') }}">View all →</a></div>
-<div class="card" style="margin-bottom:18px"><div class="body">
-  {% for r in p12_recs %}
-  <div style="margin-bottom:8px">🎯 <b>{{ r.course_title }}</b> — {{ r.module_title }}
-    <small style="color:var(--muted)">({{ r.avg }}%)</small>
-    {% if r.lesson_id %} <a href="{{ url_for('student.lesson', lesson_id=r.lesson_id) }}">{{ r.lesson_title }} →</a>{% endif %}
-  </div>
-  {% endfor %}
-</div></div>
-{% endif %}
-
-{% if live_sessions %}
-<div class="section-title"><h2>🔴 Upcoming Live Classes</h2><div class="line"></div></div>
-{% for s in live_sessions %}<div class="live-card">
-  <div><span class="live-dot"></span><b>{{ s.title }}</b>
-    <span style="color:var(--muted)">· {{ s.course.title }}</span></div>
-  <div style="margin:8px 0; color:var(--muted); font-size:.92rem">
-    🕒 {% set _st = to_user_tz(s.starts_at, current_user) %}{{ _st.strftime('%d %b %Y, %I:%M %p') }} {{ _st.strftime('%Z') }} · {{ s.duration_min }} min
-    {% if s.is_joinable(now) %}
-      <span class="tag green" style="margin-left:10px">LIVE NOW / JOINABLE</span>
-    {% else %}
-      · starts <span class="countdown" data-starts="{{ s.starts_at.strftime('%Y-%m-%dT%H:%M:%S') }}">…</span>
-    {% endif %}
-  </div>
-  {% if s.is_joinable(now) %}
-  <a class="btn btn-gold btn-sm" href="{{ url_for('ops.live_join', session_id=s.id) }}" target="_blank" rel="noopener">Join Live Class 🔴</a>
+<div class="welcome-banner">
+  <h2>Welcome Back,<br><span class="hl">{{ current_user.name }}! 👋</span></h2>
+  <p>Keep learning, keep growing.<br>Your future in technology starts here.</p>
+  {% set first_cc = course_cards[0] if course_cards else None %}
+  {% if first_cc and first_cc.continue_lesson_id %}
+    <a class="btn btn-gold" href="{{ url_for('student.lesson', lesson_id=first_cc.continue_lesson_id) }}">Continue Learning &nbsp;→</a>
   {% else %}
-  <button class="btn btn-ghost btn-sm" disabled title="Join opens 15 minutes before start">Join opens 15 min before</button>
+    <a class="btn btn-gold" href="{{ url_for('main.catalog') }}">Explore Courses &nbsp;→</a>
   {% endif %}
 </div>
-{% endfor %}
-<script>
-document.querySelectorAll(".countdown").forEach(function (el) {
-  var target = new Date(el.dataset.starts + "Z").getTime();
-  function tick() {
-    var ms = target - Date.now();
-    if (ms <= 0) { el.textContent = "starting… refresh to join"; return; }
-    var d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24,
-        m = Math.floor(ms / 6e4) % 60, s = Math.floor(ms / 1e3) % 60;
-    el.textContent = (d ? d + "d " : "") + h + "h " + m + "m " + s + "s";
-  }
-  tick(); setInterval(tick, 1000);
-});
-</script>
-{% endif %}
 
-{% if onboarding and onboarding | selectattr('done', 'equalto', false) | list | length > 0 %}
-<div class="section-title"><h2>🚀 Getting Started</h2><div class="line"></div></div>
-<div class="panel" id="onboarding-panel">
-  {% for item in onboarding %}
-  <label style="display:flex; gap:10px; align-items:flex-start; padding:8px 0; border-bottom:1px solid var(--card-brd); cursor:pointer">
-    <input type="checkbox" data-onboard-key="{{ item.key }}" {% if item.done %}checked{% endif %} style="width:auto; margin-top:4px">
-    <span><b {% if item.done %}style="text-decoration:line-through; color:var(--muted)"{% endif %}>{{ item.title }}</b><br>
-    <small style="color:var(--muted)">{{ item.desc }}</small></span>
-  </label>
-  {% endfor %}
+<div class="stat-cards">
+  <div class="stat-card"><span class="sic blue">🎓</span><div><b>{{ dash.enrolled }}</b><small>Enrolled Courses</small></div></div>
+  <div class="stat-card"><span class="sic green">▶️</span><div><b>{{ dash.lessons_done }}</b><small>Lessons Completed</small></div></div>
+  <div class="stat-card"><span class="sic blue">🕐</span><div><b>{{ dash.hours }} hrs</b><small>Learning Time</small></div></div>
+  <div class="stat-card"><span class="sic gold">🏆</span><div><b>{{ dash.certificates }}</b><small>Certificates Earned</small></div></div>
 </div>
-<script>
-document.querySelectorAll("[data-onboard-key]").forEach(function (box) {
-  box.addEventListener("change", function () {
-    fetch("/onboarding/toggle/" + box.dataset.onboardKey, {method: "POST"})
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (d.ok) {
-          var b = box.closest("label").querySelector("b");
-          b.style.textDecoration = d.done ? "line-through" : "none";
-          b.style.color = d.done ? "var(--muted)" : "";
-        }
-      }).catch(function () {});
-  });
-});
-</script>
-{% endif %}
 
-{# Phase 5 — AI learning layer widgets #}
-{% if plan_items or weak_topics %}
-<div class="two-col" style="margin-top:6px">
-  {% if plan_items %}
-  <div class="panel">
-    <h3 style="margin-top:0">🗓 Today's Study Plan</h3>
-    <ul style="margin:0; padding-left:18px">
-      {% for it in plan_items %}
-      <li style="{% if it.done %}text-decoration:line-through; color:var(--muted){% endif %}">
-        <a href="{{ url_for('student.lesson', lesson_id=it.lesson_id) }}">{{ it.lesson.title }}</a>
-        <span style="color:var(--muted)">· {{ it.plan.course.title }}</span>
-        <form class="inline-form" method="post" action="{{ url_for('tutor.planner_item_toggle', item_id=it.id) }}" style="display:inline">
-          <button class="btn btn-ghost btn-sm" type="submit">{% if it.done %}↩{% else %}✓{% endif %}</button>
+<div class="dash-grid" style="margin-top:22px">
+  <div class="dash-col">
+
+    {% if onboarding and onboarding|selectattr('done')|list|length < onboarding|length %}
+    <div class="panel-card">
+      <h3>🚀 Getting Started <span class="pill info">{{ onboarding|selectattr('done')|list|length }}/{{ onboarding|length }} done</span></h3>
+      {% for t in onboarding %}
+      <div class="ann-row">
+        <span class="aico">{% if t.done %}✅{% else %}⬜{% endif %}</span>
+        <div><b style="{% if t.done %}text-decoration:line-through; color:var(--muted){% endif %}">{{ t.title }}</b><small>{{ t.desc }}</small></div>
+        {% if not t.done %}
+        <form method="post" action="{{ url_for('crm.onboarding_toggle', key=t.key) }}" style="margin-left:auto">
+          <button class="btn btn-ghost btn-sm" type="submit">Mark done</button>
         </form>
-      </li>
+        {% endif %}
+      </div>
       {% endfor %}
-    </ul>
-    <p style="margin-bottom:0"><a class="btn btn-ghost btn-sm" href="{{ url_for('tutor.planner') }}">Open planner →</a></p>
-  </div>
-  {% endif %}
-  {% if weak_topics %}
-  <div class="panel">
-    <h3 style="margin-top:0">📝 Topics to Revise</h3>
-    <ul style="margin:0; padding-left:18px">
-      {% for w in weak_topics[:5] %}
-      <li>{{ w.title }} <span style="color:var(--muted)">· {{ w.course.title }}</span>
-        <a href="{{ url_for('tutor.tutor_home', course_id=w.course.id) }}?q={{ ('Explain ' + w.title)|urlencode }}">Ask tutor →</a></li>
-      {% endfor %}
-    </ul>
-    <p style="margin-bottom:0"><a class="btn btn-ghost btn-sm" href="{{ url_for('tutor.revise') }}">All weak topics →</a></p>
-  </div>
-  {% endif %}
-</div>
-{% endif %}
+    </div>
+    {% endif %}
 
-{% if enrollments %}
-<div class="grid">
-  {% for e in enrollments %}
-  {% set p = e.progress() %}
-  <div class="card">
-    <div class="course-banner" style="height:130px; background-image:url('{{ url_for('static', filename='img/banners/' + e.course.banner) if e.course.banner }}')"></div>
-    <div class="body">
-      <h3>{{ e.course.title }}</h3>
-      {% if e.status == 'completed' %}<span class="tag green">Completed ✓</span>
-      {% else %}<span class="tag">In progress</span>{% endif %}
-      <div class="progress"><i style="width:{{ p }}%"></i></div>
-      <small style="color:var(--muted)">{{ p }}% complete</small>
-      {% set first = e.course.lessons[0] if e.course.lessons else None %}
-      {% if first and e.status != 'completed' %}
-      <a class="btn btn-blue btn-sm" href="{{ url_for('student.lesson', lesson_id=first.id) }}">Continue Learning</a>
-      {% elif e.status == 'completed' %}
-      <a class="btn btn-gold btn-sm" href="{{ url_for('student.certificates') }}">View Certificate</a>
+    <div class="panel-card" id="my-courses">
+      <h3>My Courses <a class="more" href="{{ url_for('main.catalog') }}">View All →</a></h3>
+      {% if course_cards %}
+      <div class="my-course-grid">
+        {% for cc in course_cards[:4] %}
+        <div class="my-course">
+          <div class="course-banner" style="background-image:url('{{ url_for('static', filename='img/banners/' + cc.e.course.banner) if cc.e.course.banner }}')"></div>
+          <div class="mc-body">
+            <h4>{{ cc.e.course.title }}</h4>
+            <div class="progress"><i style="width:{{ cc.pct }}%"></i></div>
+            <div class="mc-meta"><span>{{ cc.done }}/{{ cc.total }} Lessons</span><b>{{ cc.pct }}%</b></div>
+            {% if cc.e.status == 'completed' %}
+              <a class="btn btn-gold btn-sm" href="{{ url_for('student.certificates') }}">View Certificate</a>
+            {% elif cc.continue_lesson_id %}
+              <a class="btn btn-blue btn-sm" href="{{ url_for('student.lesson', lesson_id=cc.continue_lesson_id) }}">Continue Learning</a>
+            {% else %}
+              <a class="btn btn-blue btn-sm" href="{{ url_for('main.course_detail', slug=cc.e.course.slug) }}">Open Course</a>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty">You're not enrolled yet. <a href="{{ url_for('main.catalog') }}">Browse the catalog</a> to start learning.</div>
       {% endif %}
     </div>
-  </div>
-  {% endfor %}
-</div>
-{% else %}
-<div class="panel"><p style="color:var(--muted)">You're not enrolled in any course yet.
-  <a href="{{ url_for('main.catalog') }}">Browse the catalog</a> to get started.</p></div>
-{% endif %}
 
-{% if pending %}
-<div class="section-title"><h2>Pending Assignments</h2><div class="line"></div>
-  <a href="{{ url_for('student.assignments') }}">All →</a></div>
-<div class="panel">
-  {% for a in pending %}
-  <div class="lesson-row"><span>🧪</span>
-    <span><b>{{ a.title }}</b> <span style="color:var(--muted)">· {{ a.course.title }}</span></span>
-    <a class="btn btn-ghost btn-sm" style="margin-left:auto" href="{{ url_for('student.assignment_detail', assignment_id=a.id) }}">Submit</a>
-  </div>
-  {% endfor %}
-</div>
-{% endif %}
+    <div class="panel-card">
+      <h3>Recent Assignments <a class="more" href="{{ url_for('student.assignments') }}">View All →</a></h3>
+      {% if assignment_cards %}
+        {% for ac in assignment_cards %}
+        <a class="assign-row" href="{{ url_for('student.assignment_detail', assignment_id=ac.a.id) }}" style="color:inherit">
+          <span class="aico">📝</span>
+          <span class="ainfo"><b>{{ ac.a.title }}</b><small>Submit by: {{ ac.a.due_date.strftime('%b %d, %Y') if ac.a.due_date else 'No deadline' }} · {{ ac.a.course.title }}</small></span>
+          <span class="pill {{ ac.status|lower }}">{{ ac.status }}</span><span>→</span>
+        </a>
+        {% endfor %}
+      {% else %}
+        <div class="empty">No assignments right now. 🎉</div>
+      {% endif %}
+    </div>
 
-{% if certs %}
-<div class="section-title"><h2>My Certificates</h2><div class="line"></div>
-  <a href="{{ url_for('student.certificates') }}">All →</a></div>
-<div class="panel">
-  {% for c in certs %}
-  <div class="lesson-row"><span>🏆</span><span><b>{{ c.course.title }}</b>
-    <span style="color:var(--muted)">· {{ c.code }} · {{ c.issued_at.strftime('%d %b %Y') }}</span></span>
-    <a class="btn btn-gold btn-sm" style="margin-left:auto" href="{{ url_for('student.certificate_download', code=c.code) }}">Download PDF</a>
+    <div class="panel-card">
+      <h3>My Progress <a class="more" href="{{ url_for('student.dashboard') }}#my-courses">View All →</a></h3>
+      <div class="donut-wrap">
+        <div class="donut">
+          <svg width="128" height="128" viewBox="0 0 128 128">
+            <circle cx="64" cy="64" r="54" fill="none" stroke="#e6ebf4" stroke-width="13"/>
+            <circle cx="64" cy="64" r="54" fill="none" stroke="#22b07d" stroke-width="13"
+              stroke-linecap="round" stroke-dasharray="{{ (overall_pct * 3.3929)|round(1) }} 339.29"/>
+          </svg>
+          <div class="dc"><div><b>{{ overall_pct }}%</b><small>Overall<br>Progress</small></div></div>
+        </div>
+        <div class="prog-list">
+          {% for cc in course_cards[:5] %}
+          <div class="pr-row">
+            <div class="pr-top"><b>{{ cc.e.course.title }}</b><span>{{ cc.pct }}%</span></div>
+            <div class="progress"><i style="width:{{ cc.pct }}%"></i></div>
+          </div>
+          {% endfor %}
+          {% if not course_cards %}<div class="empty">Enroll in a course to track progress.</div>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="link-cards">
+      <div class="link-card">
+        <span class="lic" style="background:#fdf0cd">🏆</span>
+        <b>Certificates</b><p>{{ dash.certificates }} Certificates Earned</p>
+        <a href="{{ url_for('student.certificates') }}">View Certificates →</a>
+      </div>
+      <div class="link-card">
+        <span class="lic" style="background:#ddf7e8">💼</span>
+        <b>Career &amp; Placement</b><p>Explore job opportunities, prepare for interviews and get placement support.</p>
+        <a href="{{ url_for('career.hub') }}">Explore Now →</a>
+      </div>
+      <div class="link-card">
+        <span class="lic" style="background:#e3efff">👥</span>
+        <b>Community &amp; Support</b><p>Discuss, ask questions and learn with fellow students.</p>
+        <a href="{{ url_for('discuss.community') }}">Join Community →</a>
+      </div>
+    </div>
+
+    {% if p12_recs %}
+    <div class="panel-card">
+      <h3>🎯 Recommended Next <a class="more" href="{{ url_for('saas.recommended') }}">View all →</a></h3>
+      {% for r in p12_recs %}
+      <div class="ann-row"><span class="aico">🎯</span>
+        <div><b>{{ r.course_title }}</b><small>{{ r.module_title }} · {{ r.avg }}%</small></div>
+        {% if r.lesson_id %}<a href="{{ url_for('student.lesson', lesson_id=r.lesson_id) }}" style="margin-left:auto; font-size:.82rem; font-weight:700">{{ r.lesson_title }} →</a>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if plan_items or weak_topics %}
+    <div class="two-col">
+      {% if plan_items %}
+      <div class="panel-card">
+        <h3>🗓 Today's Study Plan</h3>
+        {% for it in plan_items[:5] %}
+        <div class="ann-row"><span class="aico">📘</span>
+          <div><b style="{% if it.done %}text-decoration:line-through; color:var(--muted){% endif %}">{{ it.lesson.title }}</b><small>{{ it.plan.course.title }}</small></div>
+        </div>
+        {% endfor %}
+        <p style="margin:10px 0 0"><a class="btn btn-ghost btn-sm" href="{{ url_for('tutor.planner') }}">Open planner →</a></p>
+      </div>
+      {% endif %}
+      {% if weak_topics %}
+      <div class="panel-card">
+        <h3>📝 Topics to Revise</h3>
+        {% for w in weak_topics[:5] %}
+        <div class="ann-row"><span class="aico">🔍</span>
+          <div><b>{{ w.title }}</b><small>{{ w.course.title }}</small></div>
+          <a href="{{ url_for('tutor.tutor_home', course_id=w.course.id) }}?q={{ ('Explain ' + w.title)|urlencode }}" style="margin-left:auto; font-size:.82rem; font-weight:700">Ask tutor →</a>
+        </div>
+        {% endfor %}
+        <p style="margin:10px 0 0"><a class="btn btn-ghost btn-sm" href="{{ url_for('tutor.revise') }}">All weak topics →</a></p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
   </div>
-  {% endfor %}
+  <div class="dash-col">
+
+    <div class="panel-card">
+      <h3>Upcoming Live Classes <a class="more" href="{{ url_for('ops.calendar') }}">View All →</a></h3>
+      {% if live_sessions %}
+        {% for s in live_sessions[:4] %}
+        {% set _st = to_user_tz(s.starts_at, current_user) %}
+        <div class="class-row">
+          <div class="class-date"><b>{{ _st.strftime('%d') }}</b><small>{{ _st.strftime('%b')|upper }}</small></div>
+          <div class="cinfo"><b>{{ s.course.title }} - Live Class</b><small>Topic: {{ s.title }}</small><small>{{ _st.strftime('%I:%M %p %Z') }}</small></div>
+          {% if s.is_joinable(now) %}
+          <a class="btn btn-blue btn-sm" href="{{ url_for('ops.live_join', session_id=s.id) }}" target="_blank" rel="noopener">Join</a>
+          {% else %}
+          <button class="btn btn-ghost btn-sm" disabled title="Join opens 15 minutes before start">Join</button>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty">No live classes scheduled. Check the <a href="{{ url_for('ops.calendar') }}">calendar</a>.</div>
+      {% endif %}
+    </div>
+
+    <div class="ai-card">
+      <h3>AI Learning Assistant</h3>
+      <p>Ask doubts, get instant answers, notes, quizzes and study guidance.</p>
+      <a class="btn btn-blue btn-sm" href="{{ url_for('tutor.tutor_home') }}">Ask AI Assistant &nbsp;→</a>
+    </div>
+
+    <div class="panel-card">
+      <h3>Announcements <a class="more" href="{{ url_for('student.announcements') }}">View All →</a></h3>
+      {% if announcements %}
+        {% for a in announcements %}
+        <div class="ann-row"><span class="aico">📢</span>
+          <div><b>{{ a.title }}</b><small>{{ a.body[:80] if a.body else '' }}</small></div>
+          <time>{{ a.created_at.strftime('%d %b') }}</time>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty">No announcements yet.</div>
+      {% endif %}
+    </div>
+
+    {% if recent_badges %}
+    <div class="panel-card">
+      <h3>🏅 Latest Badges <a class="more" href="{{ url_for('game.achievements') }}">View All →</a></h3>
+      <div style="font-size:2rem; letter-spacing:6px">
+        {% for ub in recent_badges %}<span title="{{ ub.badge.name }}">{{ ub.badge.icon }}</span>{% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
 </div>
-{% endif %}
 {% endblock %}

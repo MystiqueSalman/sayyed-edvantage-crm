@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "layout_app.html" %}
 {% block title %}{{ project.title }}{% endblock %}
-{% block content %}
+{% block app_content %}
 <p><a href="{{ url_for('student.projects') }}">← My Projects</a></p>
 <div class="panel">
   <h2 style="margin-top:0">{{ project.title }}

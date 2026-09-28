@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}News &amp; Updates — Sayyed EdVantage{% endblock %}
+{% block content %}
+<div class="band tint">
+  <div class="wrap" style="max-width:860px">
+    <div class="sec-head"><div><h2>📰 News &amp; <span class="hl">Updates</span></h2></div></div>
+    {% for p in posts %}
+    <div class="panel-card">
+      <h3 style="margin-top:0">{{ p.title }}</h3>
+      <div>{{ p.body }}</div>
+      <small style="color:var(--muted)">{{ p.created_at.strftime('%d %b %Y') if p.created_at }}</small>
+    </div>
+    {% else %}
+    <div class="empty">No updates yet — check back soon.</div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "layout_app.html" %}
 {% block title %}Quiz: {{ quiz.title }}{% endblock %}
-{% block content %}
+{% block app_content %}
 <p><a href="{{ url_for('main.course_detail', slug=course.slug) }}">← {{ course.title }}</a></p>
 <div class="panel">
   <h2 style="margin-top:0">{{ quiz.title }}

@@ -1,0 +1,12 @@
+{% extends "layout_app.html" %}
+{% block title %}My Quizzes{% endblock %}
+{% block app_content %}
+<div class="section-title"><h2>🧪 Quizzes &amp; Exams</h2><div class="line"></div></div>
+{% for q in quizzes|default([]) %}
+<div class="lesson-row">
+  <span><strong>{{ q.quiz.title }}</strong><br>
+    <small style="color:var(--muted)">{{ q.course.title }} · attempts: {{ q.attempts }}{% if q.best is not none %} · best: {{ q.best }}%{% endif %}</small></span>
+  <a class="btn btn-sm" href="{{ url_for('student.quiz', quiz_id=q.quiz.id) }}">Open</a>
+</div>
+{% else %}<div class="panel"><p>No quizzes yet.</p></div>{% endfor %}
+{% endblock %}

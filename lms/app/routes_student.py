@@ -3,10 +3,11 @@ import os
 import uuid
 from datetime import datetime, timedelta
 
-from flask import (Blueprint, abort, current_app, flash, redirect, render_template,
-                   request, send_file, url_for)
+from flask import (Blueprint, abort, current_app, flash, jsonify, redirect,
+                   render_template, request, send_file, url_for)
 from flask_login import current_user, login_required
 from werkzeug.utils import secure_filename
+from sqlalchemy import func
 
 from . import db
 from .decorators import role_required
@@ -163,6 +164,67 @@ def dashboard():
         p12_recs = p12_recs[:3]
     except Exception:
         p12_recs = []
+    # UI14: redesigned dashboard cards + stats --------------------------------
+    course_cards = []
+    total_done = 0
+    total_time_sec = 0
+    for e in enrollments:
+        lessons = e.course.lessons
+        lesson_ids = [l.id for l in lessons]
+        done_ids = set()
+        spent = 0
+        if lesson_ids:
+            rows = LessonProgress.query.filter(
+                LessonProgress.user_id == current_user.id,
+                LessonProgress.lesson_id.in_(lesson_ids)).all()
+            done_ids = {r.lesson_id for r in rows}
+            spent = (db.session.query(func.coalesce(
+                        func.sum(LessonProgress.time_spent_sec), 0))
+                     .filter(LessonProgress.user_id == current_user.id,
+                             LessonProgress.lesson_id.in_(lesson_ids))
+                     .scalar() or 0)
+        done = len(done_ids)
+        total_done += done
+        total_time_sec += spent
+        total = len(lesson_ids)
+        continue_lesson_id = next((l.id for l in lessons if l.id not in done_ids),
+                                  lessons[0].id if lessons else None)
+        course_cards.append({
+            "e": e,
+            "total": total,
+            "done": done,
+            "pct": round(100 * done / total) if total else 0,
+            "continue_lesson_id": continue_lesson_id,
+        })
+    overall_pct = (int(sum(c["pct"] for c in course_cards) / len(course_cards))
+                   if course_cards else 0)
+    dash = {
+        "enrolled": len(enrollments),
+        "lessons_done": total_done,
+        "hours": total_time_sec // 3600,
+        "certificates": len(certs),
+        "points": (game_profile.points_total or 0) if game_profile else 0,
+        "streak": (game_profile.current_streak or 0) if game_profile else 0,
+    }
+    # UI14: upcoming assignment cards (max 4, ordered by due date)
+    assignment_cards = []
+    today = datetime.utcnow().date()
+    if course_ids:
+        my_submitted = {s.assignment_id for s in
+                        Submission.query.filter_by(user_id=current_user.id).all()}
+        for a in (Assignment.query.filter(Assignment.course_id.in_(course_ids))
+                  .order_by(Assignment.due_date.asc().nullslast(),
+                            Assignment.created_at.desc())
+                  .limit(4).all()):
+            if a.id in my_submitted:
+                status = "Submitted"
+            elif a.due_date and a.due_date < today:
+                status = "Overdue"
+            else:
+                status = "Pending"
+            assignment_cards.append({"a": a, "status": status})
+    announcements = (Announcement.query.filter_by(active=True)
+                     .order_by(Announcement.created_at.desc()).limit(4).all())
     return render_template("dashboard.html", enrollments=enrollments,
                            pending=pending, certs=certs, live_sessions=live_sessions,
                            now=now, onboarding=_onboarding_for(current_user),
@@ -170,7 +232,11 @@ def dashboard():
                            game_profile=game_profile,
                            recent_badges=recent_badges,
                            my_challenges=my_challenges,
-                           p12_recs=p12_recs)
+                           p12_recs=p12_recs,
+                           course_cards=course_cards, dash=dash,
+                           assignment_cards=assignment_cards,
+                           announcements=announcements,
+                           overall_pct=overall_pct)
 
 
 @student_bp.route("/lesson/<int:lesson_id>")
@@ -234,6 +300,38 @@ def lesson_complete(lesson_id):
         return redirect(url_for("student.lesson", lesson_id=lessons[idx + 1].id))
     flash("Lesson marked complete.", "success")
     return redirect(url_for("main.course_detail", slug=course.slug))
+
+
+@student_bp.route("/lesson/<int:lesson_id>/heartbeat", methods=["POST"])
+@student_only
+def lesson_heartbeat(lesson_id):
+    """UI14: real learning-time tracking.
+
+    The lesson page pings this every 60s with {"seconds": <n>}; the seconds
+    accumulate on the student's LessonProgress row.
+    """
+    lesson = Lesson.query.get(lesson_id)
+    if not lesson:
+        return jsonify({"ok": False, "error": "Lesson not found."}), 404
+    course = lesson.module.course
+    if not _active_enrollment_or_403(course.id):
+        return jsonify({"ok": False, "error": "Forbidden."}), 403
+    data = request.get_json(silent=True) or {}
+    try:
+        seconds = int(data.get("seconds", 0))
+    except (TypeError, ValueError):
+        seconds = 0
+    if not 0 < seconds <= 300:
+        return jsonify({"ok": False, "error": "seconds must be 1-300."}), 400
+    row = LessonProgress.query.filter_by(
+        user_id=current_user.id, lesson_id=lesson.id).first()
+    if not row:
+        row = LessonProgress(user_id=current_user.id, lesson_id=lesson.id,
+                             time_spent_sec=0)
+        db.session.add(row)
+    row.time_spent_sec = (row.time_spent_sec or 0) + seconds
+    db.session.commit()
+    return jsonify({"ok": True, "total": row.time_spent_sec})
 
 
 @student_bp.route("/quiz/<int:quiz_id>", methods=["GET", "POST"])
@@ -655,3 +753,83 @@ def wishlist_toggle(slug):
     db.session.commit()
     nxt = request.form.get("next") or url_for("main.course_detail", slug=slug)
     return redirect(nxt)
+
+
+# ---------------------------------------------------------------- UI14: student utility pages
+def _my_enrolled_course_ids():
+    return [e.course_id for e in
+            Enrollment.query.filter_by(user_id=current_user.id)
+            .filter(Enrollment.status.in_([Enrollment.STATUS_ACTIVE,
+                                           Enrollment.STATUS_COMPLETED])).all()]
+
+
+@student_bp.route("/announcements")
+@student_only
+def announcements():
+    """UI14: student's announcement inbox."""
+    items = (Announcement.query.filter_by(active=True)
+             .order_by(Announcement.created_at.desc()).all())
+    return render_template("student_announcements.html", announcements=items)
+
+
+@student_bp.route("/downloads")
+@student_only
+def downloads():
+    """UI14: certificate downloads + PDF lesson materials from enrolled courses."""
+    certs = (Certificate.query.filter_by(user_id=current_user.id)
+             .order_by(Certificate.issued_at.desc()).all())
+    materials = []
+    for cid in _my_enrolled_course_ids():
+        course = db.session.get(Course, cid)
+        if not course:
+            continue
+        for lesson in course.lessons:
+            if lesson.kind == Lesson.KIND_PDF and lesson.pdf_file:
+                materials.append({
+                    "title": course.title + " — " + lesson.title,
+                    "url": url_for("main.uploaded_file",
+                                   filename=lesson.pdf_file),
+                })
+    return render_template("student_downloads.html", certs=certs,
+                           materials=materials)
+
+
+@student_bp.route("/quizzes")
+@student_only
+def quizzes():
+    """UI14: all quizzes across enrolled courses, with attempt stats."""
+    items = []
+    for cid in _my_enrolled_course_ids():
+        course = db.session.get(Course, cid)
+        if not course:
+            continue
+        for q in course.quizzes:
+            if q.title == "__question_bank__":
+                continue
+            attempts = (QuizAttempt.query.filter_by(
+                            quiz_id=q.id, user_id=current_user.id)
+                        .filter(QuizAttempt.submitted_at.isnot(None)).count())
+            best = _policy_attempt(q, current_user.id)
+            items.append({"quiz": q, "course": course,
+                          "attempts": attempts,
+                          "best": best.percent if best else None})
+    return render_template("student_quizzes.html", quizzes=items)
+
+
+@student_bp.route("/profile", methods=["GET", "POST"])
+@student_only
+def profile():
+    """UI14: student edits their own name/phone."""
+    user = db.session.get(User, current_user.id)
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        phone = request.form.get("phone", "").strip()
+        if not name:
+            flash("Name can't be empty.", "danger")
+        else:
+            user.name = name
+            user.phone = phone
+            db.session.commit()
+            flash("Profile updated.", "success")
+        return redirect(url_for("student.profile"))
+    return render_template("student_profile.html", user=user)

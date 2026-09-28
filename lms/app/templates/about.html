@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}About Us — Sayyed EdVantage{% endblock %}
+{% block content %}
+<div class="band tint">
+  <div class="wrap" style="text-align:center">
+    <img src="{{ url_for('static', filename='img/brand-text-3d.png') }}" alt="Sayyed EdVantage — Empowering Students for Success" style="height:72px; width:auto">
+    <h2 style="margin-top:14px">Empowering Students for <span class="hl">Success</span></h2>
+    <p style="max-width:640px; margin:0 auto; color:var(--muted)">Sayyed EdVantage is a Mumbai-based training institute offering job-ready, practical courses in Data Science, AI &amp; Generative AI, Python Programming, Data Analytics, Linux, DevOps and Cyber Security — taught live by industry mentors.</p>
+  </div>
+</div>
+<div class="band">
+  <div class="wrap">
+    <div class="sec-head"><div><h2>Why <span class="hl">Sayyed EdVantage</span></h2></div></div>
+    <div class="course-grid">
+      <div class="course-card"><div class="cc-body"><div class="cc-title"><span class="cc-ico">🖥️</span><h3>Live Interactive Classes</h3></div><p>Learn with expert faculty in real-time, ask doubts instantly.</p></div></div>
+      <div class="course-card"><div class="cc-body"><div class="cc-title"><span class="cc-ico">📁</span><h3>Real-World Projects</h3></div><p>Build a portfolio with practical, hands-on projects.</p></div></div>
+      <div class="course-card"><div class="cc-body"><div class="cc-title"><span class="cc-ico">📦</span><h3>Industry Relevant Curriculum</h3></div><p>Syllabus updated with the latest tools and technologies.</p></div></div>
+      <div class="course-card"><div class="cc-body"><div class="cc-title"><span class="cc-ico">🎓</span><h3>Certificates</h3></div><p>Verifiable certificates to boost your profile.</p></div></div>
+      <div class="course-card"><div class="cc-body"><div class="cc-title"><span class="cc-ico">👥</span><h3>Career Guidance</h3></div><p>Resume building, interview prep and career roadmaps.</p></div></div>
+      <div class="course-card"><div class="cc-body"><div class="cc-title"><span class="cc-ico">💼</span><h3>Placement Support</h3></div><p>Connect with hiring companies through our placement cell (where available).</p></div></div>
+    </div>
+    <div style="text-align:center; margin-top:30px">
+      <a class="btn btn-gold" href="{{ url_for('crm.enquiry') }}">Enquire for Admissions →</a>
+      <a class="btn btn-ghost" href="{{ url_for('main.catalog') }}" style="margin-left:10px">Browse Courses</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

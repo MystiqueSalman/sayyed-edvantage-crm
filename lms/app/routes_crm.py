@@ -126,7 +126,8 @@ def enquiry():
             except Exception:
                 db.session.rollback()
                 flash("Something went wrong — please try again.", "danger")
-    return render_template("enquiry.html", courses=courses)
+    return render_template("enquiry.html", courses=courses,
+                           sel_course_id=request.args.get("course_id", ""))
 
 
 # ================================================================ PUBLIC: application form

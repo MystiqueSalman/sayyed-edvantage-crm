@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "layout_app.html" %}
 {% block title %}Admin Dashboard{% endblock %}
-{% block content %}
+{% block app_content %}
 <div class="section-title"><h2>{% if current_user.role == 'manager' %}Manager{% else %}Admin{% endif %} Dashboard</h2><div class="line"></div></div>
 <div class="stat-grid">
   <div class="stat"><div class="n">{{ stats.users }}</div><div class="l">Users</div></div>

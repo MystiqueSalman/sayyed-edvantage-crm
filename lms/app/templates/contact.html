@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Contact Us — Sayyed EdVantage{% endblock %}
+{% block content %}
+<div class="band tint">
+  <div class="wrap">
+    <div class="sec-head"><div><h2>Contact <span class="hl">Us</span></h2><p>We'd love to hear from you — call, email or send an enquiry.</p></div></div>
+    <div class="course-grid">
+      <div class="course-card"><div class="cc-body"><div class="cc-title"><span class="cc-ico">📞</span><h3>Call Us</h3></div><p><a href="tel:+917977877884" style="font-size:1.2rem; font-weight:800; color:var(--text)">{{ contact_phone|default('+91 7977877884', true) }}</a></p></div></div>
+      <div class="course-card"><div class="cc-body"><div class="cc-title"><span class="cc-ico">✉️</span><h3>Email Us</h3></div><p><a href="mailto:sayyededvantage@gmail.com" style="font-weight:700">{{ contact_email|default('sayyededvantage@gmail.com', true) }}</a></p></div></div>
+      <div class="course-card"><div class="cc-body"><div class="cc-title"><span class="cc-ico">📍</span><h3>Visit Us</h3></div><p>Mumbai, Maharashtra, India</p><p>Live online classes available across India.</p></div></div>
+    </div>
+    <div style="text-align:center; margin-top:30px">
+      <a class="btn btn-gold" href="{{ url_for('crm.enquiry') }}">Send an Enquiry →</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

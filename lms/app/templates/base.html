@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0a1628">
-<meta name="description" content="Sayyed EdVantage LMS — Empowering Students for Success.">
+<meta name="theme-color" content="#0a1a33">
+<meta name="description" content="Sayyed EdVantage — Empowering Students for Success. Future-ready IT & AI skills: Data Science, AI, Python, Data Analytics, Linux, DevOps, Cyber Security.">
 <link rel="manifest" href="/manifest.json">
-<link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='img/icons/icon-192.png') }}">
-<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/icons/icon-192.png') }}">
+<link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='img/favicon-32.png') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='img/apple-touch-icon.png') }}">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>{% block title %}Sayyed EdVantage LMS{% endblock %}</title>
+<title>{% block title %}Sayyed EdVantage — Empowering Students for Success{% endblock %}</title>
 {% block head %}{% endblock %}
 {# Phase 11 §20.7: analytics integrations — public pages only, only when configured #}
 {% if not request.path.startswith(("/admin", "/manage", "/api/")) %}
@@ -21,7 +21,7 @@
 {% if meta_pixel_id %}<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','{{ meta_pixel_id }}');fbq('track','PageView');</script>{% endif %}
 {% if head_snippet %}{{ head_snippet|safe }}{% endif %}
 {% endif %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=2">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=3">
 {# Phase 12 §21.3: tenant color overrides — only emitted when configured #}
 {% if brand.primary_color or brand.accent_color %}<style>
 :root{ {% if brand.primary_color %}--gold:{{ brand.primary_color }};{% endif %} {% if brand.accent_color %}--blue:{{ brand.accent_color }};{% endif %} }
@@ -36,89 +36,125 @@
 </div>
 {% endif %}
 
+{% block topnav %}
 <nav class="nav">
   <div class="nav-inner">
-    <a class="brand" href="{{ url_for('main.index') }}">
-      {% if brand.is_custom and brand.logo_file %}
-      <img class="brand-logo" src="{{ url_for('saas.brand_file', filename=brand.logo_file) }}" alt="{{ brand.brand_name }}" style="height:44px;width:auto">
-      {% else %}
-      <img class="brand-logo" src="{{ url_for('static', filename='img/logo.png') }}" alt="Sayyed EdVantage logo">
+    <a class="brand" href="{{ url_for('main.index') }}" aria-label="Sayyed EdVantage home">
+      <img class="brand-logo" src="{{ url_for('static', filename='img/logo-badge-circle.png') }}" alt="Sayyed EdVantage logo">
       <img src="{{ url_for('static', filename='img/nav-text-v1.png') }}" alt="Sayyed EdVantage — Empowering Students for Success" style="height:44px;width:auto;display:block">
-      {% endif %}
-      {% if brand.is_custom and not brand.logo_file %}<span class="brand-name" style="font-weight:800;color:var(--text)">{{ brand.brand_name }}</span>{% endif %}
     </a>
-    <div class="nav-links">
-      <a href="{{ url_for('saas.switch_lang', code='en') }}" title="English" style="{% if lang != 'hi' %}font-weight:800;color:var(--gold){% endif %}">EN</a><span style="color:var(--muted)">|</span><a href="{{ url_for('saas.switch_lang', code='hi') }}" title="हिंदी" style="{% if lang == 'hi' %}font-weight:800;color:var(--gold){% endif %}">हिं</a>
-      <a href="{{ url_for('main.catalog') }}">{{ t('courses') }}</a>
-      <a href="{{ url_for('growth.jobs') }}">{{ t('jobs') }}</a>
-      <a href="{{ url_for('crm.enquiry') }}">{{ t('enquire') }}</a>
-      <a href="{{ url_for('social13.leaderboard') }}">🏆 Leaderboard</a>
+    <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
+    <div class="nav-links" id="navLinks">
+      <a href="{{ url_for('main.index') }}" class="{% if request.path == '/' %}on{% endif %}">{{ t('home') if t else 'Home' }}</a>
+      <span class="nav-drop">
+        <a href="{{ url_for('main.catalog') }}" class="{% if request.path.startswith('/course') or request.path.startswith('/courses') %}on{% endif %}">{{ t('courses') }} ▾</a>
+        {% if nav_courses %}
+        <span class="nav-drop-menu">
+          {% for c in nav_courses %}
+          <a href="{{ url_for('main.course_detail', slug=c.slug) }}">{{ c.title }}<small>₹{{ "{:,}".format(c.fee) }} + GST</small></a>
+          {% endfor %}
+        </span>
+        {% endif %}
+      </span>
+      <a href="{{ url_for('main.about') }}">{{ t('about') if t else 'About Us' }}</a>
+      <a href="{{ url_for('growth.jobs') }}">{{ t('placements') if t else 'Placements' }}</a>
+      <a href="{{ url_for('main.index') }}#why-us">{{ t('why_us') if t else 'Why Us' }}</a>
+      <a href="{{ url_for('main.blogs') }}">{{ t('blogs') if t else 'Blogs' }}</a>
+      <a href="{{ url_for('main.contact') }}">{{ t('contact') if t else 'Contact' }}</a>
+      <span class="nav-lang" title="Language">
+        <a href="{{ url_for('saas.switch_lang', code='en') }}" class="{% if lang != 'hi' %}on{% endif %}">EN</a>|
+        <a href="{{ url_for('saas.switch_lang', code='hi') }}" class="{% if lang == 'hi' %}on{% endif %}">हिं</a>
+      </span>
+      <form class="nav-search" action="{{ url_for('main.catalog') }}" method="get" role="search">
+        <input type="search" name="q" placeholder="Search courses, skills, or jobs…" aria-label="Search courses">
+        <button type="submit" aria-label="Search">🔍</button>
+      </form>
+      <span class="nav-cta">
+        <a class="btn btn-gold btn-sm" href="tel:+917977877884" title="Call Sayyed EdVantage">📞 +91 79778 77884</a>
+        <a class="btn btn-outline-w btn-sm" href="{{ url_for('crm.enquiry') }}">{{ t('enquire') }}</a>
+      </span>
       {% if current_user.is_authenticated %}
         <a href="{{ url_for('notify.notifications') }}" class="notif-bell" title="Notifications" aria-label="Notifications">🔔{% if notif_unread %}<span class="notif-count">{{ notif_unread }}</span>{% endif %}</a>
-        <a href="{{ url_for('social13.inbox') }}" class="notif-bell" title="Messages" aria-label="Messages">💬{% if dm_unread %}<span class="notif-count">{{ dm_unread }}</span>{% endif %}</a>
         {% if current_user.role == 'student' %}
           <a href="{{ url_for('student.dashboard') }}">{{ t('dashboard') }}</a>
-          <a href="{{ url_for('tutor.tutor_home') }}">🤖 AI Tutor</a>
-          <a href="{{ url_for('tutor.planner') }}">🗓 Planner</a>
-          <a href="{{ url_for('ops.calendar') }}">📅 Calendar</a>
-          <a href="{{ url_for('student.projects') }}">🛠 Projects</a>
-          <a href="{{ url_for('career.hub') }}">🚀 Career</a>
-          <a href="{{ url_for('game.achievements') }}">🏆 Achievements</a>
-          <a href="{{ url_for('student.wishlist') }}">❤ Wishlist</a>
-          <a href="{{ url_for('growth.my_referrals') }}">🎁 Refer & Earn</a>
-          <a href="{{ url_for('labs.lab_list') }}">💻 Labs</a>
-          <a href="{{ url_for('vlabs.vlab_list') }}">🖥 Virtual Labs</a>
-          <a href="{{ url_for('learn13.sql_list') }}">🗄 SQL Lab</a>
-          <a href="{{ url_for('learn13.ds_list') }}">📊 DS Lab</a>
-          <a href="{{ url_for('learn13.notes_list') }}">📝 My Notes</a>
-          <a href="{{ url_for('ai13.student_memory') }}">🧠 My Memory</a>
-          <a href="{{ url_for('ai13.student_evaluations') }}">📝 My Evaluations</a>
-          <a href="{{ url_for('money13.billing') }}">🧾 Billing</a>
-        {% elif current_user.role == 'employer' %}
-          <a href="{{ url_for('career.employer_dashboard') }}">🏢 Employer Dashboard</a>
         {% elif current_user.role == 'faculty' %}
           <a href="{{ url_for('faculty.dashboard') }}">{{ t('dashboard') }}</a>
-          <a href="{{ url_for('ops.calendar') }}">📅 Calendar</a>
-          <a href="{{ url_for('ops.batch_list') }}">👥 Batches</a>
-          <a href="{{ url_for('labs.manage_list') }}">💻 Coding Labs</a>
-          <a href="{{ url_for('vlabs.manage_list') }}">🖥 Virtual Labs</a>
-          <a href="{{ url_for('ai13.ai_assistant') }}">🤖 AI Assistant</a>
-          <a href="{{ url_for('ai13.evaluations') }}">🧪 AI Evaluations</a>
-        {% elif current_user.role == 'counsellor' %}
-          <a href="{{ url_for('crm.leads') }}">CRM</a>
-          <a href="{{ url_for('ai13.at_risk') }}">⚠️ At-Risk</a>
+        {% elif current_user.role == 'employer' %}
+          <a href="{{ url_for('career.employer_dashboard') }}">Dashboard</a>
         {% else %}
           <a href="{{ url_for('admin.dashboard') }}">{{ t('dashboard') }}</a>
         {% endif %}
-        <span class="role-tag">{{ current_user.role }}</span>
-        <a href="{{ url_for('auth13.mfa_setup') }}">Two-factor auth</a>
         <a href="{{ url_for('auth.logout') }}">{{ t('logout') }}</a>
       {% else %}
         <a href="{{ url_for('auth.login') }}">{{ t('login') }}</a>
         <a href="{{ url_for('auth.register') }}" class="btn btn-gold btn-sm">Join Free</a>
-        <a href="{{ url_for('career.employer_signup') }}">For Employers</a>
       {% endif %}
     </div>
   </div>
 </nav>
+{% endblock %}{# /topnav #}
 
-<div class="wrap">
-  {% with msgs = get_flashed_messages(with_categories=true) %}
+{% block flashes %}
+{% with msgs = get_flashed_messages(with_categories=true) %}
+  {% if msgs %}<div class="wrap">
     {% for cat, msg in msgs %}
       <div class="flash {{ cat }}">{{ msg }}</div>
     {% endfor %}
-  {% endwith %}
-</div>
+  </div>{% endif %}
+{% endwith %}
+{% endblock %}
 
 {% block hero %}{% endblock %}
 
-<div class="wrap">
-  {% block content %}{% endblock %}
-</div>
+{% block content %}{% endblock %}
 
-<footer>
-  {{ brand.brand_name }} LMS · {{ t('tagline') }} · {{ t('location') }}
+{% block footer %}
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <img class="lockup" src="{{ url_for('static', filename='img/brand-text-3d.png') }}" alt="Sayyed EdVantage — Empowering Students for Success">
+      <p style="font-size:.9rem; max-width:300px">Future-ready IT &amp; AI training with practical skills, expert faculty and placement support.</p>
+    </div>
+    <div>
+      <h4>Quick Links</h4>
+      <ul>
+        <li><a href="{{ url_for('main.index') }}">Home</a></li>
+        <li><a href="{{ url_for('main.about') }}">About Us</a></li>
+        <li><a href="{{ url_for('growth.jobs') }}">Placements</a></li>
+        <li><a href="{{ url_for('main.blogs') }}">Blogs</a></li>
+        <li><a href="{{ url_for('main.contact') }}">Contact</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Popular Courses</h4>
+      <ul>
+        {% if nav_courses %}
+          {% for c in nav_courses[:5] %}
+          <li><a href="{{ url_for('main.course_detail', slug=c.slug) }}">{{ c.title }}</a></li>
+          {% endfor %}
+        {% else %}
+          <li><a href="{{ url_for('main.catalog') }}">Data Science</a></li>
+          <li><a href="{{ url_for('main.catalog') }}">AI &amp; Generative AI</a></li>
+          <li><a href="{{ url_for('main.catalog') }}">Python Programming</a></li>
+          <li><a href="{{ url_for('main.catalog') }}">Cyber Security</a></li>
+          <li><a href="{{ url_for('main.catalog') }}">DevOps</a></li>
+        {% endif %}
+      </ul>
+    </div>
+    <div>
+      <h4>Contact Us</h4>
+      <div class="contact-line">📞 <a href="tel:+917977877884">{{ contact_phone|default('+91 7977877884', true) }}</a></div>
+      <div class="contact-line">✉️ <a href="mailto:sayyededvantage@gmail.com">{{ contact_email|default('sayyededvantage@gmail.com', true) }}</a></div>
+      <div class="contact-line">📍 Mumbai, Maharashtra, India</div>
+      <p style="margin-top:14px"><a class="btn btn-gold btn-sm" href="{{ url_for('crm.enquiry') }}">Enquire for Admissions →</a></p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    © {{ now.year }} Sayyed EdVantage · {{ t('tagline') }} · {{ t('location') }}
+  </div>
 </footer>
+{% endblock %}{# /footer #}
+
 <script>
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", function () {
@@ -139,41 +175,44 @@ function dismissAnnouncement(id) {
       }
     } catch (e) {}
   }
+  var t = document.getElementById("navToggle"), links = document.getElementById("navLinks");
+  if (t && links) { t.addEventListener("click", function(){ links.classList.toggle("open"); }); }
 })();
 </script>
 <style>
 /* Phase 4: AI sales-agent chat widget */
 #chat-fab{position:fixed; right:22px; bottom:22px; width:60px; height:60px;
   border-radius:50%; border:none; cursor:pointer; z-index:999;
-  background:conic-gradient(from 200deg,#ffe9a8,#d4af37,#9c7a1e,#ffe9a8);
-  box-shadow:0 6px 24px rgba(212,175,55,.5); font-size:28px}
+  background:conic-gradient(from 200deg,#ffe9a8,#f5b301,#a86f00,#ffe9a8);
+  box-shadow:0 6px 24px rgba(245,179,1,.5); font-size:28px}
 #chat-panel{position:fixed; right:22px; bottom:94px; width:min(380px, calc(100vw - 44px));
   height:480px; max-height:70vh; z-index:999; display:none; flex-direction:column;
-  background:#0d1b33; border:1px solid rgba(212,175,55,.35); border-radius:16px;
-  box-shadow:0 18px 60px rgba(0,0,0,.6); overflow:hidden}
+  background:#ffffff; border:1px solid var(--brd); border-radius:16px;
+  box-shadow:0 18px 60px rgba(10,26,51,.25); overflow:hidden}
 #chat-panel.open{display:flex}
-#chat-head{background:linear-gradient(135deg,#16294d,#0d1b33); padding:12px 16px;
-  border-bottom:1px solid rgba(212,175,55,.25); display:flex; align-items:center; gap:10px}
-#chat-head b{color:#f5c531}
-#chat-head small{color:var(--muted); display:block; font-weight:400}
-#chat-msgs{flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px}
+#chat-head{background:linear-gradient(135deg,#0d2242,#14305a); padding:12px 16px;
+  border-bottom:1px solid rgba(245,179,1,.25); display:flex; align-items:center; gap:10px}
+#chat-head b{color:#ffd34d}
+#chat-head small{color:#aebdd6; display:block; font-weight:400}
+#chat-msgs{flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:10px; background:#f6f9fe}
 .chat-msg{max-width:85%; padding:9px 13px; border-radius:14px; font-size:.9rem; line-height:1.5;
   white-space:pre-wrap; word-wrap:break-word}
-.chat-msg.bot{background:#16294d; color:#e8eefc; align-self:flex-start; border-bottom-left-radius:4px}
-.chat-msg.user{background:linear-gradient(135deg,#d4af37,#9c7a1e); color:#0a1628; align-self:flex-end;
+.chat-msg.bot{background:#ffffff; color:#182540; align-self:flex-start; border-bottom-left-radius:4px;
+  border:1px solid var(--brd)}
+.chat-msg.user{background:linear-gradient(135deg,#2f7fff,#0b54d6); color:#fff; align-self:flex-end;
   border-bottom-right-radius:4px; font-weight:500}
 .chat-msg.typing{color:var(--muted); font-style:italic}
-.chat-ts{font-size:.68rem; color:var(--muted); opacity:.7; margin:-6px 4px 2px; max-width:85%}
+.chat-ts{font-size:.68rem; color:var(--muted2); margin:-6px 4px 2px; max-width:85%}
 .chat-ts.user{align-self:flex-end}
 .chat-ts.bot{align-self:flex-start}
-#chat-form{display:flex; gap:8px; padding:10px; border-top:1px solid rgba(212,175,55,.25)}
+#chat-form{display:flex; gap:8px; padding:10px; border-top:1px solid var(--brd); background:#fff}
 #chat-input{flex:1; margin:0}
 #chat-form button{flex:0 0 auto}
 </style>
 <button id="chat-fab" aria-label="Chat with admissions assistant">💬</button>
 <div id="chat-panel" role="dialog" aria-label="Admissions assistant chat">
   <div id="chat-head">
-    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="" style="width:38px;height:38px;border-radius:50%">
+    <img src="{{ url_for('static', filename='img/logo-badge-circle.png') }}" alt="" style="width:38px;height:38px;border-radius:50%">
     <div><b>Admissions Assistant</b><small>Ask about courses, fees & batches</small></div>
   </div>
   <div id="chat-msgs"></div>
@@ -198,14 +237,14 @@ function dismissAnnouncement(id) {
   function fmt(s) {
     return esc(s).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>");
   }
-  function stamp() {
-    // Browser-local time under each bubble; date added if not today.
-    var d = new Date();
-    var t = d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}).toLowerCase();
-    if (d.toDateString() !== new Date().toDateString()) {
-      t = d.toLocaleDateString([], {day: "numeric", month: "short"}) + ", " + t;
-    }
-    return t;
+  function stamp(dt) {
+    var d = dt || new Date(), now = new Date();
+    var sameDay = d.getFullYear() === now.getFullYear()
+               && d.getMonth() === now.getMonth()
+               && d.getDate() === now.getDate();
+    if (sameDay) return d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
+    return d.toLocaleDateString([], {day: "numeric", month: "short"}) + " "
+         + d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
   }
   function addMsg(text, who) {
     var d = document.createElement("div");

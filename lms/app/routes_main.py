@@ -1,13 +1,14 @@
 """Public routes: landing, catalog, course detail, recordings, enrollment & payments."""
 import os
-from datetime import timedelta
+from datetime import date, timedelta
 
 from flask import (Blueprint, current_app, flash, redirect, render_template, request,
                    send_from_directory, url_for)
 from flask_login import current_user, login_required
 
 from . import db
-from .models import Course, Enrollment, Coupon
+from .models import AppSetting, Batch, Certificate, Course, Enrollment, Coupon
+from .models_ui import Partner, Testimonial
 from . import payments
 
 main_bp = Blueprint("main", __name__)
@@ -22,9 +23,73 @@ def uploaded_file(filename):
 
 @main_bp.route("/")
 def index():
+    from .models import User  # noqa: E402
     courses = Course.query.filter_by(is_bonus=False).order_by(Course.fee.desc()).all()
     bonus = Course.query.filter_by(is_bonus=True).all()
-    return render_template("index.html", courses=courses, bonus=bonus)
+    # UI14: real platform stats for the redesigned homepage
+    stats = {
+        "students": User.query.filter_by(role="student").count(),
+        "courses": Course.query.filter_by(is_bonus=False).count(),
+        "certificates": Certificate.query.count(),
+        "faculty": User.query.filter_by(role="faculty").count(),
+    }
+    # UI14: admin-configured custom stats (only when both value+label set)
+    custom_stats = []
+    for i in (1, 2, 3):
+        value = AppSetting.get(f"site.stat{i}_value", "").strip()
+        label = AppSetting.get(f"site.stat{i}_label", "").strip()
+        if value and label:
+            custom_stats.append({"value": value, "label": label})
+    # UI14: upcoming batches (next 3)
+    batches = (Batch.query.filter(Batch.start_date >= date.today())
+               .order_by(Batch.start_date).limit(3).all())
+    testimonials = (Testimonial.query.filter_by(active=True)
+                    .order_by(Testimonial.sort_order, Testimonial.id).all())
+    partners = (Partner.query.filter_by(active=True)
+                .order_by(Partner.sort_order, Partner.id).all())
+    video_url = AppSetting.get("site.hero_video_url", "")
+    contact_phone = AppSetting.get("site.contact_phone", "+91 7977877884")
+    contact_email = AppSetting.get("site.contact_email", "sayyededvantage@gmail.com")
+    return render_template("index.html", courses=courses, bonus=bonus,
+                           stats=stats, custom_stats=custom_stats,
+                           batches=batches, testimonials=testimonials,
+                           partners=partners, video_url=video_url,
+                           contact_phone=contact_phone,
+                           contact_email=contact_email)
+
+
+def _contact_context():
+    return {
+        "contact_phone": AppSetting.get("site.contact_phone", "+91 7977877884"),
+        "contact_email": AppSetting.get("site.contact_email", "sayyededvantage@gmail.com"),
+    }
+
+
+@main_bp.route("/about")
+def about():
+    """UI14: public About page."""
+    return render_template("about.html", **_contact_context())
+
+
+@main_bp.route("/contact")
+def contact():
+    """UI14: public Contact page."""
+    return render_template("contact.html", **_contact_context())
+
+
+@main_bp.route("/help")
+def help():
+    """UI14: public Help/FAQ page."""
+    return render_template("help.html", **_contact_context())
+
+
+@main_bp.route("/blogs")
+def blogs():
+    """UI14: News & Updates — admin-managed active announcements."""
+    from .models import Announcement  # noqa: E402
+    posts = (Announcement.query.filter_by(active=True)
+             .order_by(Announcement.created_at.desc()).all())
+    return render_template("blogs.html", posts=posts, **_contact_context())
 
 
 @main_bp.route("/courses")

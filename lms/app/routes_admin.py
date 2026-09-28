@@ -540,3 +540,180 @@ def badge_toggle(badge_id):
     flash(f"Badge '{badge.name}' "
           f"{'activated' if badge.is_active else 'deactivated'}.", "success")
     return redirect(url_for("admin.badge_list"))
+
+
+# ---------------------------------------------------------------- UI14: testimonials (admin only)
+from .models_ui import Partner, Testimonial  # noqa: E402
+from .models import AppSetting  # noqa: E402
+
+
+@admin_bp.route("/testimonials")
+@admin_required
+def testimonial_list():
+    items = (Testimonial.query.order_by(Testimonial.sort_order,
+                                        Testimonial.id).all())
+    return render_template("admin_testimonials.html", items=items)
+
+
+@admin_bp.route("/testimonials/new", methods=["GET", "POST"])
+@admin_required
+def testimonial_new():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        text = request.form.get("text", "").strip()
+        if not name or not text:
+            flash("Name and testimonial text are required.", "danger")
+            return redirect(url_for("admin.testimonial_new"))
+        try:
+            rating = int(request.form.get("rating", 5) or 5)
+        except ValueError:
+            rating = 5
+        db.session.add(Testimonial(
+            name=name[:120],
+            role=request.form.get("role", "").strip()[:160],
+            text=text,
+            rating=max(1, min(5, rating)),
+            photo_url=request.form.get("photo_url", "").strip()[:255],
+            is_sample=bool(request.form.get("is_sample")),
+            active=bool(request.form.get("active")),
+            sort_order=request.form.get("sort_order", type=int) or 0,
+        ))
+        db.session.commit()
+        flash(f"Testimonial from '{name}' added.", "success")
+        return redirect(url_for("admin.testimonial_list"))
+    return render_template("admin_testimonial_form.html", t=None)
+
+
+@admin_bp.route("/testimonials/<int:t_id>/edit", methods=["GET", "POST"])
+@admin_required
+def testimonial_edit(t_id):
+    t = Testimonial.query.get_or_404(t_id)
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        text = request.form.get("text", "").strip()
+        if not name or not text:
+            flash("Name and testimonial text are required.", "danger")
+            return redirect(url_for("admin.testimonial_edit", t_id=t.id))
+        try:
+            rating = int(request.form.get("rating", 5) or 5)
+        except ValueError:
+            rating = 5
+        t.name = name[:120]
+        t.role = request.form.get("role", "").strip()[:160]
+        t.text = text
+        t.rating = max(1, min(5, rating))
+        t.photo_url = request.form.get("photo_url", "").strip()[:255]
+        t.is_sample = bool(request.form.get("is_sample"))
+        t.active = bool(request.form.get("active"))
+        t.sort_order = request.form.get("sort_order", type=int) or 0
+        db.session.commit()
+        flash("Testimonial updated.", "success")
+        return redirect(url_for("admin.testimonial_list"))
+    return render_template("admin_testimonial_form.html", t=t)
+
+
+@admin_bp.route("/testimonials/<int:t_id>/toggle", methods=["POST"])
+@admin_required
+def testimonial_toggle(t_id):
+    t = Testimonial.query.get_or_404(t_id)
+    t.active = not t.active
+    db.session.commit()
+    flash(f"Testimonial {'activated' if t.active else 'deactivated'}.",
+          "success")
+    return redirect(url_for("admin.testimonial_list"))
+
+
+@admin_bp.route("/testimonials/<int:t_id>/delete", methods=["POST"])
+@admin_required
+def testimonial_delete(t_id):
+    t = Testimonial.query.get_or_404(t_id)
+    db.session.delete(t)
+    db.session.commit()
+    flash("Testimonial deleted.", "info")
+    return redirect(url_for("admin.testimonial_list"))
+
+
+# ---------------------------------------------------------------- UI14: partners (admin only)
+@admin_bp.route("/partners")
+@admin_required
+def partner_list():
+    items = (Partner.query.order_by(Partner.sort_order, Partner.id).all())
+    return render_template("admin_partners.html", items=items)
+
+
+@admin_bp.route("/partners/new", methods=["GET", "POST"])
+@admin_required
+def partner_new():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        if not name:
+            flash("Name is required.", "danger")
+            return redirect(url_for("admin.partner_new"))
+        db.session.add(Partner(
+            name=name[:160],
+            logo_url=request.form.get("logo_url", "").strip()[:255],
+            website=request.form.get("website", "").strip()[:255],
+            active=bool(request.form.get("active")),
+            sort_order=request.form.get("sort_order", type=int) or 0,
+        ))
+        db.session.commit()
+        flash(f"Partner '{name}' added.", "success")
+        return redirect(url_for("admin.partner_list"))
+    return render_template("admin_partner_form.html", p=None)
+
+
+@admin_bp.route("/partners/<int:p_id>/edit", methods=["GET", "POST"])
+@admin_required
+def partner_edit(p_id):
+    p = Partner.query.get_or_404(p_id)
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        if not name:
+            flash("Name is required.", "danger")
+            return redirect(url_for("admin.partner_edit", p_id=p.id))
+        p.name = name[:160]
+        p.logo_url = request.form.get("logo_url", "").strip()[:255]
+        p.website = request.form.get("website", "").strip()[:255]
+        p.active = bool(request.form.get("active"))
+        p.sort_order = request.form.get("sort_order", type=int) or 0
+        db.session.commit()
+        flash("Partner updated.", "success")
+        return redirect(url_for("admin.partner_list"))
+    return render_template("admin_partner_form.html", p=p)
+
+
+@admin_bp.route("/partners/<int:p_id>/toggle", methods=["POST"])
+@admin_required
+def partner_toggle(p_id):
+    p = Partner.query.get_or_404(p_id)
+    p.active = not p.active
+    db.session.commit()
+    flash(f"Partner {'activated' if p.active else 'deactivated'}.", "success")
+    return redirect(url_for("admin.partner_list"))
+
+
+@admin_bp.route("/partners/<int:p_id>/delete", methods=["POST"])
+@admin_required
+def partner_delete(p_id):
+    p = Partner.query.get_or_404(p_id)
+    db.session.delete(p)
+    db.session.commit()
+    flash("Partner deleted.", "info")
+    return redirect(url_for("admin.partner_list"))
+
+
+# ---------------------------------------------------------------- UI14: site settings (admin only)
+@admin_bp.route("/site-settings", methods=["GET", "POST"])
+@admin_required
+def site_settings():
+    """UI14: one form for the public-site knobs (hero video, contact
+    details, custom homepage stats). Stored in AppSetting (site.*)."""
+    from .models_ui import SITE_DEFAULTS, SITE_KEYS  # noqa: E402
+    if request.method == "POST":
+        for key in SITE_KEYS:
+            AppSetting.set(key, request.form.get(key, "").strip())
+        flash("Site settings saved.", "success")
+        return redirect(url_for("admin.site_settings"))
+    values = {key: AppSetting.get(key, SITE_DEFAULTS.get(key, ""))
+              for key in SITE_KEYS}
+    return render_template("admin_site_settings.html", values=values)

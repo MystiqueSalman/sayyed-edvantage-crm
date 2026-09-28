@@ -1,0 +1,24 @@
+{% extends "layout_app.html" %}
+{% block title %}Site Settings — Admin{% endblock %}
+{% block app_content %}
+<div class="section-title"><h2>⚙️ Site Settings</h2><div class="line"></div></div>
+<div class="card"><div class="body">
+{% set values = values|default({}) %}
+<form method="post" style="display:grid;gap:10px;max-width:640px">
+  <h3 style="margin:0">Homepage</h3>
+  <label>Hero video URL <span style="color:var(--muted)">(optional embed link)</span>
+    <input name="site.hero_video_url" value="{{ values.get('site.hero_video_url', '') }}" maxlength="500"></label>
+  <h3 style="margin:8px 0 0">Contact details</h3>
+  <label>Contact phone<input name="site.contact_phone" value="{{ values.get('site.contact_phone', '') }}" maxlength="40"></label>
+  <label>Contact email<input name="site.contact_email" value="{{ values.get('site.contact_email', '') }}" maxlength="120"></label>
+  <h3 style="margin:8px 0 0">Custom stats <span style="color:var(--muted)">(shown only when both value + label are set)</span></h3>
+  {% for i in [1, 2, 3] %}
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px">
+    <label>Stat {{ i }} value<input name="site.stat{{ i }}_value" value="{{ values.get('site.stat' ~ i ~ '_value', '') }}"></label>
+    <label>Stat {{ i }} label<input name="site.stat{{ i }}_label" value="{{ values.get('site.stat' ~ i ~ '_label', '') }}"></label>
+  </div>
+  {% endfor %}
+  <div><button class="btn btn-gold" type="submit">Save settings</button></div>
+</form>
+</div></div>
+{% endblock %}

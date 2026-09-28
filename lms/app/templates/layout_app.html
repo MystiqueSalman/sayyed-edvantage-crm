@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{# App shell: dark sidebar + light topbar for all logged-in dashboards. #}
+{% block topnav %}{% endblock %}
+{% block flashes %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block content %}
+{% set ep = request.endpoint or '' %}
+{% set role = current_user.role if current_user.is_authenticated else '' %}
+<div class="app-shell">
+  <div class="side-scrim" id="sideScrim"></div>
+  <aside class="sidebar" id="sidebar">
+    <a class="side-brand" href="{{ url_for('main.index') }}">
+      <img class="mark" src="{{ url_for('static', filename='img/logo-badge-circle.png') }}" alt="SE">
+      <img src="{{ url_for('static', filename='img/nav-text-v1.png') }}" alt="Sayyed EdVantage" style="height:34px;width:auto;display:block">
+    </a>
+    <nav class="side-nav">
+      {% if role == 'student' %}
+        <a class="side-link {% if ep=='student.dashboard' %}on{% endif %}" href="{{ url_for('student.dashboard') }}"><span class="ico">🏠</span>Dashboard</a>
+        <a class="side-link {% if ep=='main.catalog' %}on{% endif %}" href="{{ url_for('main.catalog') }}"><span class="ico">📚</span>My Courses</a>
+        <a class="side-link {% if ep=='ops.calendar' %}on{% endif %}" href="{{ url_for('ops.calendar') }}"><span class="ico">🎥</span>Live Classes</a>
+        <a class="side-link {% if ep.startswith('student.assignments') or ep=='student.assignment_detail' %}on{% endif %}" href="{{ url_for('student.assignments') }}"><span class="ico">📝</span>Assignments</a>
+        <a class="side-link {% if ep=='student.quizzes' %}on{% endif %}" href="{{ url_for('student.quizzes') }}"><span class="ico">🧪</span>Quizzes &amp; Exams</a>
+        <a class="side-link {% if ep.startswith('student.certificate') %}on{% endif %}" href="{{ url_for('student.certificates') }}"><span class="ico">🏅</span>Certificates</a>
+        <a class="side-link {% if ep.startswith('tutor.') %}on{% endif %}" href="{{ url_for('tutor.tutor_home') }}"><span class="ico">🤖</span>AI Learning Assistant</a>
+        <a class="side-link {% if ep.startswith('career.') and ep!='career.employer_dashboard' %}on{% endif %}" href="{{ url_for('career.hub') }}"><span class="ico">🚀</span>Career &amp; Placement</a>
+        <a class="side-link {% if ep.startswith('social13.') %}on{% endif %}" href="{{ url_for('social13.inbox') }}"><span class="ico">💬</span>Messages{% if dm_unread %}<span class="side-badge">{{ dm_unread }}</span>{% endif %}</a>
+        <a class="side-link {% if ep=='student.announcements' %}on{% endif %}" href="{{ url_for('student.announcements') }}"><span class="ico">📢</span>Announcements</a>
+        <a class="side-link {% if ep.startswith('discuss.') %}on{% endif %}" href="{{ url_for('discuss.community') }}"><span class="ico">👥</span>Community</a>
+        <a class="side-link {% if ep=='student.downloads' %}on{% endif %}" href="{{ url_for('student.downloads') }}"><span class="ico">⬇️</span>Downloads</a>
+        <a class="side-link {% if ep=='student.profile' %}on{% endif %}" href="{{ url_for('student.profile') }}"><span class="ico">⚙️</span>Profile &amp; Settings</a>
+        <a class="side-link {% if ep=='main.help' %}on{% endif %}" href="{{ url_for('main.help') }}"><span class="ico">❓</span>Help &amp; Support</a>
+        {% if game_profile is defined and game_profile %}
+        <div class="side-card">
+          <b>🏆 Keep Learning</b>
+          <p>Complete your current lesson and earn reward points!</p>
+          <div class="progress"><i style="width:{{ [game_profile.points_total % 100, 100]|max }}%"></i></div>
+          <small style="color:#ffd34d;font-weight:700">{{ game_profile.points_total or 0 }} pts · 🔥 {{ game_profile.current_streak or 0 }} day streak</small>
+        </div>
+        {% endif %}
+      {% elif role == 'faculty' %}
+        <a class="side-link {% if ep=='faculty.dashboard' %}on{% endif %}" href="{{ url_for('faculty.dashboard') }}"><span class="ico">🏠</span>Dashboard</a>
+        <a class="side-link {% if ep=='ops.calendar' %}on{% endif %}" href="{{ url_for('ops.calendar') }}"><span class="ico">📅</span>Calendar</a>
+        <a class="side-link {% if ep.startswith('ops.batch') %}on{% endif %}" href="{{ url_for('ops.batch_list') }}"><span class="ico">👥</span>Batches</a>
+        <a class="side-link {% if ep.startswith('labs.manage') %}on{% endif %}" href="{{ url_for('labs.manage_list') }}"><span class="ico">💻</span>Coding Labs</a>
+        <a class="side-link {% if ep.startswith('vlabs.manage') %}on{% endif %}" href="{{ url_for('vlabs.manage_list') }}"><span class="ico">🖥️</span>Virtual Labs</a>
+        <a class="side-link {% if ep=='ai13.ai_assistant' %}on{% endif %}" href="{{ url_for('ai13.ai_assistant') }}"><span class="ico">🤖</span>AI Assistant</a>
+        <a class="side-link {% if ep.startswith('ai13.evaluations') %}on{% endif %}" href="{{ url_for('ai13.evaluations') }}"><span class="ico">🧪</span>AI Evaluations</a>
+        <a class="side-link {% if ep.startswith('social13.') %}on{% endif %}" href="{{ url_for('social13.inbox') }}"><span class="ico">💬</span>Messages{% if dm_unread %}<span class="side-badge">{{ dm_unread }}</span>{% endif %}</a>
+      {% elif role in ('admin','manager','super_admin') %}
+        <a class="side-link {% if ep=='admin.dashboard' %}on{% endif %}" href="{{ url_for('admin.dashboard') }}"><span class="ico">🏠</span>Dashboard</a>
+        <div class="side-sep">Manage</div>
+        <a class="side-link {% if ep.startswith('admin.users') %}on{% endif %}" href="{{ url_for('admin.users') }}"><span class="ico">👤</span>Users</a>
+        <a class="side-link {% if ep.startswith('admin.courses') %}on{% endif %}" href="{{ url_for('admin.courses') }}"><span class="ico">📚</span>Courses</a>
+        <a class="side-link {% if ep.startswith('crm.') %}on{% endif %}" href="{{ url_for('crm.leads') }}"><span class="ico">🧲</span>CRM &amp; Leads</a>
+        <a class="side-link {% if ep.startswith('ops.batch') %}on{% endif %}" href="{{ url_for('ops.batch_list') }}"><span class="ico">👥</span>Batches</a>
+        <a class="side-link {% if ep=='ops.finance' %}on{% endif %}" href="{{ url_for('ops.finance') }}"><span class="ico">💰</span>Finance</a>
+        <a class="side-link {% if ep=='admin.analytics' %}on{% endif %}" href="{{ url_for('admin.analytics') }}"><span class="ico">📊</span>Analytics</a>
+        <div class="side-sep">Content</div>
+        <a class="side-link {% if ep.startswith('admin.announcements') %}on{% endif %}" href="{{ url_for('admin.announcements') }}"><span class="ico">📢</span>Announcements</a>
+        <a class="side-link {% if ep.startswith('admin.testimonial') %}on{% endif %}" href="{{ url_for('admin.testimonial_list') }}"><span class="ico">⭐</span>Testimonials</a>
+        <a class="side-link {% if ep.startswith('admin.partner') %}on{% endif %}" href="{{ url_for('admin.partner_list') }}"><span class="ico">🤝</span>Partners</a>
+        <a class="side-link {% if ep=='admin.site_settings' %}on{% endif %}" href="{{ url_for('admin.site_settings') }}"><span class="ico">🌐</span>Site Settings</a>
+        <a class="side-link {% if ep.startswith('social13.') %}on{% endif %}" href="{{ url_for('social13.inbox') }}"><span class="ico">💬</span>Messages{% if dm_unread %}<span class="side-badge">{{ dm_unread }}</span>{% endif %}</a>
+      {% elif role == 'counsellor' %}
+        <a class="side-link {% if ep.startswith('crm.') %}on{% endif %}" href="{{ url_for('crm.leads') }}"><span class="ico">🧲</span>CRM &amp; Leads</a>
+        <a class="side-link {% if ep=='ai13.at_risk' %}on{% endif %}" href="{{ url_for('ai13.at_risk') }}"><span class="ico">⚠️</span>At-Risk Students</a>
+        <a class="side-link {% if ep.startswith('social13.') %}on{% endif %}" href="{{ url_for('social13.inbox') }}"><span class="ico">💬</span>Messages{% if dm_unread %}<span class="side-badge">{{ dm_unread }}</span>{% endif %}</a>
+      {% elif role == 'employer' %}
+        <a class="side-link {% if ep=='career.employer_dashboard' %}on{% endif %}" href="{{ url_for('career.employer_dashboard') }}"><span class="ico">🏢</span>Employer Dashboard</a>
+        <a class="side-link {% if ep.startswith('social13.') %}on{% endif %}" href="{{ url_for('social13.inbox') }}"><span class="ico">💬</span>Messages{% if dm_unread %}<span class="side-badge">{{ dm_unread }}</span>{% endif %}</a>
+      {% else %}
+        <a class="side-link on" href="{{ request.path }}"><span class="ico">🏠</span>Dashboard</a>
+        <a class="side-link" href="{{ url_for('main.index') }}"><span class="ico">🌐</span>Website</a>
+      {% endif %}
+      <div style="flex:1"></div>
+      <a class="side-link" href="{{ url_for('main.index') }}"><span class="ico">🌐</span>View Website</a>
+      <a class="side-link" href="{{ url_for('auth.logout') }}"><span class="ico">🚪</span>Logout</a>
+    </nav>
+  </aside>
+  <div class="app-main">
+    <div class="topbar">
+      <button class="nav-toggle" id="sideToggle" aria-label="Menu" style="display:none;color:var(--text);border-color:var(--brd)">☰</button>
+      <form class="tsearch" action="{{ url_for('main.catalog') }}" method="get" role="search">
+        <span>🔍</span><input type="search" name="q" placeholder="Search for courses, lessons, or resources…" aria-label="Search">
+      </form>
+      <div class="tright">
+        <span class="nav-lang" style="color:var(--muted)">
+          <a href="{{ url_for('saas.switch_lang', code='en') }}" class="{% if lang != 'hi' %}on{% endif %}" style="color:{% if lang != 'hi' %}var(--blue-dk){% else %}var(--muted2){% endif %}">EN</a>|
+          <a href="{{ url_for('saas.switch_lang', code='hi') }}" class="{% if lang == 'hi' %}on{% endif %}" style="color:{% if lang == 'hi' %}var(--blue-dk){% else %}var(--muted2){% endif %}">हिं</a>
+        </span>
+        <a class="tb-icon" href="{{ url_for('notify.notifications') }}" title="Notifications" aria-label="Notifications">🔔{% if notif_unread %}<span class="notif-count">{{ notif_unread }}</span>{% endif %}</a>
+        <a class="tb-icon" href="{{ url_for('social13.inbox') }}" title="Messages" aria-label="Messages">💬{% if dm_unread %}<span class="notif-count">{{ dm_unread }}</span>{% endif %}</a>
+        <a class="tb-user" href="{% if role=='student' %}{{ url_for('student.profile') }}{% elif role in ('admin','manager','super_admin') %}{{ url_for('admin.dashboard') }}{% elif role=='faculty' %}{{ url_for('faculty.dashboard') }}{% elif role=='counsellor' %}{{ url_for('crm.leads') }}{% elif role=='employer' %}{{ url_for('career.employer_dashboard') }}{% else %}{{ url_for('main.index') }}{% endif %}">
+          <span class="av">{{ (current_user.name or 'U')[:1] }}</span>
+          <span><b>{{ current_user.name }}</b><small>{{ role.replace('_',' ') }}</small></span>
+        </a>
+      </div>
+    </div>
+    <div class="app-body">
+      {% with msgs = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in msgs %}<div class="flash {{ cat }}">{{ msg }}</div>{% endfor %}
+      {% endwith %}
+      {% block app_content %}{% endblock %}
+    </div>
+    <div class="app-foot">© {{ now.year }} Sayyed EdVantage · Empowering Students for Success</div>
+  </div>
+</div>
+<script>
+(function(){
+  var sb = document.getElementById('sidebar'), sc = document.getElementById('sideScrim'),
+      tg = document.getElementById('sideToggle');
+  function showTg(){ if (tg) tg.style.display = (window.innerWidth <= 900) ? 'block' : 'none'; }
+  showTg(); window.addEventListener('resize', showTg);
+  function close(){ sb.classList.remove('open'); sc.classList.remove('on'); }
+  if (tg) tg.addEventListener('click', function(){ sb.classList.add('open'); sc.classList.add('on'); });
+  if (sc) sc.addEventListener('click', close);
+})();
+</script>
+{% endblock %}

@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "layout_app.html" %}
 {% block title %}{{ disc.title }} — Discussions{% endblock %}
-{% block content %}
+{% block app_content %}
 <p><a href="{{ url_for('discuss.thread_list', slug=course.slug) }}">← All discussions</a></p>
 <div class="panel">
   <div>{% if disc.pinned %}<span class="tag gold">📌 Pinned</span>{% endif %}</div>

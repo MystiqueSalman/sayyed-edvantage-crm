@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "layout_app.html" %}
 {% block title %}💬 Messages — Sayyed EdVantage LMS{% endblock %}
-{% block content %}
+{% block app_content %}
 <div class="section-title"><h2>💬 Messages</h2><div class="line"></div>
   {% if can_initiate %}<a class="btn btn-gold btn-sm" href="{{ url_for('social13.new_conversation') }}">✉️ New message</a>{% endif %}</div>
 

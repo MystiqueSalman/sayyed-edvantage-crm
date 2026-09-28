@@ -7,7 +7,7 @@
   <div class="lock">🔒</div>
   <h2>{{ lesson.title }}</h2>
   <p style="color:var(--muted); font-size:1.05rem">This lesson unlocks
-    <b style="color:var(--gold-lt)">in {{ locked_days }} day{{ 's' if locked_days != 1 }}</b>
+    <b style="color:var(--gold-dk)">in {{ locked_days }} day{{ 's' if locked_days != 1 }}</b>
     <br><small>Available from {{ unlock_at.strftime('%d %B %Y') }} · drip-scheduled from your enrollment date.</small></p>
   <p><a class="btn btn-ghost" href="{{ url_for('main.course_detail', slug=course.slug) }}">← Back to course</a></p>
 </div>
@@ -67,5 +67,23 @@
        href="{{ url_for('tutor.tutor_home', course_id=course.id, lesson_id=lesson.id) }}">Ask AI Tutor 🤖</a>
   </div>
 </div>
+{% endif %}
+{% if not locked %}
+<script>
+/* UI14: learning-time heartbeat — reports 60s chunks so the dashboard shows real learning time. */
+(function () {
+  var start = Date.now();
+  function beat() {
+    var secs = Math.max(1, Math.round((Date.now() - start) / 1000));
+    start = Date.now();
+    fetch("{{ url_for('student.lesson_heartbeat', lesson_id=lesson.id) }}", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({seconds: secs})
+    }).catch(function () {});
+  }
+  setInterval(beat, 60000);
+  window.addEventListener("beforeunload", beat);
+})();
+</script>
 {% endif %}
 {% endblock %}

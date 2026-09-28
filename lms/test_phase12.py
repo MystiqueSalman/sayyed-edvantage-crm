@@ -67,7 +67,7 @@ s_anon = requests.Session()
 with app.app_context():
     head = db.session.execute(
         db.text("SELECT version_num FROM alembic_version")).fetchone()[0]
-    check("migration head is Phase 13", head == "p13f1a2b3c4d5", head)
+    check("migration head is UI14", head == "u14a1b2c3d4e5", head)
 
 # ---------------------------------------------------------------- 2. tenant seed
 
@@ -174,17 +174,17 @@ with app.app_context():
 
 r = s_anon.get(f"{BASE}/lang/hi", allow_redirects=True)
 check("Hindi switch redirects home", r.status_code == 200, r.status_code)
-check("Hindi hero rendered", "वो स्किल्स सीखें जिनसे नौकरी मिले।" in r.text)
-check("Hindi nav rendered", "पाठ्यक्रम" in r.text and "नौकरियां" in r.text)
+check("Hindi hero rendered", "भविष्य के लिए तैयार" in r.text)
+check("Hindi nav rendered", "पाठ्यक्रम" in r.text and "प्लेसमेंट" in r.text)
 check("Hindi footer tagline", "छात्रों की सफलता के लिए सशक्तिकरण" in r.text)
 
 r = s_anon.get(f"{BASE}/lang/en", allow_redirects=True)
 check("English switch works",
-      "Master the Skills That Get You Hired." in r.text)
+      "Future-Ready" in r.text and "IT &amp; AI Skills" in r.text)
 
 r = s_anon.get(f"{BASE}/lang/xx", allow_redirects=True)
 check("invalid language code ignored",
-      r.status_code == 200 and "Master the Skills That Get You Hired." in r.text)
+      r.status_code == 200 and "Future-Ready" in r.text)
 
 with app.app_context():
     with app.test_request_context("/"):

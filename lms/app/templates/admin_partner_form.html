@@ -1,0 +1,16 @@
+{% extends "layout_app.html" %}
+{% block title %}{% if p %}Edit{% else %}New{% endif %} Partner — Admin{% endblock %}
+{% block app_content %}
+<div class="section-title"><h2>🤝 {% if p %}Edit{% else %}New{% endif %} Partner</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.partner_list') }}">← Partners</a></div>
+<div class="card"><div class="body">
+<form method="post" style="display:grid;gap:10px;max-width:560px">
+  <label>Name<input name="name" value="{{ p.name if p }}" required maxlength="160"></label>
+  <label>Logo URL <span style="color:var(--muted)">(optional)</span><input name="logo_url" value="{{ p.logo_url if p }}" maxlength="255"></label>
+  <label>Website <span style="color:var(--muted)">(optional)</span><input name="website" value="{{ p.website if p }}" maxlength="255" placeholder="https://…"></label>
+  <label>Sort order<input type="number" name="sort_order" value="{{ p.sort_order if p else 0 }}"></label>
+  <label style="margin:0"><input type="checkbox" name="active" value="1" {% if not p or p.active %}checked{% endif %} style="width:auto"> Active (shows on homepage)</label>
+  <div><button class="btn btn-gold" type="submit">Save partner</button></div>
+</form>
+</div></div>
+{% endblock %}

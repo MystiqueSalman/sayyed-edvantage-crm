@@ -175,8 +175,8 @@ check("widget: addMsg appends timestamp", 'className = "chat-ts " + who' in html
 check("widget: typing indicator has no timestamp",
       'who.indexOf("typing") === -1' in html)
 check("widget: existing gold/blue bubble styling untouched",
-      ".chat-msg.bot{background:#16294d" in html
-      and ".chat-msg.user{background:linear-gradient(135deg,#d4af37,#9c7a1e)" in html)
+      ".chat-msg.bot{background:#ffffff" in html
+      and ".chat-msg.user{background:linear-gradient(135deg,#2f7fff,#0b54d6)" in html)
 
 # ================================================================ LEAD ENRICHMENT: course + name capture
 with app.app_context():

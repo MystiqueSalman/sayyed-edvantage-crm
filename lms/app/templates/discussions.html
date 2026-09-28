@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "layout_app.html" %}
 {% block title %}Discussions — {{ course.title }}{% endblock %}
-{% block content %}
+{% block app_content %}
 <p><a href="{{ url_for('main.course_detail', slug=course.slug) }}">← {{ course.title }}</a></p>
 <div class="section-title"><h2>💬 Discussions</h2><div class="line"></div></div>
 

@@ -1,0 +1,19 @@
+{% extends "layout_app.html" %}
+{% block title %}{% if t %}Edit{% else %}New{% endif %} Testimonial — Admin{% endblock %}
+{% block app_content %}
+<div class="section-title"><h2>⭐ {% if t %}Edit{% else %}New{% endif %} Testimonial</h2><div class="line"></div>
+  <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.testimonial_list') }}">← Testimonials</a></div>
+<div class="card"><div class="body">
+<form method="post" style="display:grid;gap:10px;max-width:560px">
+  <label>Name<input name="name" value="{{ t.name if t }}" required maxlength="120"></label>
+  <label>Role <span style="color:var(--muted)">(e.g. "Data Science Student")</span><input name="role" value="{{ t.role if t }}" maxlength="160"></label>
+  <label>Testimonial text<textarea name="text" rows="4" required>{{ t.text if t }}</textarea></label>
+  <label>Rating (1–5)<input type="number" name="rating" value="{{ t.rating if t else 5 }}" min="1" max="5"></label>
+  <label>Photo URL <span style="color:var(--muted)">(optional)</span><input name="photo_url" value="{{ t.photo_url if t }}" maxlength="255"></label>
+  <label>Sort order<input type="number" name="sort_order" value="{{ t.sort_order if t else 0 }}"></label>
+  <label style="margin:0"><input type="checkbox" name="is_sample" value="1" {% if t and t.is_sample %}checked{% endif %} style="width:auto"> Clearly-marked sample (placeholder, not a real student)</label>
+  <label style="margin:0"><input type="checkbox" name="active" value="1" {% if not t or t.active %}checked{% endif %} style="width:auto"> Active (shows on homepage)</label>
+  <div><button class="btn btn-gold" type="submit">Save testimonial</button></div>
+</form>
+</div></div>
+{% endblock %}

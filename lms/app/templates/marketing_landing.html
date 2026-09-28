@@ -5,7 +5,7 @@
 {% for b in page.blocks or [] %}
   {% if b.type == "hero" %}
   <div class="panel" style="text-align:center; padding:3rem 1.5rem">
-    <h1 style="color:var(--gold); margin-top:0">{{ b.heading }}</h1>
+    <h1 style="color:var(--gold-dk); margin-top:0">{{ b.heading }}</h1>
     <p style="max-width:640px; margin:0 auto 1.2rem">{{ b.text }}</p>
     {% if b.button_text %}<a class="btn btn-gold" href="{{ b.button_link or '#lead-form' }}">{{ b.button_text }}</a>{% endif %}
   </div>
@@ -17,7 +17,7 @@
       {% if c %}
       <div class="panel"><h3 style="margin-top:0">{{ c.title }}</h3>
         <p style="color:var(--muted)">{{ c.tagline or "" }}</p>
-        <p><b style="color:var(--gold)">₹{{ "{:,}".format(c.fee) }}</b> + GST</p>
+        <p><b style="color:var(--gold-dk)">₹{{ "{:,}".format(c.fee) }}</b> + GST</p>
         <a class="btn btn-blue btn-sm" href="{{ url_for('main.course_detail', slug=c.slug) }}">View Course</a></div>
       {% endif %}
     {% endfor %}
@@ -26,7 +26,7 @@
   <div class="section-title"><h2>{{ b.heading or "Testimonials" }}</h2><div class="line"></div></div>
   <div class="cards">
     {% for t in b["items"] or [] %}
-    <div class="panel"><p>"{{ t.text or t.a }}"</p><p style="color:var(--gold)">— {{ t.name or t.q }}</p></div>
+    <div class="panel"><p>"{{ t.text or t.a }}"</p><p style="color:var(--gold-dk)">— {{ t.name or t.q }}</p></div>
     {% endfor %}
   </div>
   {% elif b.type == "faq" %}

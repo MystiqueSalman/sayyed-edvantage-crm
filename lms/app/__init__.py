@@ -106,6 +106,21 @@ def create_app():
                 head_snippet = _AS.get("analytics.head_snippet", "")
         except Exception:
             pass
+        # UI14: navbar course dropdown + global contact details (guarded, cheap)
+        nav_courses = []
+        try:
+            from .models import Course as _Course  # noqa: E402
+            nav_courses = (_Course.query.filter_by(is_bonus=False)
+                           .order_by(_Course.title).all())
+        except Exception:
+            nav_courses = []
+        contact_phone, contact_email = "+91 7977877884", "sayyededvantage@gmail.com"
+        try:
+            from .models import AppSetting as _AS2  # noqa: E402
+            contact_phone = _AS2.get("site.contact_phone", contact_phone)
+            contact_email = _AS2.get("site.contact_email", contact_email)
+        except Exception:
+            pass
         # Phase 12: i18n + white-label branding (§21.2/§21.3) — guarded so a
         # missing tenants table (mid-migration) never breaks rendering.
         from . import i18n as _I18N  # noqa: E402
@@ -125,6 +140,8 @@ def create_app():
                 "notif_unread": notif_unread, "dm_unread": dm_unread,
                 "ga4_id": ga4_id, "gtm_id": gtm_id,
                 "meta_pixel_id": meta_pixel_id, "head_snippet": head_snippet,
+                "nav_courses": nav_courses, "contact_phone": contact_phone,
+                "contact_email": contact_email,
                 "t": _I18N.t, "lang": lang, "brand": brand,
                 "current_tenant": tenant}
 
@@ -162,6 +179,7 @@ def create_app():
     from .social13 import social13_bp  # noqa: E402  (Phase 13: messaging/leaderboard)
     from .money13 import money13_bp  # noqa: E402  (Phase 13: money/international)
     from .parked13 import parked13_bp  # noqa: E402  (Phase 13: diagnostics)
+    from . import models_ui as _models_ui  # noqa: E402  (UI14: testimonials/partners)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -261,6 +279,12 @@ def create_app():
         from .learn13 import ensure_learning13_defaults as _L13  # noqa: E402
         try:
             _L13()
+        except Exception:
+            db.session.rollback()
+        # UI14: seed the one clearly-marked sample testimonial (guarded).
+        from .models_ui import _ensure_ui_seeds as _UI14  # noqa: E402
+        try:
+            _UI14()
         except Exception:
             db.session.rollback()
         # Security hardening: one-time backfill — encrypt any legacy plaintext
@@ -407,6 +431,9 @@ def _ensure_schema_patches(app):
          "ALTER TABLE enrollments ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id)"),
         ("enrollments", "affiliate_id",
          "ALTER TABLE enrollments ADD COLUMN affiliate_id INTEGER REFERENCES affiliates(id)"),
+        # UI14: real learning-time tracking on lesson progress
+        ("lesson_progress", "time_spent_sec",
+         "ALTER TABLE lesson_progress ADD COLUMN time_spent_sec INTEGER DEFAULT 0"),
     ]
     try:
         with app.app_context():

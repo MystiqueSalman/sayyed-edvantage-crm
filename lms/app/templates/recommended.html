@@ -1,6 +1,6 @@
-{% extends "base.html" %}
+{% extends "layout_app.html" %}
 {% block title %}Recommended for you — Sayyed EdVantage LMS{% endblock %}
-{% block content %}
+{% block app_content %}
 <div class="section-title"><h2>🎯 Recommended Next</h2><div class="line"></div>
   <a class="btn btn-ghost btn-sm" href="{{ url_for('student.dashboard') }}">← Dashboard</a></div>
 <p style="color:var(--muted); font-size:.9rem">Based on your quiz performance — topics where you're scoring below 60%.</p>

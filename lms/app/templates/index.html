@@ -1,36 +1,164 @@
 {% extends "base.html" %}
-{% block title %}Sayyed EdVantage — Learn Data Science, AI, Python & More{% endblock %}
+{% block title %}Sayyed EdVantage — Future-Ready IT & AI Skills for a Better Tomorrow{% endblock %}
+
 {% block hero %}
 <div class="hero">
-  <div class="hero-bg" style="background-image:url('{{ url_for('static', filename='img/banners/hero.png') }}')"></div>
+  <div class="hero-bg" style="background-image:url('{{ url_for('static', filename='img/hero-banner-wide.png') }}')"></div>
   <div class="hero-inner">
-    <div class="kicker">{{ t('hero_kicker') }}</div>
-    <h1>{{ t('hero_title') }}</h1>
-    <p>{{ t('hero_sub') }}</p>
-    <p>
-      <a class="btn btn-gold" href="{{ url_for('main.catalog') }}">{{ t('explore_courses') }}</a>
-    </p>
+    <div class="kicker">{{ t('hero_kicker2') }}</div>
+    <h1>{{ t('hero_h1a') }} <span class="hl">{{ t('hero_h1b') }}</span><br>{{ t('hero_h1c') }}</h1>
+    <p class="lead">{{ t('hero_lead')|safe }}</p>
+    <div class="hero-cta">
+      <a class="btn btn-gold" href="{{ url_for('main.catalog') }}">{{ t('explore_courses') }} &nbsp;→</a>
+      {% if video_url %}<a class="btn btn-outline-w" href="{{ video_url }}" target="_blank" rel="noopener">▶&nbsp; {{ t('watch_video') }}</a>{% endif %}
+    </div>
+    <div class="hero-trust">
+      <div class="faces"><span>🎓</span><span>💻</span><span>🚀</span></div>
+      <div><b>{{ "{:,}".format(stats.students) }} Registered Students</b><small>Join our growing community</small></div>
+    </div>
   </div>
 </div>
 {% endblock %}
+
 {% block content %}
-<div class="section-title"><h2>Flagship Courses</h2><div class="line"></div>
-  <a href="{{ url_for('main.catalog') }}">View all →</a></div>
-<div class="grid">
-  {% for c in courses[:6] %}
-  <div class="card">
-    <div class="course-banner" style="background-image:url('{{ url_for('static', filename='img/banners/' + c.banner) if c.banner }}')"></div>
-    <div class="body">
-      <h3>{{ c.title }}</h3>
-      <p>{{ c.short_desc }}</p>
-      <div class="fee">₹{{ "{:,}".format(c.fee) }} <small>+ GST</small></div>
-      <a class="btn btn-gold btn-sm" href="{{ url_for('main.course_detail', slug=c.slug) }}">View Course</a>
+{# ---------- Popular Courses ---------- #}
+{% set stats = stats|default({'students': 0, 'courses': 0, 'certificates': 0, 'faculty': 0}, true) %}
+{% set custom_stats = custom_stats|default([], true) %}
+{% set batches = batches|default([], true) %}
+{% set testimonials = testimonials|default([], true) %}
+{% set partners = partners|default([], true) %}
+<div class="band tint">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><h2>Our <span class="hl">Popular Courses</span></h2>
+      <p>Learn in-demand skills from industry experts and build your career in future technologies.</p></div>
+      <a class="more" href="{{ url_for('main.catalog') }}">View All Courses →</a>
+    </div>
+    <div class="course-grid">
+      {% for c in courses[:7] %}
+      {% set slug = c.slug or '' %}
+      {% set ico = '📊' if 'data-science' in slug and 'analytics' not in slug else
+                   '📈' if 'analytics' in slug else
+                   '🤖' if 'ai' in slug or 'gen' in slug else
+                   '🐍' if 'python' in slug else
+                   '🐧' if 'linux' in slug and 'devops' not in slug else
+                   '♾️' if 'devops' in slug else '💻' %}
+      <div class="course-card">
+        <div class="course-banner" style="background-image:url('{{ url_for('static', filename='img/banners/' + c.banner) if c.banner }}')"></div>
+        <div class="cc-body">
+          <div class="cc-title"><span class="cc-ico">{{ ico }}</span><h3>{{ c.title }}</h3></div>
+          <p>{{ c.short_desc or '' }}</p>
+          <div class="fee">₹{{ "{:,}".format(c.fee) }} <small>+ GST</small></div>
+          <a class="btn btn-soft btn-sm btn-block" href="{{ url_for('main.course_detail', slug=c.slug) }}">Know More →</a>
+        </div>
+      </div>
+      {% endfor %}
     </div>
   </div>
-  {% endfor %}
 </div>
 
-<div style="text-align:center;margin:1.2rem 0">
-  <img src="{{ url_for('static', filename='img/why-sayyed-edvantage-v2.png') }}" alt="Why Choose Sayyed EdVantage — Practical Skills, Expert Guidance, Industry Exposure, Career-Focused Learning" style="max-width:100%;height:auto;border-radius:14px">
+{# ---------- Why Us / features strip ---------- #}
+<div class="band features" id="why-us">
+  <div class="wrap">
+    <div class="sec-head" style="margin-bottom:26px">
+      <div style="text-align:center; width:100%">
+        <img src="{{ url_for('static', filename='img/brand-text-3d.png') }}" alt="Sayyed EdVantage — Empowering Students for Success" style="height:64px; width:auto">
+      </div>
+    </div>
+    <div class="feat-grid">
+      <div class="feat"><span class="fi">🖥️</span><div><b>Live Interactive Classes</b><small>Learn with expert faculty in real-time</small></div></div>
+      <div class="feat"><span class="fi">📁</span><div><b>Real-World Projects</b><small>Gain practical hands-on experience</small></div></div>
+      <div class="feat"><span class="fi">📦</span><div><b>Industry Relevant Curriculum</b><small>Updated with latest technologies</small></div></div>
+      <div class="feat"><span class="fi">🎓</span><div><b>Certificates</b><small>Get certified and boost your profile</small></div></div>
+      <div class="feat"><span class="fi">👥</span><div><b>Career Guidance</b><small>Resume, interviews and job preparation</small></div></div>
+      <div class="feat"><span class="fi">💼</span><div><b>Placement Support</b><small>Connect with hiring companies (where available)</small></div></div>
+    </div>
+    <img class="why-banner" src="{{ url_for('static', filename='img/why-sayyed-edvantage-v2.png') }}" alt="Why Choose Sayyed EdVantage" style="max-width:1000px; width:100%">
+  </div>
+</div>
+
+{# ---------- Upcoming Batches ---------- #}
+<div class="band">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><h2>Upcoming <span class="hl">Batches</span></h2></div>
+      <a class="more" href="{{ url_for('crm.enquiry') }}">View All →</a>
+    </div>
+    {% if batches %}
+      {% for b in batches %}
+      <div class="batch-row">
+        <div class="batch-date"><b>{{ b.start_date.strftime('%d') }}</b><small>{{ b.start_date.strftime('%b')|upper }}</small></div>
+        <div class="binfo"><b>{{ b.name }}</b><small>{{ b.course.title }}{% if b.schedule_text %} · {{ b.schedule_text }}{% endif %}</small></div>
+        {% if b.capacity and b.members|length >= b.capacity - 10 %}<span class="pill pending">Limited Seats</span>{% endif %}
+        <a class="btn btn-gold btn-sm" href="{{ url_for('crm.enquiry') }}?course_id={{ b.course.id }}">Enquire →</a>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">New batches are announced soon. <a href="{{ url_for('crm.enquiry') }}">Enquire now</a> and we'll notify you when admissions open.</div>
+    {% endif %}
+  </div>
+</div>
+
+{# ---------- Stats band ---------- #}
+<div class="band tint" style="padding-top:0">
+  <div class="wrap">
+    <div class="stats-band">
+      <div class="stat-big"><b>{{ "{:,}".format(stats.students) }}</b><span>Registered Students</span></div>
+      <div class="stat-mini"><b>{{ stats.courses }}</b><span>Career Courses</span></div>
+      <div class="stat-mini"><b>{{ "{:,}".format(stats.certificates) }}</b><span>Certificates Issued</span></div>
+      <div class="stat-mini"><b>{{ stats.faculty }}</b><span>Expert Faculty</span></div>
+      {% for s in custom_stats %}
+      <div class="stat-mini"><b>{{ s.value }}</b><span>{{ s.label }}</span></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{# ---------- Testimonials ---------- #}
+<div class="band">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><h2>What Our <span class="hl">Students Say</span></h2></div>
+      <a class="more" href="{{ url_for('main.blogs') }}">View All →</a>
+    </div>
+    {% if testimonials %}
+      {% set only_sample = testimonials|selectattr('is_sample')|list|length == testimonials|length %}
+      {% if only_sample %}
+      <div class="sample-note">Sample testimonial shown — real student stories can be added in Admin → Testimonials.</div>
+      {% endif %}
+      <div class="testi-grid">
+        {% for t in testimonials[:3] %}
+        <div class="testi">
+          <div class="stars">★★★★★</div>
+          <p>"{{ t.text }}"</p>
+          <div class="who"><span class="av">{{ t.name[:1] }}</span><span><b>{{ t.name }}</b><small>{{ t.role }}</small></span></div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty">Student success stories will appear here soon.</div>
+    {% endif %}
+  </div>
+</div>
+
+{# ---------- Hiring partners ---------- #}
+<div class="band tint" style="padding-top:0">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><h2>Our Hiring &amp; <span class="hl">Placement Partners</span></h2><p>(Where Available)</p></div>
+    </div>
+    {% if partners %}
+    <div class="partner-strip">
+      {% for p in partners %}
+      <span class="partner-chip">{% if p.logo_url %}<img src="{{ p.logo_url }}" alt="{{ p.name }}">{% endif %}{{ p.name }}</span>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="partner-note">Placement partners will be listed here as they join our hiring network.</div>
+    {% endif %}
+    <div style="text-align:center; margin-top:30px">
+      <a class="btn btn-gold" href="{{ url_for('crm.enquiry') }}">Enquire for Admissions →</a>
+    </div>
+  </div>
 </div>
 {% endblock %}
