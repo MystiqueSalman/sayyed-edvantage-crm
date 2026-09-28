@@ -29,8 +29,7 @@
   <div class="course-banner" style="height:230px; background-image:url('{{ url_for('static', filename='img/banners/' + course.banner) if course.banner }}')"></div>
   <div style="padding:26px">
     <div>
-      {% if course.is_bonus %}<span class="badge-free">FREE BONUS</span>
-      {% else %}<span class="tag gold">Flagship Course</span>{% endif %}
+      {% if not course.is_bonus %}<span class="tag gold">Flagship Course</span>{% endif %}
     </div>
     <h1 style="margin:.4em 0">{{ course.title }}</h1>
     <div>{{ course.description|safe }}</div>

@@ -153,8 +153,7 @@ document.querySelectorAll("[data-onboard-key]").forEach(function (box) {
 </div>
 {% else %}
 <div class="panel"><p style="color:var(--muted)">You're not enrolled in any course yet.
-  <a href="{{ url_for('main.catalog') }}">Browse the catalog</a> or grab a
-  <a href="{{ url_for('main.bonus_courses') }}">free bonus course</a>.</p></div>
+  <a href="{{ url_for('main.catalog') }}">Browse the catalog</a> to get started.</p></div>
 {% endif %}
 
 {% if pending %}

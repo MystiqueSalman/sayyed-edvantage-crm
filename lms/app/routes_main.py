@@ -48,8 +48,9 @@ def catalog():
 
 @main_bp.route("/bonus-courses")
 def bonus_courses():
-    courses = Course.query.filter_by(is_bonus=True).order_by(Course.title).all()
-    return render_template("bonus.html", courses=courses)
+    # Bonus courses hidden from public view for now (Salman, 2026-09-28).
+    # Restore by rendering bonus.html again when ready.
+    return redirect(url_for("main.catalog"))
 
 
 @main_bp.route("/course/<slug>")
