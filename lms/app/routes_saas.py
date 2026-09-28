@@ -182,19 +182,10 @@ def audit_export():
 @admin_required
 def integrations():
     if request.method == "POST":
-        existing = SAAS.get_oauth_settings()
-        secret = request.form.get("google_client_secret", "").strip()
-        SAAS.save_oauth_settings(
-            request.form.get("google_client_id", "").strip(),
-            secret or existing["google_client_secret"])  # blank = keep old
-        OPS.audit(current_user, "oauth.settings", "integration", None, "",
-                  request.remote_addr or "")
-        flash("Google OAuth settings saved. (Login button stays "
-              "“coming soon” until a full OAuth flow is implemented.)", "ok")
-        return redirect(url_for("saas.integrations"))
-    oauth = dict(SAAS.get_oauth_settings())
-    oauth["google_client_secret"] = ""  # never echo the secret back
-    return render_template("admin_integrations.html", oauth=oauth)
+        # The legacy inline Google OAuth form was removed (Phase 13 ships the
+        # real OAuth flow at auth13.oauth_settings). Route any stray POST there.
+        return redirect(url_for("auth13.oauth_settings"))
+    return render_template("admin_integrations.html")
 
 
 # ------------------------------------------------------------ adaptive views (§21.5)

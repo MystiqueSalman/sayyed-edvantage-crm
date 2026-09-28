@@ -4,14 +4,8 @@
 <div class="section-title"><h2>🔌 Integrations</h2><div class="line"></div>
   <a class="btn btn-ghost btn-sm" href="{{ url_for('admin.dashboard') }}">← Dashboard</a></div>
 <div class="panel" style="max-width:640px">
-  <h3 style="margin-top:0">Google OAuth <span class="tag gold">coming soon</span></h3>
-  <p style="color:var(--muted); font-size:.9rem">Save your Google Cloud credentials here. The “Continue with Google” button on the login page stays disabled until a full OAuth flow is implemented — credentials alone do not enable login.</p>
-  <form method="post">
-    <label>Google Client ID</label>
-    <input type="text" name="google_client_id" maxlength="200" value="{{ oauth.google_client_id }}" placeholder="xxxx.apps.googleusercontent.com" autocomplete="off">
-    <label>Google Client Secret</label>
-    <input type="password" name="google_client_secret" maxlength="200" value="{{ oauth.google_client_secret }}" placeholder="••••••••" autocomplete="off">
-    <p><button class="btn btn-gold" type="submit">Save</button></p>
-  </form>
+  <h3 style="margin-top:0">Google OAuth</h3>
+  <p style="color:var(--muted); font-size:.9rem">Google sign-in is managed on the dedicated Auth &amp; Google OAuth page (credentials, enable switch, and status).</p>
+  <p><a class="btn btn-gold" href="{{ url_for('auth13.oauth_settings') }}">🔐 Open Auth &amp; Google OAuth settings</a></p>
 </div>
 {% endblock %}

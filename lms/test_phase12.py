@@ -473,17 +473,17 @@ check("audit page has export button",
 # ---------------------------------------------------------------- 13. OAuth stub
 
 r = s_adm.get(f"{BASE}/admin/integrations")
-check("integrations page marked coming soon",
-      r.status_code == 200 and "coming soon" in r.text.lower()
-      and "Google OAuth" in r.text, r.status_code)
+check("integrations page links to real OAuth settings",
+      r.status_code == 200 and "/admin/integrations/google" in r.text
+      and "google_client_id" not in r.text, r.status_code)
 r = s_adm.post(f"{BASE}/admin/integrations",
                data={"google_client_id": "test-client-id.apps.googleusercontent.com",
                      "google_client_secret": "shhh-secret-123"},
-               allow_redirects=True)
-check("oauth settings save",
-      r.status_code == 200 and "test-client-id" in r.text, r.status_code)
-check("oauth secret never echoed back",
-      "shhh-secret-123" not in r.text)
+               allow_redirects=False)
+check("legacy integrations POST redirects to real OAuth settings",
+      r.status_code in (301, 302, 303)
+      and r.headers.get("Location", "").endswith("/admin/integrations/google"),
+      r.status_code)
 r = s_anon.get(f"{BASE}/login")
 check("login shows disabled Google button",
       r.status_code == 200 and "coming soon" in r.text.lower()
