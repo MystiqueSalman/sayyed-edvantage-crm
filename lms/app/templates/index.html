@@ -6,7 +6,7 @@
   <div class="hero-bg" style="background-image:url('{{ url_for('static', filename='img/hero-banner-wide.png') }}')"></div>
   <div class="hero-inner">
     <div class="kicker">{{ t('hero_kicker2') }}</div>
-    <h1>{{ t('hero_h1a') }} <span class="hl">{{ t('hero_h1b') }}</span><br>{{ t('hero_h1c') }}</h1>
+    <h1>{{ t('hero_h1a') }}<br><span class="hl nowrap">{{ t('hero_h1b') }}</span><br>{{ t('hero_h1c') }}</h1>
     <p class="lead">{{ t('hero_lead')|safe }}</p>
     <div class="hero-cta">
       <a class="btn btn-gold" href="{{ url_for('main.catalog') }}">{{ t('explore_courses') }} &nbsp;→</a>

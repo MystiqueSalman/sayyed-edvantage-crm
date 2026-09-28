@@ -111,8 +111,9 @@ img{max-width:100%}
   background:linear-gradient(100deg, rgba(8,19,39,.96) 25%, rgba(8,19,39,.62) 60%, rgba(8,19,39,.30));}
 .hero-inner{position:relative; max-width:1280px; margin:0 auto; padding:76px 24px 64px}
 .kicker{color:var(--gold-lt); font-weight:800; letter-spacing:3px; font-size:.78rem; text-transform:uppercase}
-.hero h1{font-size:clamp(2rem,4.6vw,3.4rem); margin:.35em 0 .3em; line-height:1.14; color:#fff; max-width:640px}
+.hero h1{font-size:clamp(1.4rem,3.22vw,2.38rem); margin:.35em 0 .3em; line-height:1.14; color:#fff; max-width:640px}
 .hero h1 .hl{color:var(--gold)}
+.hero h1 .nowrap{white-space:nowrap}
 .hero p.lead{color:#c3cfe4; font-size:1.08rem; max-width:600px}
 .hero-cta{display:flex; gap:14px; flex-wrap:wrap; margin:26px 0}
 .hero-trust{display:flex; align-items:center; gap:14px; margin-top:8px}
