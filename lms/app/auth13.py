@@ -382,8 +382,11 @@ def mfa_setup():
         backup = [f"{secrets.token_hex(3)}-{secrets.token_hex(3)}"
                   for _ in range(BACKUP_CODE_COUNT)]
         row = existing or UserSecurity13(user_id=current_user.id,
-                                         totp_secret=secret)
-        row.totp_secret = secret
+                                         totp_secret="")
+        # Security hardening: TOTP secrets are encrypted at rest (Fernet key
+        # derived from SECRET_KEY) — never store plaintext.
+        from app.totp_crypto import encrypt_totp_secret as _enc_totp  # noqa: E402
+        row.totp_secret = _enc_totp(secret)
         row.mfa_enabled = True
         row.backup_codes = [_sha256(c) for c in backup]
         db.session.add(row)
@@ -411,7 +414,8 @@ def mfa_verify():
         sec = UserSecurity13.query.filter_by(user_id=user.id).first()
         ok = False
         if sec is not None and sec.mfa_enabled:
-            if pyotp.TOTP(sec.totp_secret).verify(code, valid_window=1):
+            from app.totp_crypto import decrypt_totp_secret as _dec_totp  # noqa: E402
+            if pyotp.TOTP(_dec_totp(sec.totp_secret)).verify(code, valid_window=1):
                 ok = True
             else:
                 # Single-use backup codes (stored as hashes).

@@ -24,7 +24,7 @@ assignment. Faculty manages only courses where they are the assigned instructor.
 
 | Var | Purpose | Default |
 |-----|---------|---------|
-| `SECRET_KEY` | Flask sessions | `dev-secret-change-me` |
+| `SECRET_KEY` | Flask sessions **and** TOTP MFA secret encryption key derivation. **Required**: the app refuses to start without it (fail-closed; TOTP secrets are never stored plaintext). Generate a long random string. | *(none — startup error if missing)* |
 | `DATABASE_URL` | Postgres URL (empty = SQLite) | SQLite `instance/lms.db` |
 | `SQLITE_PATH` | Custom SQLite file path | `instance/lms.db` |
 | `UPLOAD_DIR` | Assignment submissions, lesson PDFs, certificates | `./uploads` |

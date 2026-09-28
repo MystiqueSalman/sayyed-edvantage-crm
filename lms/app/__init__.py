@@ -37,6 +37,12 @@ def _database_uri(app):
 
 
 def create_app():
+    # Security hardening: TOTP MFA secrets are encrypted at rest with a key
+    # derived from SECRET_KEY. Fail closed here — a missing SECRET_KEY is a
+    # hard startup error rather than silent plaintext storage.
+    from app.totp_crypto import require_totp_encryption  # noqa: E402
+    require_totp_encryption()
+
     app = Flask(__name__)
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
     app.config["SQLALCHEMY_DATABASE_URI"] = _database_uri(app)
@@ -257,6 +263,25 @@ def create_app():
             _L13()
         except Exception:
             db.session.rollback()
+        # Security hardening: one-time backfill — encrypt any legacy plaintext
+        # TOTP secrets in place (guarded like the blocks above).
+        from . import totp_crypto as _TC  # noqa: E402
+        try:
+            from sqlalchemy import inspect as _insp_tc  # noqa: E402
+            if "p13_user_security" in _insp_tc(db.engine).get_table_names():
+                n = _TC.backfill_totp_secrets()
+                if n:
+                    app.logger.info("Encrypted %d legacy plaintext TOTP "
+                                    "secret(s) at rest.", n)
+        except Exception:
+            db.session.rollback()
+
+    @app.cli.command("backfill-totp-secrets")
+    def backfill_totp_secrets_cmd():
+        """One-time backfill: encrypt any plaintext TOTP secrets in place."""
+        from app.totp_crypto import backfill_totp_secrets  # noqa: E402
+        n = backfill_totp_secrets()
+        print(f"Encrypted {n} legacy plaintext TOTP secret(s).")
 
     _start_reminder_scheduler(app)
     _start_backup_scheduler(app)

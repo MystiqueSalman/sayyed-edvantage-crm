@@ -48,8 +48,8 @@ class EmailOTP(db.Model):
 class UserSecurity13(db.Model):
     """TOTP MFA state per user (one row per user).
 
-    totp_secret: base32 TOTP secret, stored in plain text. Encrypting it
-    at rest needs a managed key-rotation story; flagged as a follow-up.
+    totp_secret: base32 TOTP secret, Fernet-encrypted at rest (key derived
+    from the SECRET_KEY env var via app.totp_crypto). Never stored plaintext.
     backup_codes: JSON list of SHA-256 hex hashes of single-use codes.
     """
     __tablename__ = "p13_user_security"

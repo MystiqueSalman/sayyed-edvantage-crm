@@ -8,6 +8,9 @@ LMS=~/workspace/lms
 DB="/tmp/lms_${SUITE}.db"
 rm -f "$DB"
 export SQLITE_PATH="$DB" LMS_SCHEDULER=off
+# TOTP secrets are encrypted at rest with a key derived from SECRET_KEY;
+# the app fails closed at startup without it, so test runs set a throwaway.
+export SECRET_KEY="${SECRET_KEY:-lms-local-test-secret-not-for-production}"
 cd "$LMS" || exit 1
 echo "== migrate $DB"
 LMS_SKIP_CREATE_ALL=1 ./venv/bin/flask db upgrade > /tmp/mig_${SUITE}.log 2>&1 || { tail -20 /tmp/mig_${SUITE}.log; exit 1; }
