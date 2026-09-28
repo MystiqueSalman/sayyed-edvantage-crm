@@ -35,10 +35,10 @@ img{max-width:100%}
 .nav{position:sticky; top:0; z-index:60; background:rgba(8,19,39,.97);
   backdrop-filter:blur(10px); border-bottom:1px solid rgba(245,179,1,.22)}
 .nav-inner{display:flex; align-items:center; gap:14px; max-width:1400px;
-  margin:0 auto; padding:10px 24px; min-width:0}
+  margin:0 auto; padding:5px 24px; min-width:0}
 .brand{display:flex; align-items:center; gap:12px; flex:0 0 auto; min-width:0; overflow:hidden}
 .brand-logo{height:44px; width:auto; display:block; flex:0 0 auto}
-.brand-text{height:54px; width:auto; display:block; flex:0 0 auto}
+.brand-text{height:85px; width:auto; display:block; flex:0 0 auto}
 /* UI15: link group is a proper flex child that can shrink; nothing inside it forces page overflow */
 .nav-links{display:flex; align-items:center; gap:2px; flex:1 1 auto; min-width:0; justify-content:center}
 .nav-links>a{color:#c3cfe4; font-weight:600; font-size:.92rem; padding:9px 12px;
