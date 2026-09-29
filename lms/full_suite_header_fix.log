@@ -1,0 +1,132 @@
+##### test_flows
+
+36/36 checks passed
+== kill server 1696
+exit=0
+##### test_phase2
+92/92 Phase 2 checks passed.
+ALL PHASE 2 CHECKS PASSED ✔
+== kill server 1781
+exit=0
+##### test_phase3
+78/78 Phase 3 checks passed.
+ALL PHASE 3 CHECKS PASSED ✔
+== kill server 1907
+exit=0
+##### test_phase4
+
+==== PHASE 4: 80/80 checks passed ====
+== kill server 2044
+exit=0
+##### test_chat_fixes
+
+43/43 checks passed
+== kill server 2168
+exit=0
+##### test_phase5
+
+== Phase 5: 62 passed, 0 failed ==
+== kill server 2199
+exit=0
+##### test_phase6
+
+50 passed, 0 failed
+== kill server 2285
+exit=0
+##### test_phase7
+
+62 passed, 0 failed
+== kill server 2377
+exit=0
+##### test_phase8
+
+Phase 8: 46 passed, 0 failed
+== kill server 2469
+exit=0
+##### test_phase9
+
+== Phase 9: 68 passed, 0 failed ==
+== kill server 2530
+exit=0
+##### test_phase10
+
+== Phase 10: 75 passed, 0 failed ==
+== kill server 2622
+exit=0
+##### test_phase11
+
+==== Phase 11: 49 passed, 0 failed ====
+== kill server 2762
+exit=0
+##### test_phase12
+==== Phase 12: 86 passed, 1 failed ====
+FAILED: ['Hindi nav rendered']
+== kill server 2821
+exit=1
+##### test_phase13_ai
+
+74 passed, 0 failed
+== kill server 2942
+exit=0
+##### test_phase13_auth
+
+114 passed, 0 failed
+== kill server 2974
+exit=0
+##### test_phase13_learning
+
+84 passed, 0 failed
+== kill server 3012
+exit=0
+##### test_phase13_money
+
+==== Phase 13 Stream 5: 47 passed, 0 failed ====
+== kill server 3075
+exit=0
+##### test_phase13_parked
+
+41/41 checks passed
+== kill server 3117
+exit=0
+##### test_phase13_social
+
+RESULT: 57 passed, 0 failed
+== kill server 3147
+exit=0
+##### test_totp_crypto
+
+28 passed, 0 failed
+== kill server 3185
+exit=0
+##### test_ui14
+51/52 checks passed
+FAILURES: ['homepage has real fee']
+== kill server 3219
+exit=1
+##### test_ui15_overflow
+20/26 checks passed
+FAILURES: ['css: drawer rule targets .nav-links', 'base.html: drawer CTA block present', 'base.html: nav scrim present', 'layout_app: sidebar JS breakpoint is 1024px', 'homepage markup: drawer-cta rendered', 'homepage markup: scrim rendered']
+== kill server 3270
+exit=1
+##### test_recorded_sessions
+
+100/100 checks passed
+== kill server 3299
+exit=0
+##### test_lockdown
+
+25/25 checks passed
+== kill server 3368
+exit=0
+##### test_dashboard_sections
+
+21/21 checks passed
+== kill server 3406
+exit=0
+##### test_live_classes_rework
+
+118/118 checks passed
+== kill server 3438
+exit=0
+##### DONE
+EXIT:0

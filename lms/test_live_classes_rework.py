@@ -197,6 +197,13 @@ check("materials section present", 'id="sec-materials"' in html)
 check("hash section-router JS",
       "location.hash" in html and "showSection" in html)
 
+# ================================================== 3b. header visibility follows the active view
+check("header markup present", 'id="page-header"' in html)
+check("header text intact on default view", "🎥 Live Classes" in html)
+check("header hidden on #recorded/#materials via JS",
+      'getElementById("page-header").hidden' in html and
+      'name !== "upcoming"' in html)
+
 # ================================================== 4. batch card, no faculty info
 check("batch card rendered", "LC DS Weekday Batch" in html)
 check("batch schedule shown", "Weekday" in html)
