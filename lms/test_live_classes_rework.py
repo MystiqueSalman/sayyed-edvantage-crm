@@ -232,17 +232,29 @@ check("(a) unenrolled course B hidden", "LC Course B" not in html)
 check("(a) unenrolled course C hidden", "LC Course C" not in html)
 n_ccards = len(re.findall(r'class="card course-card"', html))
 check("(a) exactly one course card", n_ccards == 1, f"cards={n_ccards}")
-# card shows: course → batch type → faculty → period → timing (no module list)
+# card: course → "Weekday Batch of 2nd October" → faculty →
+# "2nd Oct to 2nd March" → "6 PM to 7 PM" (no module list)
 check("card: course name", "LC Course A" in html)
 check("card: faculty name", "LC Faculty Person" in html)
 all_a = SE_STARTS
 lo, hi = all_a[0], all_a[-1]
-exp_per = (f"{lo.day} {lo.strftime('%B %Y')}" if lo.date() == hi.date()
-           else f"{lo.day} {lo.strftime('%B')} to "
-                f"{hi.day} {hi.strftime('%B')}")
-check("card: batch period, full month", exp_per in html, exp_per)
+
+
+def _ord(n):
+    if 10 <= n % 100 <= 20:
+        suf = "th"
+    else:
+        suf = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suf}"
+
+
+exp_per = (f"{_ord(lo.day)} {lo.strftime('%b %Y')}" if lo.date() == hi.date()
+           else f"{_ord(lo.day)} {lo.strftime('%b')} to "
+                f"{_ord(hi.day)} {hi.strftime('%b')}")
+check("card: batch period, ordinal + abbr month", exp_per in html, exp_per)
 up_sec = html.split('id="sec-recorded"')[0]
-check("card: batch type label", "Weekday Batch" in up_sec)
+exp_btype = f"Weekday Batch of {_ord(lo.day)} {lo.strftime('%B')}"
+check("card: batch type + start date", exp_btype in up_sec, exp_btype)
 check("card: no module list on card header",
       html.find("Soon Class") > html.find('class="body sess-list"'),
       "session topics appear only inside the date-wise view")
@@ -402,9 +414,10 @@ check("(e) no Connect button before join window",
 strip = html.split('class="card course-card"')[1].split("</summary>")[0]
 check("strip: four arrow separators", strip.count("→") == 4,
       f"arrows={strip.count('→')}")
-i_course, i_type = strip.find("LC Course A"), strip.find("Weekday Batch")
+i_course = strip.find("LC Course A")
+i_type = strip.find("Weekday Batch of")
 i_fac, i_per = strip.find("LC Faculty Person"), strip.find(exp_per)
-m_time = re.search(r"\d{1,2}(:\d{2})? (?:AM|PM) – \d{1,2}(:\d{2})? (?:AM|PM)",
+m_time = re.search(r"\d{1,2}(:\d{2})? (?:AM|PM) to \d{1,2}(:\d{2})? (?:AM|PM)",
                   strip)
 check("strip: all five items present",
       all(i >= 0 for i in (i_course, i_type, i_fac, i_per))
@@ -414,23 +427,40 @@ check("strip: order course → type → faculty → period → timing",
       0 <= i_course < i_type < i_fac < i_per < (m_time.start() if m_time else -1))
 check("strip: no module list on card", "Soon Class" not in strip)
 
-# ================================================== 12. full month names everywhere;
-# no abbreviated months on the Live Classes page
-months = {(d.strftime("%B"), d.strftime("%b")) for d in SE_STARTS}
-# batch card smalls render batch start/end dates too (full months)
-for d in SE_BATCH_DATES:
-    months.add((d.strftime("%B"), d.strftime("%b")))
-cal_html = html  # full /calendar page (upcoming + recorded sections)
-for full_m, abbr_m in sorted(months):
-    check(f"month: full '{full_m}' shown", full_m in cal_html)
-    if full_m != abbr_m:  # e.g. May == May, skip
-        check(f"month: abbreviated '{abbr_m}' not shown",
-              f" {abbr_m} " not in cal_html and f" {abbr_m}," not in cal_html)
+# ================================================== 12. month spelling rules:
+# date-wise rows + detail page = FULL months, no abbreviations;
+# card period = ordinals + ABBREVIATED months ("2nd Oct to 2nd March");
+# card batch-type start = ordinal + FULL month ("Weekday Batch of 2nd October")
+rows_html = html.split('class="body sess-list"')[1].split("</details>")[0]
+up_starts = [d for d in SE_STARTS if d >= SE_SOON_START - timedelta(hours=4)]
+for d in up_starts:
+    exp_row = (f"<b>{d.strftime('%a')}</b>"
+               f"<small>{d.day} {d.strftime('%B %Y')}</small>")
+    check(f"row date full month: {d.strftime('%a')} {d.day} "
+          f"{d.strftime('%B')}", exp_row in rows_html)
+    abbr = d.strftime("%b")
+    if abbr != d.strftime("%B"):
+        check(f"row date no abbr '{abbr}'", f" {abbr} " not in rows_html)
 d_full, d_abbr = SE_SOON_START.strftime("%B"), SE_SOON_START.strftime("%b")
 check("detail: full month shown", d_full in phtml)
 if d_full != d_abbr:
     check("detail: no abbreviated month",
           f" {d_abbr} " not in phtml and f" {d_abbr}," not in phtml)
+check("period: ordinal + abbreviated months",
+      re.search(r"\d{1,2}(st|nd|rd|th) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|"
+                r"Oct|Nov|Dec) to \d{1,2}(st|nd|rd|th) (Jan|Feb|Mar|Apr|May|"
+                r"Jun|Jul|Aug|Sep|Oct|Nov|Dec)", strip) is not None)
+check("batch type: ordinal + full month start date",
+      re.search(r"Weekday Batch of \d{1,2}(st|nd|rd|th) "
+                r"(January|February|March|April|May|June|July|August|"
+                r"September|October|November|December)", strip) is not None)
+
+# ================================================== 13. ordinal helper
+from app.routes_ops import _ord as app_ord  # noqa: E402
+for n, exp in [(1, "1st"), (2, "2nd"), (3, "3rd"), (4, "4th"),
+               (11, "11th"), (12, "12th"), (13, "13th"),
+               (21, "21st"), (22, "22nd"), (23, "23rd"), (31, "31st")]:
+    check(f"ordinal {n} -> {exp}", app_ord(n) == exp)
 
 failed = [n for n, ok, _ in results if not ok]
 print(f"\n{len(results) - len(failed)}/{len(results)} checks passed")

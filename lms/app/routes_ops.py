@@ -34,6 +34,15 @@ def _tfmt(dt):
     return dt.strftime("%I:%M %p").lstrip("0").replace(":00 ", " ")
 
 
+def _ord(n):
+    """Ordinal day: 1st, 2nd, 3rd, 4th … 11th-13th, 21st, 22nd, 23rd, 31st."""
+    if 10 <= n % 100 <= 20:
+        suf = "th"
+    else:
+        suf = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suf}"
+
+
 # ================================================================ live join + auto attendance (student)
 
 @ops_bp.route("/live/join/<int:session_id>")
@@ -189,19 +198,21 @@ def _live_classes_context(user):
                      if fac_ids else {})
         faculty_name = ", ".join(fac_by_id[f] for f in fac_ids
                                  if f in fac_by_id)
-        # batch period: min -> max session dates, full month names
-        # ("2 October to 2 March")
+        # batch period: min -> max session dates, ordinal days +
+        # abbreviated months ("2nd Oct to 2nd March")
+        d0 = d1 = None
         if all_s:
             d0, d1 = all_s[0].starts_at.date(), all_s[-1].starts_at.date()
-            fmt = lambda d: f"{d.day} {d.strftime('%B')}"
             if d0 == d1:
-                period = f"{fmt(d0)} {d0.year}"
+                period = f"{_ord(d0.day)} {d0.strftime('%b')} {d0.year}"
             else:
-                period = f"{fmt(d0)} to {fmt(d1)}"
+                period = (f"{_ord(d0.day)} {d0.strftime('%b')} to "
+                          f"{_ord(d1.day)} {d1.strftime('%b')}")
         else:
             period = ""
         # batch type: Batch.schedule_text, else infer from session weekdays;
-        # display label is e.g. "Weekday Batch" / "Weekend Batch"
+        # display label is e.g. "Weekday Batch of 2nd October"
+        # (type + "of" + earliest session date, ordinal + full month)
         types = []
         for b in rel_batches:
             st = (b.schedule_text or "").strip()
@@ -215,10 +226,15 @@ def _live_classes_context(user):
                 types = ["Weekend"]
             elif wds:
                 types = ["Weekday + Weekend"]
-        batch_type = ", ".join(
-            t if t.lower().endswith("batch") else f"{t} Batch" for t in types)
+        type_labels = [t if t.lower().endswith("batch") else f"{t} Batch"
+                       for t in types]
+        if d0 is not None:
+            batch_type = (", ".join(type_labels) +
+                          f" of {_ord(d0.day)} {d0.strftime('%B')}")
+        else:
+            batch_type = ", ".join(type_labels)
         # class timing: most common start→end slot across the course's
-        # sessions (times are stored as IST wall-clock), e.g. "6 PM – 7 PM"
+        # sessions (times are stored as IST wall-clock), e.g. "6 PM to 7 PM"
         slot_counts = {}
         for s in all_s:
             key = (_tfmt(s.starts_at), _tfmt(s.ends_at))
@@ -226,7 +242,7 @@ def _live_classes_context(user):
         timing = ""
         if slot_counts:
             (t0, t1) = max(slot_counts.items(), key=lambda kv: kv[1])[0]
-            timing = f"{t0} – {t1}"
+            timing = f"{t0} to {t1}"
         # card strip, left → right: course → batch type → faculty →
         # period → timing (empty items dropped, arrows only between items)
         strip = [c.title]
