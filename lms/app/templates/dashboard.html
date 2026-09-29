@@ -7,13 +7,6 @@
 {% set announcements = announcements|default([], true) %}
 {% set overall_pct = overall_pct|default(0, true) %}
 
-<div class="stat-cards">
-  <div class="stat-card"><span class="sic blue">🎓</span><div><b>{{ dash.enrolled }}</b><small>Enrolled Courses</small></div></div>
-  <div class="stat-card"><span class="sic green">▶️</span><div><b>{{ dash.lessons_done }}</b><small>Lessons Completed</small></div></div>
-  <div class="stat-card"><span class="sic blue">🕐</span><div><b>{{ dash.hours }} hrs</b><small>Learning Time</small></div></div>
-  <div class="stat-card"><span class="sic gold">🏆</span><div><b>{{ dash.certificates }}</b><small>Certificates Earned</small></div></div>
-</div>
-
 <div class="dash-grid" style="margin-top:22px">
   <div class="dash-col">
 
@@ -193,15 +186,6 @@
         <div class="empty">No announcements yet.</div>
       {% endif %}
     </div>
-
-    {% if recent_badges %}
-    <div class="panel-card">
-      <h3>🏅 Latest Badges <a class="more" href="{{ url_for('game.achievements') }}">View All →</a></h3>
-      <div style="font-size:2rem; letter-spacing:6px">
-        {% for ub in recent_badges %}<span title="{{ ub.badge.name }}">{{ ub.badge.icon }}</span>{% endfor %}
-      </div>
-    </div>
-    {% endif %}
 
   </div>
 </div>
