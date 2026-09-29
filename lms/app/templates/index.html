@@ -12,10 +12,6 @@
       <a class="btn btn-gold" href="{{ url_for('main.catalog') }}">{{ t('explore_courses') }} &nbsp;→</a>
       {% if video_url %}<a class="btn btn-outline-w" href="{{ video_url }}" target="_blank" rel="noopener">▶&nbsp; {{ t('watch_video') }}</a>{% endif %}
     </div>
-    <div class="hero-trust">
-      <div class="faces"><span>🎓</span><span>💻</span><span>🚀</span></div>
-      <div><b>{{ "{:,}".format(stats.students) }} Registered Students</b><small>Join our growing community</small></div>
-    </div>
   </div>
 </div>
 {% endblock %}
