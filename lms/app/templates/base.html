@@ -21,7 +21,7 @@
 {% if meta_pixel_id %}<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','{{ meta_pixel_id }}');fbq('track','PageView');</script>{% endif %}
 {% if head_snippet %}{{ head_snippet|safe }}{% endif %}
 {% endif %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=15">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=17">
 {# Phase 12 §21.3: tenant color overrides — only emitted when configured #}
 {% if brand.primary_color or brand.accent_color %}<style>
 :root{ {% if brand.primary_color %}--gold:{{ brand.primary_color }};{% endif %} {% if brand.accent_color %}--blue:{{ brand.accent_color }};{% endif %} }

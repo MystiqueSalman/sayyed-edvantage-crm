@@ -10,10 +10,6 @@
 <div class="app-shell">
   <div class="side-scrim" id="sideScrim"></div>
   <aside class="sidebar" id="sidebar">
-    <a class="side-brand" href="{{ url_for('main.index') }}">
-      <img class="mark" src="{{ url_for('static', filename='img/logo-badge-circle.png') }}" alt="SE">
-      <img src="{{ url_for('static', filename='img/nav-text-v1.png') }}" alt="Sayyed EdVantage" style="height:34px;width:auto;display:block">
-    </a>
     <nav class="side-nav">
       {% if role == 'student' %}
         <a class="side-link {% if ep=='student.dashboard' %}on{% endif %}" href="{{ url_for('student.dashboard') }}"><span class="ico">🏠</span>Dashboard</a>
@@ -80,15 +76,11 @@
   </aside>
   <div class="app-main">
     <div class="topbar">
-      <button class="nav-toggle" id="sideToggle" aria-label="Menu" style="display:none;color:var(--text);border-color:var(--brd)">☰</button>
+      <button class="side-toggle" id="sideToggle" aria-label="Menu">☰</button>
       <form class="tsearch" action="{{ url_for('main.catalog') }}" method="get" role="search">
         <span>🔍</span><input type="search" name="q" placeholder="Search for courses, lessons, or resources…" aria-label="Search">
       </form>
       <div class="tright">
-        <span class="nav-lang" style="color:var(--muted)">
-          <a href="{{ url_for('saas.switch_lang', code='en') }}" class="{% if lang != 'hi' %}on{% endif %}" style="color:{% if lang != 'hi' %}var(--blue-dk){% else %}var(--muted2){% endif %}">EN</a>|
-          <a href="{{ url_for('saas.switch_lang', code='hi') }}" class="{% if lang == 'hi' %}on{% endif %}" style="color:{% if lang == 'hi' %}var(--blue-dk){% else %}var(--muted2){% endif %}">हिं</a>
-        </span>
         <a class="tb-icon" href="{{ url_for('notify.notifications') }}" title="Notifications" aria-label="Notifications">🔔{% if notif_unread %}<span class="notif-count">{{ notif_unread }}</span>{% endif %}</a>
         <a class="tb-icon" href="{{ url_for('social13.inbox') }}" title="Messages" aria-label="Messages">💬{% if dm_unread %}<span class="notif-count">{{ dm_unread }}</span>{% endif %}</a>
         <a class="tb-user" href="{% if role=='student' %}{{ url_for('student.profile') }}{% elif role in ('admin','manager','super_admin') %}{{ url_for('admin.dashboard') }}{% elif role=='faculty' %}{{ url_for('faculty.dashboard') }}{% elif role=='counsellor' %}{{ url_for('crm.leads') }}{% elif role=='employer' %}{{ url_for('career.employer_dashboard') }}{% else %}{{ url_for('main.index') }}{% endif %}">
@@ -110,11 +102,10 @@
 (function(){
   var sb = document.getElementById('sidebar'), sc = document.getElementById('sideScrim'),
       tg = document.getElementById('sideToggle');
-  function showTg(){ if (tg) tg.style.display = (window.innerWidth <= 1024) ? 'block' : 'none'; }
-  showTg(); window.addEventListener('resize', showTg);
-  function close(){ sb.classList.remove('open'); sc.classList.remove('on'); }
+  function close(){ if (sb) sb.classList.remove('open'); if (sc) sc.classList.remove('on'); }
   if (tg) tg.addEventListener('click', function(){ sb.classList.add('open'); sc.classList.add('on'); });
   if (sc) sc.addEventListener('click', close);
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
 })();
 </script>
 {% endblock %}
