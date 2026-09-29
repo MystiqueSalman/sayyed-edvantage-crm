@@ -82,7 +82,11 @@
         <a class="tb-icon" href="{{ url_for('notify.notifications') }}" title="Notifications" aria-label="Notifications">🔔{% if notif_unread %}<span class="notif-count">{{ notif_unread }}</span>{% endif %}</a>
         <a class="tb-icon" href="{{ url_for('social13.inbox') }}" title="Messages" aria-label="Messages">💬{% if dm_unread %}<span class="notif-count">{{ dm_unread }}</span>{% endif %}</a>
         <a class="tb-user" href="{% if role=='student' %}{{ url_for('student.profile') }}{% elif role in ('admin','manager','super_admin') %}{{ url_for('admin.dashboard') }}{% elif role=='faculty' %}{{ url_for('faculty.dashboard') }}{% elif role=='counsellor' %}{{ url_for('crm.leads') }}{% elif role=='employer' %}{{ url_for('career.employer_dashboard') }}{% else %}{{ url_for('main.index') }}{% endif %}">
+          {% if current_user.photo %}
+          <img class="av" src="{{ url_for('main.uploaded_file', filename=current_user.photo) }}" alt="">
+          {% else %}
           <span class="av">{{ (current_user.name or 'U')[:1] }}</span>
+          {% endif %}
           <span><b>{{ current_user.name }}</b><small>{{ role.replace('_',' ') }}</small></span>
         </a>
       </div>

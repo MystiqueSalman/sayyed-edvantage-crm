@@ -576,3 +576,28 @@ pre{max-width:100%; overflow-x:auto}
   .donut-wrap{flex-wrap:wrap}
   .batch-row{flex-wrap:wrap}
 }
+
+/* ---------------- student profile page ---------------- */
+.profile-head-card{max-width:560px; margin-bottom:18px}
+.profile-head{display:flex; align-items:center; gap:18px; margin-bottom:14px}
+.profile-avatar{width:96px; height:96px; border-radius:50%; object-fit:cover; flex:0 0 auto;
+  border:3px solid var(--gold); box-shadow:var(--shadow); background:#eef2f8}
+.profile-avatar-fallback{display:grid; place-items:center; font-size:2.4rem; font-weight:800;
+  color:#fff; background:linear-gradient(135deg,var(--navy3),var(--blue-dk))}
+.profile-head-info h3{margin:0 0 2px; font-size:1.25rem}
+.profile-head-info .muted{margin:0 0 8px}
+.role-badge{display:inline-block; background:#eef4ff; color:var(--blue-dk); border:1px solid #cfe0ff;
+  font-size:.72rem; font-weight:800; letter-spacing:.6px; text-transform:uppercase;
+  padding:3px 10px; border-radius:999px}
+.photo-form{display:flex; align-items:center; gap:10px}
+.photo-btn{cursor:pointer; margin:0}
+.profile-form{display:grid; gap:12px}
+.profile-form label{display:grid; gap:5px; font-weight:600; font-size:.9rem}
+.profile-form input{border:1px solid var(--brd); border-radius:10px; padding:10px 12px;
+  font-size:.95rem; width:100%; box-sizing:border-box}
+.profile-form input:focus{outline:2px solid var(--blue); outline-offset:0; border-color:var(--blue)}
+.readonly-field{background:var(--bg); color:var(--muted); cursor:not-allowed}
+.pw-actions{display:flex; align-items:center; gap:14px}
+.pw-actions a{font-size:.88rem; font-weight:600}
+/* topbar avatar shows the uploaded photo when present */
+.tb-user img.av{object-fit:cover; padding:0}

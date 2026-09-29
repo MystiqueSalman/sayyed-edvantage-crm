@@ -819,17 +819,80 @@ def quizzes():
 @student_bp.route("/profile", methods=["GET", "POST"])
 @student_only
 def profile():
-    """UI14: student edits their own name/phone."""
+    """Student profile: name/phone, avatar photo upload, password change."""
     user = db.session.get(User, current_user.id)
     if request.method == "POST":
-        name = request.form.get("name", "").strip()
-        phone = request.form.get("phone", "").strip()
-        if not name:
-            flash("Name can't be empty.", "danger")
+        action = request.form.get("action", "profile")
+        if action == "photo":
+            _profile_photo_upload(user)
+        elif action == "password":
+            _profile_password_change(user)
         else:
-            user.name = name
-            user.phone = phone
-            db.session.commit()
-            flash("Profile updated.", "success")
+            name = request.form.get("name", "").strip()
+            phone = request.form.get("phone", "").strip()
+            if not name:
+                flash("Name can't be empty.", "danger")
+            else:
+                user.name = name
+                user.phone = phone
+                db.session.commit()
+                flash("Profile updated.", "success")
         return redirect(url_for("student.profile"))
     return render_template("student_profile.html", user=user)
+
+
+ALLOWED_AVATAR_EXTS = {"png", "jpg", "jpeg", "webp"}
+AVATAR_MAX_BYTES = 2 * 1024 * 1024
+
+
+def _avatar_dir():
+    d = os.path.join(current_app.config["UPLOAD_DIR"], "avatars")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _profile_photo_upload(user):
+    """Handle the avatar upload from the profile page."""
+    file = request.files.get("photo")
+    if not file or not file.filename:
+        flash("Choose a photo to upload.", "warning")
+        return
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else ""
+    if ext not in ALLOWED_AVATAR_EXTS:
+        flash("Photo must be PNG, JPG, JPEG or WebP.", "danger")
+        return
+    file.seek(0, os.SEEK_END)
+    size = file.tell()
+    file.seek(0)
+    if size > AVATAR_MAX_BYTES:
+        flash("Photo must be under 2 MB.", "danger")
+        return
+    avatar_dir = _avatar_dir()
+    filename = f"user_{user.id}.{ext}"
+    for old_ext in ALLOWED_AVATAR_EXTS:  # drop previous avatar if ext changed
+        old = os.path.join(avatar_dir, f"user_{user.id}.{old_ext}")
+        if old_ext != ext and os.path.exists(old):
+            os.remove(old)
+    file.save(os.path.join(avatar_dir, filename))
+    user.photo = f"avatars/{filename}"
+    db.session.commit()
+    flash("Profile photo updated.", "success")
+
+
+def _profile_password_change(user):
+    """Change password after verifying the current one."""
+    current = request.form.get("current_password", "")
+    new = request.form.get("new_password", "")
+    confirm = request.form.get("confirm_password", "")
+    if not user.check_password(current):
+        flash("Current password is incorrect.", "danger")
+        return
+    if len(new) < 8:
+        flash("New password must be at least 8 characters.", "danger")
+        return
+    if new != confirm:
+        flash("New passwords don't match.", "danger")
+        return
+    user.set_password(new)
+    db.session.commit()
+    flash("Password changed successfully.", "success")

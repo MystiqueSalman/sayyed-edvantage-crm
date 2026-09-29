@@ -2,16 +2,73 @@
 {% block title %}My Profile{% endblock %}
 {% block app_content %}
 <div class="section-title"><h2>👤 My Profile</h2><div class="line"></div></div>
-<div class="panel" style="max-width:520px">
-  <form method="post" style="display:grid;gap:10px">
-    <label>Name<input name="name" value="{{ user.name }}" required maxlength="120"></label>
-    <label>Phone<input name="phone" value="{{ user.phone or '' }}" maxlength="20" placeholder="+91 …"></label>
+
+{# ---------- Profile header: photo + identity ---------- #}
+<div class="panel profile-head-card">
+  <div class="profile-head">
+    {% if user.photo %}
+    <img class="profile-avatar" src="{{ url_for('main.uploaded_file', filename=user.photo) }}" alt="Profile photo">
+    {% else %}
+    <span class="profile-avatar profile-avatar-fallback">{{ (user.name or 'U')[:1] }}</span>
+    {% endif %}
+    <div class="profile-head-info">
+      <h3>{{ user.name }}</h3>
+      <p class="muted">{{ user.email }}</p>
+      <span class="role-badge">{{ (user.role or 'student').replace('_', ' ')|title }}</span>
+    </div>
+  </div>
+  <form method="post" enctype="multipart/form-data" class="photo-form">
+    <input type="hidden" name="action" value="photo">
+    <label class="btn btn-ghost btn-sm photo-btn">📷 Change photo
+      <input type="file" name="photo" accept=".png,.jpg,.jpeg,.webp" hidden onchange="this.form.submit()">
+    </label>
+    <small class="muted">PNG, JPG or WebP · max 2 MB</small>
+  </form>
+</div>
+
+{# ---------- Personal information ---------- #}
+<div class="panel" style="max-width:560px">
+  <h3 style="margin-top:0">Personal information</h3>
+  <form method="post" class="profile-form">
+    <input type="hidden" name="action" value="profile">
+    <label>Full name
+      <input name="name" value="{{ user.name }}" required maxlength="120" autocomplete="name">
+    </label>
+    <label>Mobile number
+      <input name="phone" value="{{ user.phone or '' }}" maxlength="20" placeholder="+91 …" autocomplete="tel">
+    </label>
+    <label>Email ID <small class="muted">(login identity — can't be changed)</small>
+      <input value="{{ user.email }}" readonly disabled class="readonly-field">
+    </label>
     <div><button class="btn btn-gold" type="submit">Save profile</button></div>
   </form>
 </div>
-<div class="panel" style="max-width:520px">
+
+{# ---------- Change password ---------- #}
+<div class="panel" style="max-width:560px">
+  <h3 style="margin-top:0">🔒 Change password</h3>
+  <form method="post" class="profile-form">
+    <input type="hidden" name="action" value="password">
+    <label>Current password
+      <input type="password" name="current_password" required autocomplete="current-password" minlength="1">
+    </label>
+    <label>New password <small class="muted">(min 8 characters)</small>
+      <input type="password" name="new_password" required minlength="8" autocomplete="new-password">
+    </label>
+    <label>Confirm new password
+      <input type="password" name="confirm_password" required minlength="8" autocomplete="new-password">
+    </label>
+    <div class="pw-actions">
+      <button class="btn btn-blue" type="submit">Change password</button>
+      <a href="{{ url_for('auth13.forgot_password') }}">Forgot current password?</a>
+    </div>
+  </form>
+</div>
+
+{# ---------- Account settings ---------- #}
+<div class="panel" style="max-width:560px">
   <h3 style="margin-top:0">Account settings</h3>
   <p><a class="btn btn-ghost btn-sm" href="{{ url_for('money13.timezone_settings') }}">🌍 Timezone preferences</a></p>
-  <p><a class="btn btn-ghost btn-sm" href="{{ url_for('auth13.mfa_setup') }}">🔐 Two-factor (MFA) setup</a></p>
+  <p style="margin-bottom:0"><a class="btn btn-ghost btn-sm" href="{{ url_for('auth13.mfa_setup') }}">🔐 Two-factor (MFA) setup</a></p>
 </div>
 {% endblock %}

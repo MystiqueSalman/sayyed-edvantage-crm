@@ -434,6 +434,9 @@ def _ensure_schema_patches(app):
         # UI14: real learning-time tracking on lesson progress
         ("lesson_progress", "time_spent_sec",
          "ALTER TABLE lesson_progress ADD COLUMN time_spent_sec INTEGER DEFAULT 0"),
+        # Student profile — avatar photo
+        ("users", "photo",
+         "ALTER TABLE users ADD COLUMN photo VARCHAR(255) DEFAULT ''"),
     ]
     try:
         with app.app_context():

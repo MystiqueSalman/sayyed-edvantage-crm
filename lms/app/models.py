@@ -26,6 +26,7 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), nullable=False, default=ROLE_STUDENT)
     is_active = db.Column(db.Boolean, default=True)
     phone = db.Column(db.String(20), default="")  # Phase 3: WhatsApp notifications
+    photo = db.Column(db.String(255), default="")  # avatar: avatars/user_<id>.<ext>
     company = db.Column(db.String(160), default="")  # Phase 7: employer company
     referral_code = db.Column(db.String(20), unique=True, nullable=True,
                               index=True)  # Phase 3: my referral code
