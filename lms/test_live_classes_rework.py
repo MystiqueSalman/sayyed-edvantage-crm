@@ -201,8 +201,8 @@ check("hash section-router JS",
 check("header markup present", 'id="page-header"' in html)
 check("header text intact on default view", "🎥 Live Classes" in html)
 check("header hidden on #recorded/#materials via JS",
-      'getElementById("page-header").hidden' in html and
-      'name !== "upcoming"' in html)
+      'getElementById("page-header").style.display' in html and
+      'name === "upcoming"' in html)
 
 # ================================================== 4. batch card, no faculty info
 check("batch card rendered", "LC DS Weekday Batch" in html)

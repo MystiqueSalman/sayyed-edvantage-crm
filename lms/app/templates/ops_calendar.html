@@ -98,8 +98,9 @@ let matLoaded = false, MATS = [];
 function showSection(name){
   if (SECS.indexOf(name) < 0) name = "upcoming";
   SECS.forEach(t => document.getElementById("sec-" + t).hidden = t !== name);
-  /* header shows only on the default Upcoming view */
-  document.getElementById("page-header").hidden = name !== "upcoming";
+  /* header shows only on the default Upcoming view (style.display: the
+     .section-title{display:flex} rule overrides the [hidden] attribute) */
+  document.getElementById("page-header").style.display = name === "upcoming" ? "" : "none";
   if (name === "materials" && !matLoaded){ matLoaded = true; loadMaterials(); }
 }
 (function(){
