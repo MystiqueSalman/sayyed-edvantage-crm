@@ -620,3 +620,34 @@ pre{max-width:100%; overflow-x:auto}
 .pw-actions a{font-size:.88rem; font-weight:600}
 /* topbar avatar shows the uploaded photo when present */
 .tb-user img.av{object-fit:cover; padding:0}
+/* Live Classes page — batch accordion + date-wise session rows (2026-09-29) */
+.batch-card{margin-bottom:12px}
+.batch-card summary{display:flex;gap:12px;align-items:center;padding:14px 16px;
+  cursor:pointer;list-style:none}
+.batch-card summary::-webkit-details-marker{display:none}
+.batch-card summary::after{content:"▾";color:var(--muted);font-size:.9rem;margin-left:auto}
+.batch-card[open] summary::after{content:"▴"}
+.batch-card .bicon{font-size:1.5rem;flex:0 0 auto}
+.batch-card .bmeta{flex:1;min-width:0}
+.batch-card .bmeta b{display:block;font-size:.95rem}
+.batch-card .bmeta small{color:var(--muted);font-size:.78rem;display:block}
+.batch-card .bcount{flex:0 0 auto;font-size:.75rem;font-weight:700;color:var(--navy);
+  background:var(--gold-lt);border-radius:20px;padding:3px 10px;margin-right:6px}
+.sess-list{padding-top:0 !important}
+.sess-row{display:flex;gap:12px;align-items:center;padding:10px 4px;
+  border-bottom:1px solid var(--brd)}
+.sess-row:last-child{border-bottom:0}
+.sess-date{flex:0 0 66px;text-align:center;background:var(--bg);
+  border:1px solid var(--brd);border-radius:10px;padding:6px 4px}
+.sess-date b{display:block;font-size:1.15rem;color:var(--blue-dk);line-height:1.1}
+.sess-date small{color:var(--muted);font-size:.66rem;font-weight:800;letter-spacing:1px}
+.sess-meta{flex:1;min-width:0}
+.sess-meta b{font-size:.9rem;display:block}
+.sess-meta small{color:var(--muted);display:block;font-size:.78rem}
+.sess-right{flex:0 0 auto;display:flex;gap:8px;align-items:center}
+.chip{display:inline-block;font-size:.72rem;font-weight:800;padding:4px 10px;
+  border-radius:20px;white-space:nowrap}
+.chip-green{background:#e6f7ef;color:#0d7a4f;border:1px solid #bfe8d4}
+.chip-red{background:#fdecec;color:#b3261e;border:1px solid #f5c6c2}
+.chip-blue{background:#e8f1ff;color:#0b54d6;border:1px solid #c2d9fb}
+@media(max-width:560px){.sess-right{flex-wrap:wrap;justify-content:flex-end}}

@@ -167,13 +167,16 @@ atitles = [i["title"] for i in (adm_c.get(
 check("admin sees all recordings", len(atitles) == 3, f"titles={atitles}")
 
 # ================================================== 5. calendar page tabs
+# (2026-09-29: month-grid calendar removed; page is Upcoming list |
+#  Recorded batch list | Materials, server-rendered.)
 cal = stu_c.get("/calendar")
 cal_html = cal.get_data(as_text=True)
 check("/calendar 200", cal.status_code == 200, f"status={cal.status_code}")
 check("tab switcher: Upcoming", 'data-tab="upcoming"' in cal_html)
 check("tab switcher: Recorded Sessions", 'data-tab="recorded"' in cal_html)
-check("recorded list container", 'id="recList"' in cal_html)
-check("fetches recorded-sessions endpoint", "recorded-sessions" in cal_html)
+check("recorded tab container", 'id="tab-recorded"' in cal_html)
+check("no calendar grid markup", 'id="grid"' not in cal_html)
+check("materials tab still lazy-loads", "loadMaterials" in cal_html)
 
 # ================================================== 6. link recording to live class
 # past session with no linked recording -> suggestion shown

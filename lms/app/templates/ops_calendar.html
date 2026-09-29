@@ -11,22 +11,64 @@
 </div>
 
 <div id="tab-upcoming">
-<div class="card"><div class="body">
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-    <button class="btn btn-ghost btn-sm" id="prev">←</button>
-    <h3 id="mtitle" style="margin:0;flex:1;text-align:center"></h3>
-    <button class="btn btn-ghost btn-sm" id="next">→</button>
-    <button class="btn btn-ghost btn-sm" id="today">Today</button>
-  </div>
-  <div id="grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div>
-  <div id="daylist" style="margin-top:18px"></div>
-</div></div>
+  <div class="card"><div class="body">
+    {% if upcoming %}
+      {% for s in upcoming %}
+      {% set _st = to_user_tz(s.starts_at, current_user) %}
+      <div class="class-row">
+        <div class="class-date"><b>{{ _st.strftime('%d') }}</b><small>{{ _st.strftime('%b')|upper }}</small></div>
+        <div class="cinfo"><b>{{ s.course.title }} - Live Class</b><small>Topic: {{ s.title }}</small><small>{{ _st.strftime('%d %b %Y · %I:%M %p %Z') }}</small></div>
+        {% if s.is_joinable(now) %}
+        <a class="btn btn-blue btn-sm" href="{{ url_for('ops.live_join', session_id=s.id) }}" target="_blank" rel="noopener">Join</a>
+        {% else %}
+        <button class="btn btn-ghost btn-sm" disabled title="Join opens 15 minutes before start">Join</button>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">No upcoming live classes scheduled.</div>
+    {% endif %}
+  </div></div>
 </div>
 
 <div id="tab-recorded" hidden>
-  <div class="card"><div class="body" id="recList">
-    <p style="color:var(--muted)">Loading recorded sessions…</p>
-  </div></div>
+  {% if cards %}
+    {% for card in cards %}
+    <details class="card batch-card" {% if loop.first %}open{% endif %}>
+      <summary>
+        <span class="bicon">📚</span>
+        <span class="bmeta">
+          <b>{% if card.batch %}{{ card.batch.name }}{% else %}{{ card.course.title }} (no batches){% endif %}</b>
+          <small>{{ card.course.title }}{% if card.batch and card.batch.schedule_text %} · {{ card.batch.schedule_text }}{% endif %}{% if card.batch and card.batch.start_date %} · {{ card.batch.start_date.strftime('%d %b %Y') }}{% if card.batch.end_date %} → {{ card.batch.end_date.strftime('%d %b %Y') }}{% endif %}{% endif %}</small>
+        </span>
+        <span class="bcount">{{ card.rows|length }} class{{ "es" if card.rows|length != 1 }}</span>
+      </summary>
+      <div class="body sess-list">
+        {% for row in card.rows %}
+        {% set _st = to_user_tz(row.session.starts_at, current_user) %}
+        <div class="sess-row">
+          <div class="sess-date real-date"><b>{{ _st.strftime('%a') }}</b><small>{{ _st.strftime('%-d %b %Y') }}</small></div>
+          <div class="sess-meta"><b>{{ row.session.title }}</b><small>{{ _st.strftime('%I:%M %p') }}{% if row.session.duration_min %} · {{ row.session.duration_min }} min{% endif %}</small></div>
+          <div class="sess-right">
+            {% if row.chip == "joined" %}
+            <span class="chip chip-green">Faculty joined ✓</span>
+            {% if row.watch_url %}<a class="btn btn-gold btn-sm" href="{{ row.watch_url }}" target="_blank" rel="noopener">▶ Watch</a>{% endif %}
+            {% elif row.chip == "live" %}
+            <span class="chip chip-blue">In progress</span>
+            {% else %}
+            <span class="chip chip-red">Faculty didn't join</span>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <div class="empty">No past classes yet — they appear here after each live class.</div>
+        {% endfor %}
+      </div>
+    </details>
+    {% endfor %}
+  {% else %}
+    <div class="card"><div class="body"><div class="empty">No recorded sessions yet — they appear here after each live class.</div></div></div>
+  {% endif %}
 </div>
 
 <div id="tab-materials" hidden>
@@ -38,29 +80,16 @@
 </div>
 
 <script>
-let EVENTS = [], cursor = new Date();
-const DOW = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-fetch("{{ url_for('ops.calendar_events') }}").then(r => r.json()).then(d => {
-  EVENTS = d; render();
-});
-function ymd(dt){ return dt.toISOString().slice(0,10); }
 function esc(s){ return String(s == null ? "" : s)
   .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
   .replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
-function fdate(iso){
-  const p = String(iso).split("-");
-  if (p.length !== 3) return iso || "";
-  const MN = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  return (+p[2]) + " " + (MN[+p[1]] || p[1]) + " " + p[0];
-}
 /* ---- tab switching ---- */
 const TABS = ["upcoming", "recorded", "materials"];
-let recLoaded = false, matLoaded = false, MATS = [];
+let matLoaded = false, MATS = [];
 function switchTab(name){
   document.querySelectorAll(".rs-tab").forEach(
     b => b.classList.toggle("on", b.dataset.tab === name));
   TABS.forEach(t => document.getElementById("tab-" + t).hidden = t !== name);
-  if (name === "recorded" && !recLoaded){ recLoaded = true; loadRecorded(); }
   if (name === "materials" && !matLoaded){ matLoaded = true; loadMaterials(); }
   try { history.replaceState(null, "", "#" + name); } catch (e) {}
 }
@@ -75,46 +104,6 @@ window.addEventListener("hashchange", function(){
   const h = (location.hash || "").replace("#", "");
   if (TABS.indexOf(h) >= 0) switchTab(h);
 });
-/* ---- recorded sessions ---- */
-function loadRecorded(){
-  fetch("{{ url_for('ops.recorded_sessions') }}").then(r => r.json()).then(list => {
-    const el = document.getElementById("recList");
-    if (!list.length){
-      el.innerHTML = "<p style='color:var(--muted)'>No recorded sessions yet — " +
-        "they appear here after each live class.</p>";
-      return;
-    }
-    el.innerHTML = list.map(r =>
-      "<div class='rec-row'>" +
-        "<div class='rec-thumb'>" +
-          (r.thumbnail ? "<img src='"+esc(r.thumbnail)+"' alt='' loading='lazy'>" : "🎥") +
-        "</div>" +
-        "<div class='rec-meta'><b>"+esc(r.title)+"</b>" +
-          "<small>"+esc(r.course) +
-          (r.live_session ? " · from: "+esc(r.live_session) : "") +
-          (r.recorded_on ? " · "+fdate(r.recorded_on) : "") +
-          (r.duration_min ? " · "+r.duration_min+" min" : "") + "</small>" +
-          (r.notes ? "<p class='rec-notes'>"+esc(r.notes)+"</p>" : "") +
-        "</div>" +
-        (r.watch_url ? "<button class='btn btn-gold btn-sm rec-watch' data-url='"+
-          esc(r.watch_url)+"' data-id='"+r.id+"'>▶ Watch</button>" : "") +
-      "</div>" +
-      "<div class='video-wrap' id='recvid-"+r.id+"' hidden style='margin:-2px 0 14px'></div>"
-    ).join("");
-    el.querySelectorAll(".rec-watch").forEach(b => b.addEventListener("click", () => {
-      const box = document.getElementById("recvid-" + b.dataset.id);
-      if (box.hidden){
-        box.innerHTML = "<iframe src='"+b.dataset.url+"' allowfullscreen></iframe>";
-        box.hidden = false; b.textContent = "✕ Close";
-      } else {
-        box.innerHTML = ""; box.hidden = true; b.textContent = "▶ Watch";
-      }
-    }));
-  }).catch(() => {
-    document.getElementById("recList").innerHTML =
-      "<p style='color:var(--muted)'>Could not load recorded sessions.</p>";
-  });
-}
 /* ---- course materials ---- */
 const MAT_ICON = {pdf:"📕", xlsx:"📊", xls:"📊", csv:"📊", ppt:"📽️", pptx:"📽️",
   doc:"📝", docx:"📝", zip:"📦", png:"🖼️", jpg:"🖼️", jpeg:"🖼️", gif:"🖼️",
@@ -178,56 +167,5 @@ function renderMaterials(q){
   });
   el.innerHTML = html;
 }
-/* ---- calendar (unchanged) ---- */
-function render(){
-  const y = cursor.getFullYear(), m = cursor.getMonth();
-  document.getElementById("mtitle").textContent =
-    cursor.toLocaleString("en-IN", {month:"long", year:"numeric"});
-  const first = new Date(y, m, 1);
-  let startCol = (first.getDay() + 6) % 7;
-  const days = new Date(y, m + 1, 0).getDate();
-  const g = document.getElementById("grid"); g.innerHTML = "";
-  DOW.forEach(d => { const h = document.createElement("div");
-    h.innerHTML = "<b>"+d+"</b>"; h.style.cssText = "text-align:center;color:var(--muted);font-size:.8rem;padding:4px";
-    g.appendChild(h); });
-  for (let i = 0; i < startCol; i++) g.appendChild(document.createElement("div"));
-  const byDay = {};
-  EVENTS.forEach(e => { const k = e.start.slice(0,10);
-    (byDay[k] = byDay[k] || []).push(e); });
-  const todayK = ymd(new Date());
-  for (let d = 1; d <= days; d++){
-    const k = y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");
-    const cell = document.createElement("div");
-    cell.style.cssText = "min-height:64px;border:1px solid var(--line);border-radius:8px;padding:4px;font-size:.78rem;cursor:pointer" +
-      (k === todayK ? ";border-color:var(--gold)" : "");
-    cell.innerHTML = "<b>"+d+"</b>";
-    (byDay[k] || []).slice(0,3).forEach(e => {
-      const s = document.createElement("div");
-      s.textContent = e.title.slice(0,22);
-      s.style.cssText = "white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--gold-light)";
-      cell.appendChild(s);
-    });
-    if ((byDay[k] || []).length > 3){
-      const s = document.createElement("div");
-      s.textContent = "+" + (byDay[k].length - 3) + " more";
-      s.style.color = "var(--muted)"; cell.appendChild(s);
-    }
-    cell.onclick = () => showDay(k, byDay[k] || []);
-    g.appendChild(cell);
-  }
-}
-function showDay(k, evs){
-  const el = document.getElementById("daylist");
-  let html = "<h4 style='margin:0 0 8px'>" + k + "</h4>";
-  html += evs.length ? evs.map(e =>
-    "<div class='lesson-row'><span style='flex:1'><b>"+e.title+"</b><br><small style='color:var(--muted)'>"+
-    (e.course||"")+" · "+(e.start||"").slice(11,16)+"</small></span>"+
-    (e.url ? "<a class='btn btn-ghost btn-sm' href='"+e.url+"'>Open</a>" : "")+"</div>"
-  ).join("") : "<p style='color:var(--muted)'>Nothing scheduled.</p>";
-  el.innerHTML = html;
-}
-document.getElementById("prev").onclick = () => { cursor.setMonth(cursor.getMonth()-1); render(); };
-document.getElementById("next").onclick = () => { cursor.setMonth(cursor.getMonth()+1); render(); };
-document.getElementById("today").onclick = () => { cursor = new Date(); render(); };
 </script>
 {% endblock %}

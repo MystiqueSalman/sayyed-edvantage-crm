@@ -8,7 +8,7 @@ import csv
 import io
 import os
 import tempfile
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from flask import (Blueprint, Response, abort, after_this_request, current_app,
                    flash, jsonify, redirect, render_template, request,
@@ -49,13 +49,110 @@ def live_join(session_id):
 
 
 # ================================================================ calendar (§4.6)
+# NOTE: the month-grid calendar UI was removed 2026-09-29 per Salman's
+# directive — the page is now Upcoming list | Recorded batch list | Materials.
+
+def _live_classes_context(user):
+    """Server-rendered data for the Live Classes page (no calendar).
+
+    Returns dict with:
+      now        — datetime.utcnow()
+      upcoming   — LiveSession list, soonest first (enrollment/managed scoped)
+      cards      — batch cards for the Recorded Sessions tab, each:
+                   {batch, course, rows:[...]}. Students see ONLY the
+                   batches they are enrolled in (BatchMember roster);
+                   faculty see only batches they teach; admin/manager see all.
+                   rows are past sessions (starts_at < now), newest first;
+                   each row: {session, chip, watch_url} where chip is
+                   'joined' (a Recording is linked to the session → faculty
+                   took the class), 'missed' (no linked recording → faculty
+                   didn't join), 'live' (class in progress right now).
+    """
+    now = datetime.utcnow()
+    role = user.role
+    show_course_fallback = False
+    if role in ("admin", "manager"):
+        course_ids = None  # all
+        batches = (Batch.query
+                   .order_by(Batch.course_id, Batch.start_date, Batch.id).all())
+        show_course_fallback = True  # courses with no batches, for admins only
+    elif role == "faculty":
+        taught_ids = [c.id for c in
+                      Course.query.filter_by(instructor_id=user.id).all()]
+        b1 = (Batch.query.filter(Batch.course_id.in_(taught_ids)).all()
+              if taught_ids else [])
+        b2 = Batch.query.filter_by(faculty_id=user.id).all()
+        batches, seen = [], set()
+        for b in b1 + b2:
+            if b.id not in seen:
+                seen.add(b.id)
+                batches.append(b)
+        course_ids = taught_ids
+    else:  # student — batch-level scoping via the BatchMember roster only
+        course_ids = [e.course_id for e in
+                      Enrollment.query.filter_by(user_id=user.id).all()]
+        bms = (BatchMember.query.filter_by(user_id=user.id)
+               .join(Batch).order_by(Batch.start_date, Batch.id).all())
+        batches = [bm.batch for bm in bms]
+
+    # ---- upcoming (soonest first) ----
+    uq = LiveSession.query.filter(
+        LiveSession.starts_at >= now - timedelta(hours=3))
+    if course_ids is not None:
+        uq = (uq.filter(LiveSession.course_id.in_(course_ids))
+              if course_ids else uq.filter(LiveSession.id == -1))
+    upcoming = uq.order_by(LiveSession.starts_at).limit(50).all()
+
+    # ---- batch cards ----
+    cards, covered = [], set()
+    for b in batches:
+        covered.add(b.course_id)
+        cards.append({"batch": b, "course": b.course, "rows": []})
+    if show_course_fallback:
+        rest = [c for c in Course.query.order_by(Course.id).all()
+                if c.id not in covered]
+        for c in rest:
+            cards.append({"batch": None, "course": c, "rows": []})
+    need = {card["course"].id for card in cards}
+    if need:
+        past = (LiveSession.query
+                .filter(LiveSession.course_id.in_(need),
+                        LiveSession.starts_at < now)
+                .order_by(LiveSession.starts_at.desc()).all())
+        by_course = {}
+        for s in past:
+            by_course.setdefault(s.course_id, []).append(s)
+        rec_by_session = {}
+        sids = [s.id for s in past]
+        if sids:
+            for r in Recording.query.filter(
+                    Recording.live_session_id.in_(sids)).all():
+                rec_by_session.setdefault(r.live_session_id, r)
+        from .video13 import signed_recording_url
+        for card in cards:
+            for s in by_course.get(card["course"].id, []):
+                rec = rec_by_session.get(s.id)
+                # Only a linked Recording marks the class as taken and
+                # earns a Watch button.
+                if rec and (rec.video_url or "").strip():
+                    chip, watch = "joined", signed_recording_url(
+                        rec.id, user.id)
+                elif now <= s.ends_at:
+                    chip, watch = "live", ""
+                else:
+                    chip, watch = "missed", ""
+                card["rows"].append({"session": s, "chip": chip,
+                                    "watch_url": watch})
+    return {"now": now, "upcoming": upcoming, "cards": cards}
+
 
 @ops_bp.route("/calendar")
 @login_required
 def calendar():
     if current_user.role not in ("student", "faculty", "admin", "manager"):
         abort(403)
-    return render_template("ops_calendar.html")
+    return render_template("ops_calendar.html",
+                           **_live_classes_context(current_user))
 
 
 @ops_bp.route("/calendar/events")
