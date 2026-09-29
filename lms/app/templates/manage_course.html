@@ -79,6 +79,16 @@
     </div>
     {% else %}<p style="color:var(--muted)">No recordings yet.</p>{% endfor %}
   </div>
+  <div class="panel">
+    <h3>📚 Course Materials <a class="btn btn-gold btn-sm" style="margin-left:10px" href="{{ url_for('manage.material_new', course_id=course.id) }}">+ Upload</a></h3>
+    {% for m in course.materials %}
+    <div class="lesson-row"><span>📎</span><span><b>{{ m.title }}</b>
+      <span style="color:var(--muted)">· .{{ m.file_ext }}{% if m.file_size %} · {{ '%.1f'|format(m.file_size / 1024) }} KB{% endif %}{% if m.live_session %} · 🎬 {{ m.live_session.title }}{% endif %}</span></span>
+      <form class="inline-form" style="margin-left:auto" method="post" action="{{ url_for('manage.material_delete', material_id=m.id) }}"
+            onsubmit="return confirm('Delete this material?')"><button class="btn btn-danger btn-sm" type="submit">Delete</button></form>
+    </div>
+    {% else %}<p style="color:var(--muted)">No materials yet.</p>{% endfor %}
+  </div>
 </div>
 
 <div class="panel" style="margin-top:22px">
@@ -86,7 +96,7 @@
   {% for s in course.live_sessions %}
   <div class="lesson-row"><span>🔴</span>
     <span><b>{{ s.title }}</b> <span style="color:var(--muted)">· {% set _st = to_user_tz(s.starts_at, current_user) %}{{ _st.strftime('%d %b %Y, %I:%M %p') }} {{ _st.strftime('%Z') }} · {{ s.duration_min }} min</span>
-      <br><small style="color:var(--muted)">meet.jit.si/{{ s.room_name }}{% if s.recording_url %} · <a href="{{ s.recording_url }}" target="_blank">recording</a>{% endif %}</small></span>
+      <br><small style="color:var(--muted)">meet.jit.si/{{ s.room_name }}{% if s.recording_url %} · <a href="{{ s.recording_url }}" target="_blank">recording</a>{% endif %}{% if s.recordings %} · <span style="color:var(--gold-dk)" title="Recorded session linked">🎬</span>{% endif %}</small></span>
     <span style="margin-left:auto; display:flex; gap:8px">
       <a class="btn btn-ghost btn-sm" href="{{ s.join_url }}" target="_blank">Open Room</a>
       <a class="btn btn-ghost btn-sm" href="{{ url_for('manage.live_edit', session_id=s.id) }}">Edit</a>

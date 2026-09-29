@@ -10,16 +10,17 @@ import os
 import tempfile
 from datetime import date, datetime
 
-from flask import (Blueprint, Response, abort, after_this_request, flash,
-                   jsonify, redirect, render_template, request, send_file,
-                   url_for)
+from flask import (Blueprint, Response, abort, after_this_request, current_app,
+                   flash, jsonify, redirect, render_template, request,
+                   send_file, send_from_directory, url_for)
 from flask_login import current_user, login_required
 
 from . import db
 from .decorators import permission_required, role_required
 from .models import (Announcement, Assignment, AuditLog, Batch, BatchMember,
-                     Course, Enrollment, Invoice, InvoiceSetting, LiveSession,
-                     Refund, RolePermission, SessionAttendance, User)
+                     Course, CourseMaterial, Enrollment, Invoice,
+                     InvoiceSetting, LiveSession, Recording, Refund,
+                     RolePermission, SessionAttendance, User)
 from . import operations as OPS
 
 ops_bp = Blueprint("ops", __name__)
@@ -61,6 +62,145 @@ def calendar():
 @login_required
 def calendar_events():
     return jsonify(OPS.calendar_events(current_user))
+
+
+@ops_bp.route("/calendar/recorded-sessions")
+@login_required
+def recorded_sessions():
+    """Recordings for the user's courses (Recorded Sessions tab).
+
+    Scoped exactly like calendar events: students see enrolled courses,
+    faculty see courses they teach, admin/manager see everything.
+    The payload carries signed, expiring watch URLs — never raw video URLs.
+    """
+    if current_user.role not in ("student", "faculty", "admin", "manager"):
+        abort(403)
+    return jsonify(OPS.recorded_sessions_for(current_user))
+
+
+# ------------------------------------------- recorded video security
+# Recorded videos are non-downloadable: the tab only ever sees a signed,
+# expiring watch URL. The watch page plays through an enrollment-checked
+# stream endpoint with nodownload player controls; the raw video URL is
+# never rendered into page source and local files have no direct static
+# route (they are served here, access-checked, via send_from_directory).
+
+_YT_WATCH = None
+
+
+def _yt_re():
+    global _YT_WATCH
+    if _YT_WATCH is None:
+        import re as _re
+        _YT_WATCH = _re.compile(
+            r"(?:youtube\.com/(?:embed/|watch\?v=)|youtu\.be/)([\w-]{6,})")
+    return _YT_WATCH
+
+
+def _recording_for_token(token):
+    """Validate a recording token and load the recording."""
+    from .video13 import verify_recording_token
+    coords, err = verify_recording_token(token)
+    if err:
+        return None, None, err
+    recording_id, user_id, _exp = coords
+    rec = Recording.query.get(recording_id)
+    if not rec or not (rec.video_url or "").strip():
+        return None, None, "video not found"
+    return rec, user_id, None
+
+
+def _may_watch_recording(rec, token_user_id):
+    """The logged-in user must own the token and may access the course."""
+    if not current_user.is_authenticated:
+        return False
+    if current_user.id != token_user_id:
+        return False
+    if current_user.role in ("admin", "manager"):
+        return True
+    if current_user.role == "faculty":
+        return (rec.course is not None and
+                rec.course.instructor_id == current_user.id)
+    enr = (Enrollment.query
+           .filter(Enrollment.user_id == current_user.id,
+                   Enrollment.course_id == rec.course_id,
+                   Enrollment.status.in_([Enrollment.STATUS_ACTIVE,
+                                         Enrollment.STATUS_COMPLETED]))
+           .first())
+    return enr is not None
+
+
+@ops_bp.route("/rec/<token>")
+@login_required
+def recording_watch(token):
+    """Signed watch page for one recording (embedded by the tab's player)."""
+    rec, token_user_id, err = _recording_for_token(token)
+    if err or not _may_watch_recording(rec, token_user_id):
+        abort(403)
+    stream_url = url_for("ops.recording_stream", token=token)
+    return render_template("ops_recording_watch.html", recording=rec,
+                           stream_url=stream_url,
+                           is_youtube=bool(
+                               _yt_re().search(rec.video_url or "")))
+
+
+@ops_bp.route("/rec/<token>/stream")
+@login_required
+def recording_stream(token):
+    """Enrollment-checked stream endpoint for a recording's video.
+
+    External http(s) URLs 302 to storage (raw URL never in page source);
+    local relative paths are served from the private RECORDINGS_DIR here —
+    that directory has no direct static/web route (it is outside both
+    UPLOAD_DIR and Flask's static folder).
+    HTTP Range requests are honored (206 partial content) for seeking.
+    """
+    rec, token_user_id, err = _recording_for_token(token)
+    if err or not _may_watch_recording(rec, token_user_id):
+        abort(403)
+    url = (rec.video_url or "").strip()
+    import re as _re
+    if _re.match(r"^https?://", url, _re.I):
+        return redirect(url)
+    rel = url.lstrip("/").replace("\\", "/")
+    if not rel or ".." in rel.split("/"):
+        abort(404)
+    directory = os.path.abspath(current_app.config["RECORDINGS_DIR"])
+    full = os.path.abspath(os.path.join(directory, rel))
+    if not full.startswith(directory + os.sep):
+        abort(403)
+    if not os.path.isfile(full):
+        abort(404)
+    resp = send_from_directory(directory, rel)
+    resp.headers["Cache-Control"] = "no-store"
+    return resp
+
+
+# ================================================================ course materials
+@ops_bp.route("/calendar/materials")
+@login_required
+def course_materials():
+    """Uploaded materials for the user's courses (Course Materials tab)."""
+    if current_user.role not in ("student", "faculty", "admin", "manager"):
+        abort(403)
+    return jsonify(OPS.course_materials_for(current_user))
+
+
+@ops_bp.route("/materials/<int:material_id>/download")
+@login_required
+def material_download(material_id):
+    """Secure download: enrollment/management check, then
+    send_from_directory off the materials dir (never a raw filename path)."""
+    m = CourseMaterial.query.get_or_404(material_id)
+    if not OPS.can_access_course_material(current_user, m):
+        abort(404)
+    directory = os.path.join(current_app.config["UPLOAD_DIR"], "materials")
+    filename = os.path.basename(m.file_path or "")
+    if not filename:
+        abort(404)
+    dl_name = f"{m.title}.{m.file_ext}" if m.file_ext else m.title
+    return send_from_directory(directory, filename, as_attachment=True,
+                               download_name=dl_name)
 
 
 # ================================================================ attendance (§4.3)

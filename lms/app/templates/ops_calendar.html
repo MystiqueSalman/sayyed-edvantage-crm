@@ -1,9 +1,16 @@
 {% extends "layout_app.html" %}
-{% block title %}Calendar — Sayyed EdVantage LMS{% endblock %}
+{% block title %}Live Classes — Sayyed EdVantage LMS{% endblock %}
 {% block app_content %}
-<div class="section-title"><h2>📅 Calendar</h2><div class="line"></div>
-  <span style="color:var(--muted);font-size:.85rem">Classes · assignments · exam deadlines · project deadlines · challenges</span></div>
+<div class="section-title"><h2>🎥 Live Classes</h2><div class="line"></div>
+  <span style="color:var(--muted);font-size:.85rem">Upcoming classes · recorded sessions · course materials</span></div>
 
+<div class="rs-tabs" role="tablist">
+  <button class="rs-tab on" data-tab="upcoming">📅 Upcoming</button>
+  <button class="rs-tab" data-tab="recorded">🎬 Recorded Sessions</button>
+  <button class="rs-tab" data-tab="materials">📚 Course Materials</button>
+</div>
+
+<div id="tab-upcoming">
 <div class="card"><div class="body">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
     <button class="btn btn-ghost btn-sm" id="prev">←</button>
@@ -14,6 +21,21 @@
   <div id="grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div>
   <div id="daylist" style="margin-top:18px"></div>
 </div></div>
+</div>
+
+<div id="tab-recorded" hidden>
+  <div class="card"><div class="body" id="recList">
+    <p style="color:var(--muted)">Loading recorded sessions…</p>
+  </div></div>
+</div>
+
+<div id="tab-materials" hidden>
+  <div class="card"><div class="body">
+    <input id="matSearch" type="search" placeholder="🔍 Search materials…"
+           style="width:100%;margin-bottom:12px" autocomplete="off">
+    <div id="matList"><p style="color:var(--muted)">Loading course materials…</p></div>
+  </div></div>
+</div>
 
 <script>
 let EVENTS = [], cursor = new Date();
@@ -22,6 +44,131 @@ fetch("{{ url_for('ops.calendar_events') }}").then(r => r.json()).then(d => {
   EVENTS = d; render();
 });
 function ymd(dt){ return dt.toISOString().slice(0,10); }
+function esc(s){ return String(s == null ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+  .replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+function fdate(iso){
+  const p = String(iso).split("-");
+  if (p.length !== 3) return iso || "";
+  const MN = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return (+p[2]) + " " + (MN[+p[1]] || p[1]) + " " + p[0];
+}
+/* ---- tab switching ---- */
+const TABS = ["upcoming", "recorded", "materials"];
+let recLoaded = false, matLoaded = false, MATS = [];
+function switchTab(name){
+  document.querySelectorAll(".rs-tab").forEach(
+    b => b.classList.toggle("on", b.dataset.tab === name));
+  TABS.forEach(t => document.getElementById("tab-" + t).hidden = t !== name);
+  if (name === "recorded" && !recLoaded){ recLoaded = true; loadRecorded(); }
+  if (name === "materials" && !matLoaded){ matLoaded = true; loadMaterials(); }
+}
+document.querySelectorAll(".rs-tab").forEach(
+  b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
+/* ---- recorded sessions ---- */
+function loadRecorded(){
+  fetch("{{ url_for('ops.recorded_sessions') }}").then(r => r.json()).then(list => {
+    const el = document.getElementById("recList");
+    if (!list.length){
+      el.innerHTML = "<p style='color:var(--muted)'>No recorded sessions yet — " +
+        "they appear here after each live class.</p>";
+      return;
+    }
+    el.innerHTML = list.map(r =>
+      "<div class='rec-row'>" +
+        "<div class='rec-thumb'>" +
+          (r.thumbnail ? "<img src='"+esc(r.thumbnail)+"' alt='' loading='lazy'>" : "🎥") +
+        "</div>" +
+        "<div class='rec-meta'><b>"+esc(r.title)+"</b>" +
+          "<small>"+esc(r.course) +
+          (r.live_session ? " · from: "+esc(r.live_session) : "") +
+          (r.recorded_on ? " · "+fdate(r.recorded_on) : "") +
+          (r.duration_min ? " · "+r.duration_min+" min" : "") + "</small>" +
+          (r.notes ? "<p class='rec-notes'>"+esc(r.notes)+"</p>" : "") +
+        "</div>" +
+        (r.watch_url ? "<button class='btn btn-gold btn-sm rec-watch' data-url='"+
+          esc(r.watch_url)+"' data-id='"+r.id+"'>▶ Watch</button>" : "") +
+      "</div>" +
+      "<div class='video-wrap' id='recvid-"+r.id+"' hidden style='margin:-2px 0 14px'></div>"
+    ).join("");
+    el.querySelectorAll(".rec-watch").forEach(b => b.addEventListener("click", () => {
+      const box = document.getElementById("recvid-" + b.dataset.id);
+      if (box.hidden){
+        box.innerHTML = "<iframe src='"+b.dataset.url+"' allowfullscreen></iframe>";
+        box.hidden = false; b.textContent = "✕ Close";
+      } else {
+        box.innerHTML = ""; box.hidden = true; b.textContent = "▶ Watch";
+      }
+    }));
+  }).catch(() => {
+    document.getElementById("recList").innerHTML =
+      "<p style='color:var(--muted)'>Could not load recorded sessions.</p>";
+  });
+}
+/* ---- course materials ---- */
+const MAT_ICON = {pdf:"📕", xlsx:"📊", xls:"📊", csv:"📊", ppt:"📽️", pptx:"📽️",
+  doc:"📝", docx:"📝", zip:"📦", png:"🖼️", jpg:"🖼️", jpeg:"🖼️", gif:"🖼️",
+  webp:"🖼️", txt:"📄"};
+function fsize(b){
+  b = +b || 0;
+  if (!b) return "";
+  if (b < 1024) return b + " B";
+  if (b < 1048576) return (b / 1024).toFixed(1) + " KB";
+  return (b / 1048576).toFixed(1) + " MB";
+}
+function fdt(iso){
+  if (!iso) return "";
+  const p = String(iso).slice(0, 10).split("-");
+  if (p.length !== 3) return "";
+  const MN = ["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  return (+p[2]) + " " + (MN[+p[1]] || p[1]) + " " + p[0];
+}
+function loadMaterials(){
+  fetch("{{ url_for('ops.course_materials') }}").then(r => r.json()).then(list => {
+    MATS = list || [];
+    renderMaterials("");
+  }).catch(() => {
+    document.getElementById("matList").innerHTML =
+      "<p style='color:var(--muted)'>Could not load course materials.</p>";
+  });
+  document.getElementById("matSearch").addEventListener("input", e => {
+    renderMaterials(e.target.value.trim().toLowerCase());
+  });
+}
+function renderMaterials(q){
+  const el = document.getElementById("matList");
+  const list = MATS.filter(m =>
+    !q || (m.title + " " + (m.description || "") + " " + m.course)
+           .toLowerCase().includes(q));
+  if (!list.length){
+    el.innerHTML = "<p style='color:var(--muted)'>" +
+      (MATS.length ? "No materials match your search." :
+       "No course materials yet — your faculty will upload them here.") + "</p>";
+    return;
+  }
+  let html = "", lastCourse = "";
+  list.forEach(m => {
+    if (m.course !== lastCourse){
+      html += "<h4 style='margin:14px 0 8px'>" + esc(m.course) + "</h4>";
+      lastCourse = m.course;
+    }
+    html += "<div class='rec-row'>" +
+      "<div class='rec-thumb' style='font-size:1.6rem'>" +
+        (MAT_ICON[m.ext] || "📎") + "</div>" +
+      "<div class='rec-meta'><b>" + esc(m.title) + "</b>" +
+        "<small>" + (m.ext ? "." + esc(m.ext) : "file") +
+        (m.file_size ? " · " + fsize(m.file_size) : "") +
+        (m.uploaded_at ? " · " + fdt(m.uploaded_at) : "") +
+        (m.live_session ? " · 🎬 " + esc(m.live_session) : "") + "</small>" +
+        (m.description ? "<p class='rec-notes'>" + esc(m.description) + "</p>" : "") +
+      "</div>" +
+      "<a class='btn btn-gold btn-sm rec-watch' href='" + esc(m.download_url) +
+        "'>⬇ Download</a>" +
+    "</div>";
+  });
+  el.innerHTML = html;
+}
+/* ---- calendar (unchanged) ---- */
 function render(){
   const y = cursor.getFullYear(), m = cursor.getMonth();
   document.getElementById("mtitle").textContent =

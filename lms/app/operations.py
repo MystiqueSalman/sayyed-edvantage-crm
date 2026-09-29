@@ -4,12 +4,14 @@ Central helpers for: audit logging, attendance, the granular permission
 matrix, batches, invoices/finance, and calendar event aggregation.
 """
 from datetime import datetime, timedelta
+import re
 
 from . import db
 from .models import (Assignment, AuditLog, Batch, BatchMember, Challenge,
-                     Coupon, Course, Enrollment, Invoice, InvoiceSetting,
-                     LiveSession, Module, Project, Quiz, Refund,
-                     RolePermission, SessionAttendance, User)
+                     Coupon, Course, CourseMaterial, Enrollment, Invoice,
+                     InvoiceSetting, LiveSession, Module, Project, Quiz,
+                     Recording, Refund, RolePermission, SessionAttendance,
+                     User)
 from .roles13 import (ROLE_CONTENT_MANAGER, ROLE_FINANCE_OFFICER, ROLE_PARENT,
                       ROLE_PLACEMENT_OFFICER, ROLE_SUPER_ADMIN)
 
@@ -445,3 +447,108 @@ def calendar_events(user):
                            "url": "/challenges"})
     events.sort(key=lambda e: e["start"])
     return events
+
+
+# ---------------------------------------------------------------- recorded sessions
+_YT_ID = re.compile(r"(?:youtube\.com/(?:embed/|watch\?v=)|youtu\.be/)([\w-]{6,})")
+
+
+def recording_thumbnail(video_url):
+    """Best-effort thumbnail for a recording: YouTube preview image when the
+    video URL is a YouTube link, else empty (UI shows a styled placeholder)."""
+    if not video_url:
+        return ""
+    m = _YT_ID.search(video_url)
+    return f"https://img.youtube.com/vi/{m.group(1)}/hqdefault.jpg" if m else ""
+
+
+def recorded_sessions_for(user):
+    """Recordings visible to a user, mirroring calendar_events scoping.
+
+    Students see recordings for their enrolled courses, faculty for courses
+    they teach, admin/manager for all courses.
+    """
+    if user.role == "faculty":
+        course_ids = [c.id for c in Course.query.filter_by(
+            instructor_id=user.id).all()]
+    elif user.role in ("admin", "manager"):
+        course_ids = None  # all courses
+    else:
+        course_ids = [e.course_id for e in
+                      Enrollment.query.filter_by(user_id=user.id).all()]
+    q = Recording.query
+    if course_ids is not None:
+        if not course_ids:
+            return []
+        q = q.filter(Recording.course_id.in_(course_ids))
+    recs = q.order_by(Recording.recorded_on.desc().nullslast(),
+                      Recording.id.desc()).all()
+    # Signed, expiring watch URLs (Phase 13 mechanism): the raw video URL
+    # is never exposed to the tab — playback goes through the
+    # enrollment-checked /rec/<token> stream endpoint.
+    from .video13 import signed_recording_url
+    out = []
+    for r in recs:
+        out.append({
+            "id": r.id,
+            "title": r.title,
+            "course": r.course.title if r.course else "",
+            "course_id": r.course_id,
+            "recorded_on": r.recorded_on.isoformat() if r.recorded_on else "",
+            "duration_min": r.duration_min or 0,
+            "has_video": bool((r.video_url or "").strip()),
+            "watch_url": (signed_recording_url(r.id, user.id)
+                          if (r.video_url or "").strip() else ""),
+            "thumbnail": recording_thumbnail(r.video_url),
+            "notes": r.notes or "",
+            "live_session": r.live_session.title if r.live_session else "",
+        })
+    return out
+
+
+# ------------------------------------------------------- course materials
+def _material_course_ids(user):
+    """Course ids whose materials a user may see (None = all)."""
+    if user.role == "faculty":
+        return [c.id for c in Course.query.filter_by(
+            instructor_id=user.id).all()]
+    if user.role in ("admin", "manager"):
+        return None
+    return [e.course_id for e in
+            Enrollment.query.filter_by(user_id=user.id).all()]
+
+
+def course_materials_for(user):
+    """Materials visible to a user, scoped like recorded_sessions_for."""
+    course_ids = _material_course_ids(user)
+    q = CourseMaterial.query
+    if course_ids is not None:
+        if not course_ids:
+            return []
+        q = q.filter(CourseMaterial.course_id.in_(course_ids))
+    mats = q.order_by(CourseMaterial.course_id,
+                      CourseMaterial.uploaded_at.desc()).all()
+    return [{
+        "id": m.id,
+        "title": m.title,
+        "description": m.description or "",
+        "course": m.course.title if m.course else "",
+        "course_id": m.course_id,
+        "ext": m.file_ext or "",
+        "file_size": m.file_size or 0,
+        "uploaded_at": m.uploaded_at.isoformat() if m.uploaded_at else "",
+        "live_session": m.live_session.title if m.live_session else "",
+        "download_url": f"/materials/{m.id}/download",
+    } for m in mats]
+
+
+def can_access_course_material(user, material):
+    """True if the user may download this material."""
+    if user.role in ("admin", "manager"):
+        return True
+    if user.role == "faculty":
+        return (material.course is not None and
+                material.course.instructor_id == user.id)
+    return (Enrollment.query
+            .filter_by(user_id=user.id, course_id=material.course_id)
+            .first() is not None)

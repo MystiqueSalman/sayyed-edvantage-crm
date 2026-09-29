@@ -500,7 +500,7 @@ check("flask db upgrade exits 0 on blank DB", pr.returncode == 0,
 conn = sqlite3.connect(mig_db)
 head = conn.execute(
     "SELECT version_num FROM alembic_version").fetchone()[0]
-check("migration head is UI14 revision (latest)", head == "u14a1b2c3d4e5", head)
+check("migration head is recorded-sessions revision (latest)", head == "f29d3e4a5b6c", head)
 tables = {r[0] for r in conn.execute(
     "SELECT name FROM sqlite_master WHERE type='table'")}
 check("Phase 10 tables exist",

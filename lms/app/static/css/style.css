@@ -442,6 +442,25 @@ tr:hover td{background:#f6f9fe}
 .video-wrap{position:relative; padding-bottom:56.25%; height:0; border-radius:14px; overflow:hidden;
   box-shadow:var(--shadow); background:#000}
 .video-wrap iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
+/* Recorded Sessions tab (Live Classes page): navy-and-gold, compact */
+.rs-tabs{display:flex;gap:8px;margin:0 0 14px}
+.rs-tab{flex:1;padding:9px 10px;border-radius:10px;border:1px solid var(--brd);
+  background:#fff;color:var(--text);font-weight:700;font-size:.9rem;cursor:pointer}
+.rs-tab.on{background:var(--navy);color:var(--gold-lt);border-color:var(--navy)}
+.rec-row{display:flex;gap:12px;align-items:center;padding:10px 12px;
+  border:1px solid var(--brd);border-radius:12px;margin-bottom:10px;background:#fff}
+.rec-thumb{width:96px;height:60px;flex:0 0 96px;border-radius:8px;overflow:hidden;
+  background:var(--navy);color:var(--gold-lt);display:flex;align-items:center;
+  justify-content:center;font-size:1.4rem}
+.rec-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.rec-meta{flex:1;min-width:0}
+.rec-meta small{color:var(--muted);display:block;margin-top:2px}
+.rec-notes{margin:6px 0 0;font-size:.85rem;color:var(--text)}
+@media(max-width:560px){
+  .rec-row{flex-wrap:wrap}
+  .rec-thumb{width:100%;height:auto;aspect-ratio:16/9;flex-basis:100%}
+  .rec-watch{width:100%}
+}
 .quiz-q{background:#fff; border:1px solid var(--brd); border-radius:12px; padding:18px; margin-bottom:16px}
 .quiz-q p{font-weight:700; margin-top:0}
 .opt{display:block; padding:10px 14px; border-radius:9px; margin:7px 0; cursor:pointer;

@@ -18,6 +18,22 @@
     <input type="text" name="recording_url" value="{{ session.recording_url if session }}"
            placeholder="https://…">
     {% if session %}
+    <div style="border-top:1px solid var(--brd);margin-top:16px;padding-top:14px">
+      <label>Linked recording <span style="color:var(--muted)">(students see it under Recorded Sessions)</span></label>
+      {% if is_past and not linked %}
+      <p style="background:#fff8e6;border:1px solid var(--gold);border-radius:10px;padding:10px 12px;font-size:.88rem">
+        🎬 This class has ended — link its recording below so students can rewatch it.</p>
+      {% endif %}
+      <select name="attach_recording_id">
+        <option value="">— none —</option>
+        {% for r in recordings %}
+        <option value="{{ r.id }}" {% if linked and linked.id == r.id %}selected{% endif %}>{{ r.title }}</option>
+        {% endfor %}
+      </select>
+      <p style="font-size:.85rem;color:var(--muted)">or <a href="{{ url_for('manage.recording_new', course_id=course.id, live_session_id=session.id) }}">add a new recording for this class</a></p>
+    </div>
+    {% endif %}
+    {% if session %}
     <p style="color:var(--muted); font-size:.85rem">Room: <code>meet.jit.si/{{ session.room_name }}</code></p>
     {% endif %}
     <p><button class="btn btn-gold" type="submit" style="margin-top:14px">Save Live Class</button>

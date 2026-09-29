@@ -12,9 +12,9 @@ from werkzeug.utils import secure_filename
 
 from . import db
 from .decorators import content_manager_required
-from .models import (Assignment, Course, Lesson, LiveSession, Module, Project,
-                     ProjectSubmission, Question, Quiz, QuizAnswer, QuizAttempt,
-                     Recording, Submission, User)
+from .models import (Assignment, Course, CourseMaterial, Lesson, LiveSession,
+                     Module, Project, ProjectSubmission, Question, Quiz,
+                     QuizAnswer, QuizAttempt, Recording, Submission, User)
 
 manage_bp = Blueprint("manage", __name__, url_prefix="/manage")
 
@@ -861,10 +861,23 @@ def live_edit(session_id):
         except ValueError:
             pass
         sess.recording_url = request.form.get("recording_url", "").strip()
+        # Link a recorded session (Recorded Sessions tab) to this live class.
+        attach_id = request.form.get("attach_recording_id", "").strip()
+        for r in Recording.query.filter_by(live_session_id=sess.id).all():
+            r.live_session_id = None
+        if attach_id and attach_id.isdigit():
+            rec = Recording.query.get(int(attach_id))
+            if rec and rec.course_id == course.id:
+                rec.live_session_id = sess.id
         db.session.commit()
         flash("Live class updated.", "success")
         return redirect(url_for("manage.course_home", course_id=course.id))
-    return render_template("manage_live_form.html", course=course, session=sess)
+    recordings = (Recording.query.filter_by(course_id=course.id)
+                  .order_by(Recording.id.desc()).all())
+    linked = Recording.query.filter_by(live_session_id=sess.id).first()
+    return render_template("manage_live_form.html", course=course, session=sess,
+                           recordings=recordings, linked=linked,
+                           is_past=sess.ends_at < datetime.utcnow())
 
 
 @manage_bp.route("/live/<int:session_id>/delete", methods=["POST"])
@@ -883,21 +896,37 @@ def live_delete(session_id):
 @content_manager_required
 def recording_new(course_id):
     course = _course_or_403(course_id)
+    linked_session = None
     if request.method == "POST":
         title = request.form.get("title", "").strip()
         if not title:
             flash("Title is required.", "danger")
         else:
             rec_on = request.form.get("recorded_on", "").strip()
+            live_sid = request.form.get("live_session_id", "").strip()
+            ls = None
+            if live_sid.isdigit():
+                ls = LiveSession.query.get(int(live_sid))
+                if ls and ls.course_id != course.id:
+                    ls = None
             db.session.add(Recording(
                 course_id=course.id, title=title,
                 video_url=request.form.get("video_url", "").strip(),
                 duration_min=int(request.form.get("duration_min", 0) or 0),
-                recorded_on=datetime.strptime(rec_on, "%Y-%m-%d").date() if rec_on else None))
+                recorded_on=datetime.strptime(rec_on, "%Y-%m-%d").date() if rec_on else None,
+                live_session_id=ls.id if ls else None,
+                notes=request.form.get("notes", "").strip()))
             db.session.commit()
             flash("Recording added.", "success")
             return redirect(url_for("manage.course_home", course_id=course.id))
-    return render_template("manage_recording_form.html", course=course)
+    else:
+        prefill = request.args.get("live_session_id", "").strip()
+        if prefill.isdigit():
+            linked_session = LiveSession.query.get(int(prefill))
+            if linked_session and linked_session.course_id != course.id:
+                linked_session = None
+    return render_template("manage_recording_form.html", course=course,
+                           linked_session=linked_session)
 
 
 @manage_bp.route("/recording/<int:recording_id>/delete", methods=["POST"])
@@ -908,6 +937,95 @@ def recording_delete(recording_id):
     db.session.delete(rec)
     db.session.commit()
     flash("Recording deleted.", "info")
+    return redirect(url_for("manage.course_home", course_id=course.id))
+
+
+# ------------------------------------------------- course materials (uploads)
+MATERIAL_ALLOWED_EXTS = {"pdf", "xlsx", "xls", "ppt", "pptx", "doc", "docx",
+                         "csv", "zip", "png", "jpg", "jpeg", "gif", "webp",
+                         "txt"}
+MATERIAL_MAX_BYTES = 100 * 1024 * 1024  # 100 MB
+
+
+def _materials_dir():
+    d = os.path.join(current_app.config["UPLOAD_DIR"], "materials")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+@manage_bp.route("/course/<int:course_id>/material/new", methods=["GET", "POST"])
+@content_manager_required
+def material_new(course_id):
+    course = _course_or_403(course_id)
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        f = request.files.get("file")
+        lsid = request.form.get("live_session_id", "").strip()
+        live_session = None
+        if lsid.isdigit():
+            live_session = LiveSession.query.get(int(lsid))
+            if live_session and live_session.course_id != course.id:
+                live_session = None
+        if not title:
+            flash("Title is required.", "danger")
+        elif not f or not f.filename:
+            flash("Choose a file to upload.", "danger")
+        else:
+            # Sanitize first (defense in depth); the stored file itself uses
+            # a server-generated name, so the raw filename never touches
+            # the filesystem (blocks path traversal).
+            safe_name = secure_filename(f.filename or "")
+            ext = safe_name.rsplit(".", 1)[-1].lower() \
+                if "." in safe_name else ""
+            if ext not in MATERIAL_ALLOWED_EXTS:
+                flash(f"File type .{ext or '?'} is not allowed.", "danger")
+            else:
+                f.seek(0, os.SEEK_END)
+                size = f.tell()
+                f.seek(0)
+                if size > MATERIAL_MAX_BYTES:
+                    flash("File is too large (max 100 MB).", "danger")
+                elif size <= 0:
+                    flash("The file is empty.", "danger")
+                else:
+                    # Server-generated name: the sanitized upload filename
+                    # never touches the filesystem (blocks path traversal).
+                    name = f"mat_{uuid.uuid4().hex[:12]}.{ext}"
+                    f.save(os.path.join(_materials_dir(), name))
+                    db.session.add(CourseMaterial(
+                        course_id=course.id, title=title,
+                        description=request.form.get("description",
+                                                     "").strip(),
+                        file_path=f"materials/{name}", file_ext=ext,
+                        file_size=size, uploaded_by=current_user.id,
+                        live_session_id=(live_session.id
+                                         if live_session else None)))
+                    db.session.commit()
+                    flash("Material uploaded.", "success")
+                    return redirect(url_for("manage.course_home",
+                                            course_id=course.id))
+    sessions = (LiveSession.query.filter_by(course_id=course.id)
+                .order_by(LiveSession.starts_at.desc()).all())
+    return render_template("manage_material_form.html", course=course,
+                           sessions=sessions)
+
+
+@manage_bp.route("/material/<int:material_id>/delete", methods=["POST"])
+@content_manager_required
+def material_delete(material_id):
+    m = CourseMaterial.query.get_or_404(material_id)
+    course = _course_or_403(m.course_id)
+    try:
+        mat_dir = os.path.abspath(_materials_dir())
+        p = os.path.abspath(os.path.join(
+            mat_dir, os.path.basename(m.file_path or "")))
+        if p.startswith(mat_dir + os.sep) and os.path.isfile(p):
+            os.remove(p)
+    except OSError:
+        pass
+    db.session.delete(m)
+    db.session.commit()
+    flash("Material deleted.", "info")
     return redirect(url_for("manage.course_home", course_id=course.id))
 
 

@@ -109,3 +109,63 @@ def verify_video_token(token):
     if exp <= int(time.time()):
         return None, "token expired"
     return (lesson_id, user_id, exp), None
+
+
+# ---------------------------------------------------------------
+# Recorded Sessions — signed URLs for Recording videos.
+#
+# Same HMAC mechanism as lesson video tokens, but namespaced with a
+# "rec:" prefix in the payload so a lesson token can never validate as
+# a recording token (or vice versa). Used by the Live Classes
+# "Recorded Sessions" tab: the raw video URL is never rendered into
+# page source — the tab only carries the signed watch URL, and the
+# watch page plays through an enrollment-checked stream endpoint.
+
+
+def mint_recording_token(recording_id, user_id, expiry_hours=None):
+    """Create a fresh signed token string for a recording (not the URL)."""
+    hours = expiry_hours if expiry_hours else default_expiry_hours()
+    exp = int(time.time()) + int(hours) * 3600
+    payload = f"rec:{int(recording_id)}.{int(user_id)}.{exp}"
+    sig = hmac.new(_signing_key(), payload.encode("utf-8"),
+                   hashlib.sha256).hexdigest()
+    raw = f"{payload}.{sig}".encode("utf-8")
+    return base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+
+
+def signed_recording_url(recording_id, user_id, expiry_hours=None):
+    """Public helper: full same-origin signed watch URL for a recording."""
+    token = mint_recording_token(recording_id, user_id,
+                                 expiry_hours=expiry_hours)
+    return url_for("ops.recording_watch", token=token)
+
+
+def verify_recording_token(token):
+    """Validate a recording token.
+
+    Returns (recording_id, user_id, exp) on success, else (None, error_str).
+    """
+    if not token or not isinstance(token, str):
+        return None, "missing token"
+    padded = token + "=" * (-len(token) % 4)
+    try:
+        raw = base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8")
+    except Exception:
+        return None, "malformed token"
+    parts = raw.split(".")
+    if len(parts) != 4 or not parts[0].startswith("rec:"):
+        return None, "malformed token"
+    try:
+        recording_id = int(parts[0][4:])
+        user_id = int(parts[1])
+        exp = int(parts[2])
+    except ValueError:
+        return None, "malformed token"
+    payload = f"rec:{recording_id}.{user_id}.{exp}"
+    expected = hmac.new(_signing_key(), payload.encode("utf-8"),
+                        hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, parts[3]):
+        return None, "invalid signature"
+    if exp <= int(time.time()):
+        return None, "token expired"
+    return (recording_id, user_id, exp), None

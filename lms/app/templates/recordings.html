@@ -3,15 +3,15 @@
 {% block app_content %}
 <div class="section-title"><h2>Recorded Sessions · {{ course.title }}</h2><div class="line"></div>
   <a href="{{ url_for('main.course_detail', slug=course.slug) }}">← Course</a></div>
-{% for r in course.recordings %}
+{% for r, watch_url in recs %}
 <div class="panel">
   <h3 style="margin-top:0">{{ r.title }}</h3>
   <p style="color:var(--muted)">
     {% if r.recorded_on %}Recorded {{ r.recorded_on.strftime('%d %b %Y') }} · {% endif %}
     {% if r.duration_min %}{{ r.duration_min }} min{% endif %}
   </p>
-  {% if r.video_url %}
-  <div class="video-wrap"><iframe src="{{ r.video_url }}" allowfullscreen></iframe></div>
+  {% if watch_url %}
+  <a class="btn btn-primary" href="{{ watch_url }}">▶ Watch recording</a>
   {% else %}
   <p style="color:var(--warn)">🎥 Recording will be uploaded after the live class.</p>
   {% endif %}

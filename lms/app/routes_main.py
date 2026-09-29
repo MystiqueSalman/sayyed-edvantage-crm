@@ -171,9 +171,26 @@ def service_worker():
 
 
 @main_bp.route("/course/<slug>/recordings")
+@login_required
 def recordings(slug):
+    """Recorded sessions — the public site is teaser-only: login +
+    enrollment in the course required. Staff bypass via manage permission.
+    Playback goes through signed, expiring watch URLs (non-downloadable);
+    raw video URLs are never rendered."""
+    from .video13 import signed_recording_url
     course = Course.query.filter_by(slug=slug).first_or_404()
-    return render_template("recordings.html", course=course)
+    if current_user.can_manage_course(course):
+        recs = [(r, signed_recording_url(r.id, current_user.id)
+                 if r.video_url else "") for r in course.recordings]
+        return render_template("recordings.html", course=course, recs=recs)
+    enr = Enrollment.query.filter_by(user_id=current_user.id,
+                                     course_id=course.id).first()
+    if not enr or enr.status == Enrollment.STATUS_PENDING:
+        flash("Enroll to watch recorded sessions.", "warning")
+        return redirect(url_for("main.course_detail", slug=course.slug))
+    recs = [(r, signed_recording_url(r.id, current_user.id)
+             if r.video_url else "") for r in course.recordings]
+    return render_template("recordings.html", course=course, recs=recs)
 
 
 def _apply_coupon(code, fee):

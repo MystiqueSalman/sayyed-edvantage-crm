@@ -85,6 +85,8 @@ class Course(db.Model):
                               order_by="Module.position")
     assignments = db.relationship("Assignment", backref="course", cascade="all, delete-orphan")
     recordings = db.relationship("Recording", backref="course", cascade="all, delete-orphan")
+    materials = db.relationship("CourseMaterial", backref="course",
+                                cascade="all, delete-orphan")
 
     @property
     def lessons(self):
@@ -146,6 +148,35 @@ class Recording(db.Model):
     video_url = db.Column(db.String(500), default="")
     duration_min = db.Column(db.Integer, default=0)
     recorded_on = db.Column(db.Date, nullable=True)
+    # Recorded Sessions tab: optional link to the live class this recording
+    # came from, plus free-text notes / attached-material links for students.
+    live_session_id = db.Column(db.Integer, db.ForeignKey("live_sessions.id"),
+                                nullable=True)
+    notes = db.Column(db.Text, default="")
+    live_session = db.relationship(
+        "LiveSession",
+        backref=db.backref("recordings", cascade="all, delete-orphan"))
+
+
+class CourseMaterial(db.Model):
+    """Uploaded course materials (xlsx, pdf, ppt, …), per course."""
+    __tablename__ = "course_materials"
+    id = db.Column(db.Integer, primary_key=True)
+    course_id = db.Column(db.Integer, db.ForeignKey("courses.id"), nullable=False)
+    title = db.Column(db.String(160), nullable=False)
+    description = db.Column(db.Text, default="")
+    # Stored name, relative to <UPLOAD_DIR>/materials/ (server-generated,
+    # never the raw upload filename).
+    file_path = db.Column(db.String(500), nullable=False)
+    file_ext = db.Column(db.String(20), default="")
+    file_size = db.Column(db.Integer, default=0)
+    uploaded_by = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow)
+    live_session_id = db.Column(db.Integer, db.ForeignKey("live_sessions.id"),
+                                nullable=True)
+    live_session = db.relationship(
+        "LiveSession", backref=db.backref("materials",
+                                          cascade="all, delete-orphan"))
 
 
 class Enrollment(db.Model):

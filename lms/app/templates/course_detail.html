@@ -66,7 +66,9 @@
   <div><span class="live-dot"></span><b>{{ s.title }}</b></div>
   <div style="margin:8px 0; color:var(--muted); font-size:.92rem">
     🕒 {% set _st = to_user_tz(s.starts_at, current_user) %}{{ _st.strftime('%d %b %Y, %I:%M %p') }} {{ _st.strftime('%Z') }} · {{ s.duration_min }} min
-    {% if s.recording_url %} · <a href="{{ s.recording_url }}" target="_blank">Watch recording</a>{% endif %}
+    {# Teaser-only public page: never expose the raw recording URL. Enrolled
+       students / staff watch via the login-gated Live Classes page. #}
+    {% if s.recording_url and current_user.is_authenticated and ((enrollment and enrollment.status != 'pending') or current_user.can_manage_course(course)) %} · <a href="{{ url_for('ops.calendar') }}">Watch recording</a>{% endif %}
   </div>
   {% if current_user.is_authenticated and enrollment and enrollment.status != 'pending' and s.is_joinable(now) %}
   <a class="btn btn-gold btn-sm" href="{{ url_for('ops.live_join', session_id=s.id) }}" target="_blank" rel="noopener">Join Live Class 🔴</a>

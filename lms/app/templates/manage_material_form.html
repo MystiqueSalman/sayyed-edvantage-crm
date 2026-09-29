@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Upload Material — {{ course.title }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width:560px; margin:30px auto">
+  <h2>Upload Course Material <span style="color:var(--muted); font-size:.9rem">· {{ course.title }}</span></h2>
+  <p style="color:var(--muted); font-size:.88rem">📚 Excel, PDF, PPT, Word, CSV, ZIP, images or text — max 100 MB.</p>
+  <form method="post" enctype="multipart/form-data">
+    <label>Title</label>
+    <input type="text" name="title" required autofocus placeholder="e.g. Week 3 practice workbook">
+    <label>Description <span style="color:var(--muted)">(optional)</span></label>
+    <textarea name="description" rows="2" placeholder="What's inside this file…"></textarea>
+    <label>File</label>
+    <input type="file" name="file" required
+           accept=".pdf,.xlsx,.xls,.ppt,.pptx,.doc,.docx,.csv,.zip,.png,.jpg,.jpeg,.gif,.webp,.txt">
+    <label>Linked live class <span style="color:var(--muted)">(optional)</span></label>
+    <select name="live_session_id">
+      <option value="">— none —</option>
+      {% for s in sessions %}<option value="{{ s.id }}">{{ s.title }}</option>{% endfor %}
+    </select>
+    <p><button class="btn btn-gold" type="submit" style="margin-top:14px">Upload</button>
+    <a class="btn btn-ghost" href="{{ url_for('manage.course_home', course_id=course.id) }}" style="margin-left:10px">Cancel</a></p>
+  </form>
+</div>
+{% endblock %}

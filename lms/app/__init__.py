@@ -47,13 +47,22 @@ def create_app():
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-change-me")
     app.config["SQLALCHEMY_DATABASE_URI"] = _database_uri(app)
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB uploads
+    app.config["MAX_CONTENT_LENGTH"] = 100 * 1024 * 1024  # 100 MB uploads
 
     upload_dir = os.environ.get("UPLOAD_DIR", "").strip() or os.path.join(
         os.path.dirname(app.instance_path), "uploads"
     )
     os.makedirs(upload_dir, exist_ok=True)
     app.config["UPLOAD_DIR"] = upload_dir
+    # Private directory for recorded-session video files. It is NOT under
+    # UPLOAD_DIR and NOT under Flask's static folder, so there is no direct
+    # web route to these files — they are served only through the signed,
+    # enrollment-checked /rec/<token>/stream endpoint (non-downloadable).
+    recordings_dir = os.environ.get("RECORDINGS_DIR", "").strip() or \
+        os.path.join(os.path.dirname(upload_dir), "uploads_private",
+                     "recordings")
+    os.makedirs(recordings_dir, exist_ok=True)
+    app.config["RECORDINGS_DIR"] = recordings_dir
     app.config["RAZORPAY_KEY_ID"] = os.environ.get("RAZORPAY_KEY_ID", "").strip()
     app.config["RAZORPAY_KEY_SECRET"] = os.environ.get("RAZORPAY_KEY_SECRET", "").strip()
     app.config["PAYMENTS_LIVE"] = bool(
@@ -437,6 +446,11 @@ def _ensure_schema_patches(app):
         # Student profile — avatar photo
         ("users", "photo",
          "ALTER TABLE users ADD COLUMN photo VARCHAR(255) DEFAULT ''"),
+        # Recorded Sessions tab — link recordings to live classes + notes
+        ("recordings", "live_session_id",
+         "ALTER TABLE recordings ADD COLUMN live_session_id INTEGER REFERENCES live_sessions(id)"),
+        ("recordings", "notes",
+         "ALTER TABLE recordings ADD COLUMN notes TEXT DEFAULT ''"),
     ]
     try:
         with app.app_context():
