@@ -35,10 +35,10 @@ img{max-width:100%}
 .nav{position:sticky; top:0; z-index:60; background:rgba(8,19,39,.97);
   backdrop-filter:blur(10px); border-bottom:1px solid rgba(245,179,1,.22)}
 .nav-inner{display:flex; align-items:center; gap:14px; max-width:1400px;
-  margin:0 auto; padding:5px 24px; min-width:0}
+  margin:0 auto; padding:4px 24px; min-width:0}
 .brand{display:flex; align-items:center; gap:12px; flex:0 0 auto; min-width:0; overflow:hidden}
-.brand-logo{height:44px; width:auto; display:block; flex:0 0 auto}
-.brand-text{height:85px; width:auto; display:block; flex:0 0 auto}
+.brand-logo{height:36px; width:auto; display:block; flex:0 0 auto}
+.brand-text{height:40px; width:auto; display:block; flex:0 0 auto}
 /* UI15: link group is a proper flex child that can shrink; nothing inside it forces page overflow */
 .nav-links{display:flex; align-items:center; gap:2px; flex:1 1 auto; min-width:0; justify-content:center}
 .nav-links>a{color:#c3cfe4; font-weight:600; font-size:.92rem; padding:9px 12px;
@@ -72,7 +72,8 @@ img{max-width:100%}
   border-radius:9px; white-space:nowrap}
 .nav-inline>a:not(.btn):hover{color:#fff; background:rgba(255,255,255,.07)}
 .search-toggle{display:none; background:none; border:1px solid rgba(255,255,255,.25);
-  color:#fff; border-radius:9px; font-size:1.1rem; padding:6px 11px; cursor:pointer; flex:0 0 auto}
+  color:#fff; border-radius:8px; font-size:.95rem; height:30px; padding:0 10px; cursor:pointer; flex:0 0 auto;
+  align-items:center; justify-content:center}
 /* expandable search row (narrow screens) */
 .nav-search-row{display:none; border-top:1px solid rgba(255,255,255,.1); padding:10px 24px}
 .nav-search-row.open{display:block}
@@ -100,7 +101,7 @@ img{max-width:100%}
 .btn-outline-w:hover{border-color:var(--gold-lt); color:var(--gold-lt)}
 .btn-sm{padding:8px 15px; font-size:.83rem; border-radius:9px}
 /* navbar CTAs (phone / Enquire Now / Join Free): identical size regardless of content */
-.nav-inline .nav-cta-btn{height:42px; padding:0 20px; font-size:.9rem; line-height:1; border-radius:10px}
+.nav-inline .nav-cta-btn{height:30px; padding:0 14px; font-size:.78rem; line-height:1; border-radius:8px}
 .btn-danger{background:linear-gradient(135deg,#ff8585,var(--danger)); color:#fff}
 .btn-block{width:100%}
 
@@ -533,7 +534,7 @@ pre{max-width:100%; overflow-x:auto}
 /* UI15: public navbar has no drawer — logo + inline CTAs only, at every width.
    The search toggle opens the expandable search row on narrow screens. */
 @media(max-width:1600px){
-  .search-toggle{display:block}
+  .search-toggle{display:inline-flex}
 }
 @media(max-width:1100px){
   .dash-grid{grid-template-columns:1fr}
@@ -556,10 +557,10 @@ pre{max-width:100%; overflow-x:auto}
   .link-cards{grid-template-columns:1fr}
 }
 @media(max-width:640px){
-  .brand-logo{height:32px; width:auto}
-  .brand-text{height:64px}
+  .brand-logo{height:28px; width:auto}
+  .brand-text{height:32px}
   .nav-inline{gap:6px}
-  .nav-inline .nav-cta-btn{height:36px; padding:0 12px; font-size:.8rem}
+  .nav-inline .nav-cta-btn{height:28px; padding:0 12px; font-size:.8rem}
   .nav-inline .ph-num{display:none}
   .topbar .tsearch{display:none}
   .two-col{grid-template-columns:1fr}
