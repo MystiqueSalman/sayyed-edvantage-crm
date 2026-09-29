@@ -306,6 +306,8 @@ img{max-width:100%}
 .stat-card small{color:var(--muted); font-size:.82rem}
 .sic.blue{background:#e3efff} .sic.green{background:#ddf7e8} .sic.gold{background:#fdf0cd} .sic.navy{background:#e2e9f6}
 .panel-card{background:#fff; border:1px solid var(--brd); border-radius:16px; padding:22px; box-shadow:var(--shadow)}
+/* Student dashboard: every box rendered 30% smaller */
+.dash-compact{zoom:.7}
 .panel-card>h3{margin:0 0 4px; font-size:1.12rem; display:flex; align-items:center; justify-content:space-between}
 .panel-card>h3 .more{font-size:.82rem; font-weight:700}
 .my-course-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(215px,1fr)); gap:16px; margin-top:14px}
