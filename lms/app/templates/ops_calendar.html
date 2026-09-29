@@ -62,9 +62,19 @@ function switchTab(name){
   TABS.forEach(t => document.getElementById("tab-" + t).hidden = t !== name);
   if (name === "recorded" && !recLoaded){ recLoaded = true; loadRecorded(); }
   if (name === "materials" && !matLoaded){ matLoaded = true; loadMaterials(); }
+  try { history.replaceState(null, "", "#" + name); } catch (e) {}
 }
 document.querySelectorAll(".rs-tab").forEach(
   b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
+/* ---- deep-link tabs via location hash (#upcoming/#recorded/#materials) ---- */
+(function(){
+  const h = (location.hash || "").replace("#", "");
+  if (TABS.indexOf(h) >= 0) switchTab(h);
+})();
+window.addEventListener("hashchange", function(){
+  const h = (location.hash || "").replace("#", "");
+  if (TABS.indexOf(h) >= 0) switchTab(h);
+});
 /* ---- recorded sessions ---- */
 function loadRecorded(){
   fetch("{{ url_for('ops.recorded_sessions') }}").then(r => r.json()).then(list => {

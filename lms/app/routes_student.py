@@ -112,6 +112,104 @@ def check_and_issue_certificate(user_id, course_id):
     return cert
 
 
+# Catalog display order (matches seed order / Salman: Data Science first,
+# then AI & Generative AI, ...). Used to group dashboard content sections.
+CATALOG_COURSE_ORDER = [
+    "data-science",
+    "ai-generative-ai",
+    "python-programming",
+    "data-analytics",
+    "linux-administration",
+    "devops",
+    "cyber-security-ethical-hacking",
+]
+
+_MAT_ICONS = {
+    "pdf": "📕", "xls": "📊", "xlsx": "📊", "csv": "📊",
+    "ppt": "📽️", "pptx": "📽️", "doc": "📝", "docx": "📝",
+    "zip": "🗜️", "txt": "📄", "png": "🖼️", "jpg": "🖼️", "jpeg": "🖼️",
+}
+
+
+def _catalog_key(slug):
+    try:
+        return CATALOG_COURSE_ORDER.index(slug)
+    except ValueError:
+        return len(CATALOG_COURSE_ORDER)
+
+
+def _dashboard_content_sections(course_ids):
+    """Recorded Sessions + Course Materials for the student dashboard.
+
+    Grouped by course in catalog order; date-wise newest first within each
+    course. Scoped to the given (enrolled) course ids.
+    Returns (recording_groups, material_groups).
+    """
+    from . import operations as OPS
+    courses = Course.query.filter(Course.id.in_(course_ids)).all() \
+        if course_ids else []
+    courses.sort(key=lambda c: (_catalog_key(c.slug), c.id))
+
+    rec_by_course = {}
+    for r in OPS.recorded_sessions_for(current_user):
+        rec_by_course.setdefault(r["course_id"], []).append(r)
+    mat_by_course = {}
+    for m in OPS.course_materials_for(current_user):
+        mat_by_course.setdefault(m["course_id"], []).append(m)
+
+    def _fmt_date(iso):
+        if not iso:
+            return ""
+        try:
+            return datetime.fromisoformat(iso).strftime("%d %b %Y")
+        except ValueError:
+            return iso
+
+    rec_groups = []
+    for c in courses:
+        items = rec_by_course.get(c.id, [])[:3]
+        if not items:
+            continue
+        rec_groups.append({
+            "course_title": c.title,
+            "items": [{
+                "title": r["title"],
+                "date": _fmt_date(r["recorded_on"]),
+                "watch_url": r["watch_url"],
+                "has_video": r["has_video"],
+                "duration": (f"{r['duration_min']} min"
+                             if r.get("duration_min") else ""),
+            } for r in items],
+        })
+        if len(rec_groups) >= 4:
+            break
+
+    mat_groups = []
+    total_mats = 0
+    for c in courses:
+        items = mat_by_course.get(c.id, [])[:3]
+        if not items:
+            continue
+        rows = []
+        for m in items:
+            if total_mats >= 4:
+                break
+            rows.append({
+                "title": m["title"],
+                "date": _fmt_date(m["uploaded_at"]),
+                "download_url": m["download_url"],
+                "icon": _MAT_ICONS.get((m["ext"] or "").lower(), "📄"),
+                "size": (f"{round(m['file_size'] / 1024)} KB"
+                         if m.get("file_size") else ""),
+            })
+            total_mats += 1
+        if rows:
+            mat_groups.append({"course_title": c.title, "items": rows})
+        if total_mats >= 4:
+            break
+    return rec_groups, mat_groups
+
+
 @student_bp.route("/dashboard")
 @student_only
 def dashboard():
@@ -225,6 +323,10 @@ def dashboard():
             assignment_cards.append({"a": a, "status": status})
     announcements = (Announcement.query.filter_by(active=True)
                      .order_by(Announcement.created_at.desc()).limit(4).all())
+    # Dashboard sections: Recorded Sessions + Course Materials, grouped by
+    # course in catalog order (seed order: Data Science, AI & Gen AI, ...),
+    # date-wise newest first within each course.
+    dash_recordings, dash_materials = _dashboard_content_sections(course_ids)
     return render_template("dashboard.html", enrollments=enrollments,
                            pending=pending, certs=certs, live_sessions=live_sessions,
                            now=now, onboarding=_onboarding_for(current_user),
@@ -236,6 +338,8 @@ def dashboard():
                            course_cards=course_cards, dash=dash,
                            assignment_cards=assignment_cards,
                            announcements=announcements,
+                           dash_recordings=dash_recordings,
+                           dash_materials=dash_materials,
                            overall_pct=overall_pct)
 
 

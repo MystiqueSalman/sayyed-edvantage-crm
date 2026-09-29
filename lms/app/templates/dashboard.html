@@ -175,6 +175,42 @@
     </div>
 
     <div class="panel-card">
+      <h3>🎬 Recorded Sessions <a class="more" href="{{ url_for('ops.calendar') }}#recorded">View All →</a></h3>
+      {% if dash_recordings %}
+        {% for g in dash_recordings %}
+        <div style="margin:6px 0 2px;color:var(--muted);font-size:.8rem"><b>{{ g.course_title }}</b></div>
+        {% for r in g['items'] %}
+        <div class="ann-row"><span class="aico">▶</span>
+          <div><b>{{ r.title }}</b><small>{{ r.date }}{% if r.duration %} · {{ r.duration }}{% endif %}</small></div>
+          {% if r.watch_url %}
+          <a class="btn btn-gold btn-sm" href="{{ r.watch_url }}" target="_blank" rel="noopener">Watch</a>
+          {% endif %}
+        </div>
+        {% endfor %}
+        {% endfor %}
+      {% else %}
+        <div class="empty">No recorded sessions yet — they appear here after each live class.</div>
+      {% endif %}
+    </div>
+
+    <div class="panel-card">
+      <h3>📚 Course Materials <a class="more" href="{{ url_for('ops.calendar') }}#materials">View All →</a></h3>
+      {% if dash_materials %}
+        {% for g in dash_materials %}
+        <div style="margin:6px 0 2px;color:var(--muted);font-size:.8rem"><b>{{ g.course_title }}</b></div>
+        {% for m in g['items'] %}
+        <div class="ann-row"><span class="aico">{{ m.icon }}</span>
+          <div><b>{{ m.title }}</b><small>{{ m.date }}{% if m.size %} · {{ m.size }}{% endif %}</small></div>
+          <a class="btn btn-blue btn-sm" href="{{ m.download_url }}">Download</a>
+        </div>
+        {% endfor %}
+        {% endfor %}
+      {% else %}
+        <div class="empty">No course materials yet.</div>
+      {% endif %}
+    </div>
+
+    <div class="panel-card">
       <h3>Announcements <a class="more" href="{{ url_for('student.announcements') }}">View All →</a></h3>
       {% if announcements %}
         {% for a in announcements %}
