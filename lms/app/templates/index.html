@@ -64,20 +64,7 @@
   </div>
 </div>
 
-{# ---------- Stats band ---------- #}
-<div class="band tint" style="padding-top:0">
-  <div class="wrap">
-    <div class="stats-band">
-      <div class="stat-big"><b>{{ "{:,}".format(stats.students) }}</b><span>Registered Students</span></div>
-      <div class="stat-mini"><b>{{ stats.courses }}</b><span>Career Courses</span></div>
-      <div class="stat-mini"><b>{{ "{:,}".format(stats.certificates) }}</b><span>Certificates Issued</span></div>
-      <div class="stat-mini"><b>{{ stats.faculty }}</b><span>Expert Faculty</span></div>
-      {% for s in custom_stats %}
-      <div class="stat-mini"><b>{{ s.value }}</b><span>{{ s.label }}</span></div>
-      {% endfor %}
-    </div>
-  </div>
-</div>
+{# ---------- Stats band (removed) ---------- #}
 
 {# ---------- Testimonials ---------- #}
 <div class="band">
