@@ -1,0 +1,37 @@
+{% extends "layout_app.html" %}
+{% block title %}{{ session.title }} — Live Class{% endblock %}
+{% block app_content %}
+{% set _st = to_user_tz(session.starts_at, current_user) %}
+<div class="section-title"><h2>🎥 Live Class</h2><div class="line"></div>
+  <span style="color:var(--muted);font-size:.85rem">{{ _st.strftime('%a, %-d %B %Y') }}</span></div>
+
+<div class="card"><div class="body">
+  <div class="sess-row" style="margin-bottom:14px">
+    <div class="sess-date real-date"><b>{{ _st.strftime('%a') }}</b><small>{{ _st.strftime('%-d %B %Y') }}</small></div>
+    <div class="sess-meta">
+      <b>{{ session.course.title }} - Live Class</b>
+      <small>Topic: {{ session.title }}</small>
+      <small>{{ _st.strftime('%I:%M %p %Z') }}{% if session.duration_min %} · {{ session.duration_min }} min{% endif %}</small>
+    </div>
+  </div>
+  <table style="width:100%;border-collapse:collapse;font-size:.92rem;margin-bottom:18px">
+    <tr><td style="padding:6px 0;color:var(--muted);width:110px">Course</td><td><b>{{ session.course.title }}</b></td></tr>
+    {% if batches %}
+    <tr><td style="padding:6px 0;color:var(--muted)">Batch</td><td>{{ batches|map(attribute='name')|join(', ') }}</td></tr>
+    {% endif %}
+    {% if faculty_name %}
+    <tr><td style="padding:6px 0;color:var(--muted)">Faculty</td><td>{{ faculty_name }}</td></tr>
+    {% endif %}
+  </table>
+  {% if meeting_url and joinable %}
+    <a class="btn btn-gold" style="font-size:1.1rem;padding:14px 30px"
+       href="{{ url_for('ops.live_join', session_id=session.id) }}"
+       target="_blank" rel="noopener">🔴 Connect to Live Class</a>
+  {% elif meeting_url %}
+    <p style="color:var(--muted)">Scheduled — the connect button activates 15 minutes before the class starts.</p>
+  {% else %}
+    <p style="color:var(--muted)">The class link will appear here before the session starts.</p>
+  {% endif %}
+  <p style="margin-top:16px"><a href="{{ url_for('ops.calendar') }}#upcoming" style="color:var(--blue)">← Back to Live Classes</a></p>
+</div></div>
+{% endblock %}

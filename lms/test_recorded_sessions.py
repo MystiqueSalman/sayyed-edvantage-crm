@@ -166,15 +166,17 @@ atitles = [i["title"] for i in (adm_c.get(
     "/calendar/recorded-sessions").get_json() or [])]
 check("admin sees all recordings", len(atitles) == 3, f"titles={atitles}")
 
-# ================================================== 5. calendar page tabs
-# (2026-09-29: month-grid calendar removed; page is Upcoming list |
+# ================================================== 5. calendar page sections (no tab bar)
+# (2026-09-29: month-grid calendar removed, then the tab bar removed;
+#  page shows ONE hash-routed section at a time: Upcoming list |
 #  Recorded batch list | Materials, server-rendered.)
 cal = stu_c.get("/calendar")
 cal_html = cal.get_data(as_text=True)
 check("/calendar 200", cal.status_code == 200, f"status={cal.status_code}")
-check("tab switcher: Upcoming", 'data-tab="upcoming"' in cal_html)
-check("tab switcher: Recorded Sessions", 'data-tab="recorded"' in cal_html)
-check("recorded tab container", 'id="tab-recorded"' in cal_html)
+check("no tab bar markup",
+      'rs-tabs' not in cal_html and 'data-tab=' not in cal_html)
+check("upcoming section", 'id="sec-upcoming"' in cal_html)
+check("recorded section container", 'id="sec-recorded"' in cal_html)
 check("no calendar grid markup", 'id="grid"' not in cal_html)
 check("materials tab still lazy-loads", "loadMaterials" in cal_html)
 
@@ -433,8 +435,8 @@ with app.app_context():
           CourseMaterial.query.get(EV_ID) is None
           and not os.path.exists(ev_path))
 
-# calendar page: materials tab + search
-check("tab switcher: Course Materials", 'data-tab="materials"' in cal_html)
+# calendar page: materials section + search
+check("materials section present", 'id="sec-materials"' in cal_html)
 check("materials search box present", 'id="matSearch"' in cal_html)
 check("materials fetch wired", "calendar/materials" in cal_html)
 

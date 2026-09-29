@@ -29,6 +29,11 @@ student_only = role_required("student")
 manage_perm = permission_required  # alias for brevity
 
 
+def _tfmt(dt):
+    """Compact 12-hour clock time, e.g. '6 PM' or '6:30 PM'."""
+    return dt.strftime("%I:%M %p").lstrip("0").replace(":00 ", " ")
+
+
 # ================================================================ live join + auto attendance (student)
 
 @ops_bp.route("/live/join/<int:session_id>")
@@ -48,6 +53,58 @@ def live_join(session_id):
     return redirect(session.join_url)
 
 
+@ops_bp.route("/live-session/<int:session_id>")
+@login_required
+def live_session(session_id):
+    """Date-wise session page (new Join flow, 2026-09-29).
+
+    The Upcoming list's "Join" button lands here first: the page shows the
+    class's real date, course + batch, topic, time (IST) and faculty, with a
+    big "Connect to Live Class" button that goes through ops.live_join
+    (join-window check + attendance marking) out to the meeting URL.
+    Access: students enrolled in the session's course/batch, the session's
+    faculty, admin/manager. Everyone else gets 403.
+    """
+    session = LiveSession.query.get_or_404(session_id)
+    user = current_user
+    role = user.role
+    if role in ("admin", "manager"):
+        allowed = True
+        my_batches = (Batch.query
+                      .filter_by(course_id=session.course_id)
+                      .order_by(Batch.start_date, Batch.id).all())
+    elif role == "faculty":
+        manages = user.can_manage_course(session.course)
+        fb = (Batch.query.filter_by(course_id=session.course_id,
+                                    faculty_id=user.id)
+              .order_by(Batch.start_date, Batch.id).all())
+        allowed = manages or bool(fb)
+        my_batches = ((Batch.query.filter_by(course_id=session.course_id)
+                       .order_by(Batch.start_date, Batch.id).all())
+                      if manages else fb)
+    else:  # student — course enrollment or batch roster membership
+        enr = Enrollment.query.filter_by(
+            user_id=user.id, course_id=session.course_id).first()
+        bms = (BatchMember.query.filter_by(user_id=user.id).join(Batch)
+               .filter(Batch.course_id == session.course_id)
+               .order_by(Batch.start_date, Batch.id).all())
+        allowed = bool(enr or bms)
+        my_batches = [bm.batch for bm in bms]
+    if not allowed:
+        abort(403)
+    room = (session.room_name or "").strip()
+    meeting_url = session.join_url if room else None
+    instructor = (User.query.get(session.course.instructor_id)
+                  if session.course.instructor_id else None)
+    return render_template(
+        "live_session_detail.html",
+        session=session,
+        meeting_url=meeting_url,
+        joinable=session.is_joinable(),
+        batches=my_batches,
+        faculty_name=instructor.name if instructor else "")
+
+
 # ================================================================ calendar (§4.6)
 # NOTE: the month-grid calendar UI was removed 2026-09-29 per Salman's
 # directive — the page is now Upcoming list | Recorded batch list | Materials.
@@ -57,7 +114,12 @@ def _live_classes_context(user):
 
     Returns dict with:
       now        — datetime.utcnow()
-      upcoming   — LiveSession list, soonest first (enrollment/managed scoped)
+      upcoming_cards — course cards for the Upcoming section, each:
+                   {course, sessions, count}. Students see ONLY their
+                   enrolled courses; faculty see courses they instruct;
+                   admin/manager see all. sessions are upcoming
+                   (starts_at >= now - 3h), soonest first; count is shown
+                   on the card ("N upcoming classes").
       cards      — batch cards for the Recorded Sessions tab, each:
                    {batch, course, rows:[...]}. Students see ONLY the
                    batches they are enrolled in (BatchMember roster);
@@ -72,7 +134,6 @@ def _live_classes_context(user):
     role = user.role
     show_course_fallback = False
     if role in ("admin", "manager"):
-        course_ids = None  # all
         batches = (Batch.query
                    .order_by(Batch.course_id, Batch.start_date, Batch.id).all())
         show_course_fallback = True  # courses with no batches, for admins only
@@ -87,21 +148,97 @@ def _live_classes_context(user):
             if b.id not in seen:
                 seen.add(b.id)
                 batches.append(b)
-        course_ids = taught_ids
     else:  # student — batch-level scoping via the BatchMember roster only
-        course_ids = [e.course_id for e in
-                      Enrollment.query.filter_by(user_id=user.id).all()]
         bms = (BatchMember.query.filter_by(user_id=user.id)
                .join(Batch).order_by(Batch.start_date, Batch.id).all())
         batches = [bm.batch for bm in bms]
 
-    # ---- upcoming (soonest first) ----
-    uq = LiveSession.query.filter(
-        LiveSession.starts_at >= now - timedelta(hours=3))
-    if course_ids is not None:
-        uq = (uq.filter(LiveSession.course_id.in_(course_ids))
-              if course_ids else uq.filter(LiveSession.id == -1))
-    upcoming = uq.order_by(LiveSession.starts_at).limit(50).all()
+    # ---- upcoming: course-grouped cards, date-wise sessions soonest first
+    # Card header shows ONLY: course name, faculty, batch period, batch
+    # type. Modules/topics appear only inside the date-wise view.
+    if role in ("admin", "manager"):
+        up_courses = Course.query.order_by(Course.id).all()
+    elif role == "faculty":
+        up_courses = (Course.query.filter_by(instructor_id=user.id)
+                      .order_by(Course.id).all())
+    else:  # student — enrolled courses only
+        up_courses = [e.course for e in
+                      (Enrollment.query.filter_by(user_id=user.id)
+                       .order_by(Enrollment.course_id).all())]
+    upcoming_cards = []
+    for c in up_courses:
+        all_s = (LiveSession.query.filter_by(course_id=c.id)
+                 .order_by(LiveSession.starts_at).all())
+        sess = [s for s in all_s
+                if s.starts_at >= now - timedelta(hours=3)][:50]
+        # viewer's relevant batches in this course (roster / taught / all)
+        if role in ("admin", "manager", "faculty"):
+            rel_batches = [b for b in batches if b.course_id == c.id]
+        else:
+            rel_batches = [bm.batch for bm in bms
+                           if bm.batch.course_id == c.id]
+        # faculty: batch faculty first, else the course instructor
+        fac_ids = []
+        for b in rel_batches:
+            if b.faculty_id and b.faculty_id not in fac_ids:
+                fac_ids.append(b.faculty_id)
+        if not fac_ids and c.instructor_id:
+            fac_ids = [c.instructor_id]
+        fac_by_id = ({u.id: u.name for u in
+                      User.query.filter(User.id.in_(fac_ids)).all()}
+                     if fac_ids else {})
+        faculty_name = ", ".join(fac_by_id[f] for f in fac_ids
+                                 if f in fac_by_id)
+        # batch period: min -> max session dates, full month names
+        # ("2 October to 2 March")
+        if all_s:
+            d0, d1 = all_s[0].starts_at.date(), all_s[-1].starts_at.date()
+            fmt = lambda d: f"{d.day} {d.strftime('%B')}"
+            if d0 == d1:
+                period = f"{fmt(d0)} {d0.year}"
+            else:
+                period = f"{fmt(d0)} to {fmt(d1)}"
+        else:
+            period = ""
+        # batch type: Batch.schedule_text, else infer from session weekdays;
+        # display label is e.g. "Weekday Batch" / "Weekend Batch"
+        types = []
+        for b in rel_batches:
+            st = (b.schedule_text or "").strip()
+            if st and st not in types:
+                types.append(st)
+        if not types:
+            wds = {s.starts_at.weekday() for s in all_s}
+            if wds and wds <= {0, 1, 2, 3, 4}:
+                types = ["Weekday"]
+            elif wds and wds <= {5, 6}:
+                types = ["Weekend"]
+            elif wds:
+                types = ["Weekday + Weekend"]
+        batch_type = ", ".join(
+            t if t.lower().endswith("batch") else f"{t} Batch" for t in types)
+        # class timing: most common start→end slot across the course's
+        # sessions (times are stored as IST wall-clock), e.g. "6 PM – 7 PM"
+        slot_counts = {}
+        for s in all_s:
+            key = (_tfmt(s.starts_at), _tfmt(s.ends_at))
+            slot_counts[key] = slot_counts.get(key, 0) + 1
+        timing = ""
+        if slot_counts:
+            (t0, t1) = max(slot_counts.items(), key=lambda kv: kv[1])[0]
+            timing = f"{t0} – {t1}"
+        # card strip, left → right: course → batch type → faculty →
+        # period → timing (empty items dropped, arrows only between items)
+        strip = [c.title]
+        for item in (batch_type, faculty_name, period, timing):
+            if item:
+                strip.append(item)
+        upcoming_cards.append({
+            "course": c, "sessions": sess,
+            "faculty_name": faculty_name,
+            "period": period, "batch_type": batch_type,
+            "strip": strip,
+        })
 
     # ---- batch cards ----
     cards, covered = [], set()
@@ -143,7 +280,7 @@ def _live_classes_context(user):
                     chip, watch = "missed", ""
                 card["rows"].append({"session": s, "chip": chip,
                                     "watch_url": watch})
-    return {"now": now, "upcoming": upcoming, "cards": cards}
+    return {"now": now, "upcoming_cards": upcoming_cards, "cards": cards}
 
 
 @ops_bp.route("/calendar")

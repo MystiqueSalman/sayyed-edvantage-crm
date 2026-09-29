@@ -4,34 +4,42 @@
 <div class="section-title"><h2>🎥 Live Classes</h2><div class="line"></div>
   <span style="color:var(--muted);font-size:.85rem">Upcoming classes · recorded sessions · course materials</span></div>
 
-<div class="rs-tabs" role="tablist">
-  <button class="rs-tab on" data-tab="upcoming">📅 Upcoming</button>
-  <button class="rs-tab" data-tab="recorded">🎬 Recorded Sessions</button>
-  <button class="rs-tab" data-tab="materials">📚 Course Materials</button>
-</div>
-
-<div id="tab-upcoming">
-  <div class="card"><div class="body">
-    {% if upcoming %}
-      {% for s in upcoming %}
-      {% set _st = to_user_tz(s.starts_at, current_user) %}
-      <div class="class-row">
-        <div class="class-date"><b>{{ _st.strftime('%d') }}</b><small>{{ _st.strftime('%b')|upper }}</small></div>
-        <div class="cinfo"><b>{{ s.course.title }} - Live Class</b><small>Topic: {{ s.title }}</small><small>{{ _st.strftime('%d %b %Y · %I:%M %p %Z') }}</small></div>
-        {% if s.is_joinable(now) %}
-        <a class="btn btn-blue btn-sm" href="{{ url_for('ops.live_join', session_id=s.id) }}" target="_blank" rel="noopener">Join</a>
+<div id="sec-upcoming">
+  {% if upcoming_cards %}
+    {% for uc in upcoming_cards %}
+    <details class="card course-card" {% if loop.first %}open{% endif %}>
+      <summary class="course-strip">
+        {%- for item in uc.strip -%}
+        {%- if not loop.first %}<span class="cs-sep" aria-hidden="true">→</span>{% endif -%}
+        <span class="cs-item{% if loop.first %} cs-first{% endif %}">{{ item }}</span>
+        {%- endfor -%}
+      </summary>
+      <div class="body sess-list">
+        {% for s in uc.sessions %}
+        {% set _st = to_user_tz(s.starts_at, current_user) %}
+        <div class="sess-row">
+          <div class="sess-date real-date"><b>{{ _st.strftime('%a') }}</b><small>{{ _st.strftime('%-d %B %Y') }}</small></div>
+          <div class="sess-meta"><b>{{ s.title }}</b><small>{{ _st.strftime('%a, %-d %B %Y') }} · {{ _st.strftime('%I:%M %p %Z') }}{% if s.duration_min %} · {{ s.duration_min }} min{% endif %}</small></div>
+          <div class="sess-right">
+            {% if s.is_joinable(now) %}
+            <a class="btn btn-blue btn-sm" href="{{ url_for('ops.live_session', session_id=s.id) }}">Join</a>
+            {% else %}
+            <button class="btn btn-ghost btn-sm" disabled title="Join opens 15 minutes before start">Join</button>
+            {% endif %}
+          </div>
+        </div>
         {% else %}
-        <button class="btn btn-ghost btn-sm" disabled title="Join opens 15 minutes before start">Join</button>
-        {% endif %}
+        <div class="empty">No upcoming classes scheduled for this course.</div>
+        {% endfor %}
       </div>
-      {% endfor %}
-    {% else %}
-      <div class="empty">No upcoming live classes scheduled.</div>
-    {% endif %}
-  </div></div>
+    </details>
+    {% endfor %}
+  {% else %}
+    <div class="card"><div class="body"><div class="empty">No upcoming live classes scheduled.</div></div></div>
+  {% endif %}
 </div>
 
-<div id="tab-recorded" hidden>
+<div id="sec-recorded" hidden>
   {% if cards %}
     {% for card in cards %}
     <details class="card batch-card" {% if loop.first %}open{% endif %}>
@@ -39,7 +47,7 @@
         <span class="bicon">📚</span>
         <span class="bmeta">
           <b>{% if card.batch %}{{ card.batch.name }}{% else %}{{ card.course.title }} (no batches){% endif %}</b>
-          <small>{{ card.course.title }}{% if card.batch and card.batch.schedule_text %} · {{ card.batch.schedule_text }}{% endif %}{% if card.batch and card.batch.start_date %} · {{ card.batch.start_date.strftime('%d %b %Y') }}{% if card.batch.end_date %} → {{ card.batch.end_date.strftime('%d %b %Y') }}{% endif %}{% endif %}</small>
+          <small>{{ card.course.title }}{% if card.batch and card.batch.schedule_text %} · {{ card.batch.schedule_text }}{% endif %}{% if card.batch and card.batch.start_date %} · {{ card.batch.start_date.strftime('%-d %B %Y') }}{% if card.batch.end_date %} → {{ card.batch.end_date.strftime('%-d %B %Y') }}{% endif %}{% endif %}</small>
         </span>
         <span class="bcount">{{ card.rows|length }} class{{ "es" if card.rows|length != 1 }}</span>
       </summary>
@@ -47,7 +55,7 @@
         {% for row in card.rows %}
         {% set _st = to_user_tz(row.session.starts_at, current_user) %}
         <div class="sess-row">
-          <div class="sess-date real-date"><b>{{ _st.strftime('%a') }}</b><small>{{ _st.strftime('%-d %b %Y') }}</small></div>
+          <div class="sess-date real-date"><b>{{ _st.strftime('%a') }}</b><small>{{ _st.strftime('%-d %B %Y') }}</small></div>
           <div class="sess-meta"><b>{{ row.session.title }}</b><small>{{ _st.strftime('%I:%M %p') }}{% if row.session.duration_min %} · {{ row.session.duration_min }} min{% endif %}</small></div>
           <div class="sess-right">
             {% if row.chip == "joined" %}
@@ -71,7 +79,7 @@
   {% endif %}
 </div>
 
-<div id="tab-materials" hidden>
+<div id="sec-materials" hidden>
   <div class="card"><div class="body">
     <input id="matSearch" type="search" placeholder="🔍 Search materials…"
            style="width:100%;margin-bottom:12px" autocomplete="off">
@@ -83,26 +91,21 @@
 function esc(s){ return String(s == null ? "" : s)
   .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
   .replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
-/* ---- tab switching ---- */
-const TABS = ["upcoming", "recorded", "materials"];
+/* ---- section routing via location hash (#upcoming/#recorded/#materials) ----
+   One section is visible at a time (no tab bar); each section is reached
+   from the dashboard's "View All ->" links. */
+const SECS = ["upcoming", "recorded", "materials"];
 let matLoaded = false, MATS = [];
-function switchTab(name){
-  document.querySelectorAll(".rs-tab").forEach(
-    b => b.classList.toggle("on", b.dataset.tab === name));
-  TABS.forEach(t => document.getElementById("tab-" + t).hidden = t !== name);
+function showSection(name){
+  if (SECS.indexOf(name) < 0) name = "upcoming";
+  SECS.forEach(t => document.getElementById("sec-" + t).hidden = t !== name);
   if (name === "materials" && !matLoaded){ matLoaded = true; loadMaterials(); }
-  try { history.replaceState(null, "", "#" + name); } catch (e) {}
 }
-document.querySelectorAll(".rs-tab").forEach(
-  b => b.addEventListener("click", () => switchTab(b.dataset.tab)));
-/* ---- deep-link tabs via location hash (#upcoming/#recorded/#materials) ---- */
 (function(){
-  const h = (location.hash || "").replace("#", "");
-  if (TABS.indexOf(h) >= 0) switchTab(h);
+  showSection((location.hash || "").replace("#", ""));
 })();
 window.addEventListener("hashchange", function(){
-  const h = (location.hash || "").replace("#", "");
-  if (TABS.indexOf(h) >= 0) switchTab(h);
+  showSection((location.hash || "").replace("#", ""));
 });
 /* ---- course materials ---- */
 const MAT_ICON = {pdf:"📕", xlsx:"📊", xls:"📊", csv:"📊", ppt:"📽️", pptx:"📽️",

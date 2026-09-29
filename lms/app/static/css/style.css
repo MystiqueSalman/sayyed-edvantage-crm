@@ -442,11 +442,7 @@ tr:hover td{background:#f6f9fe}
 .video-wrap{position:relative; padding-bottom:56.25%; height:0; border-radius:14px; overflow:hidden;
   box-shadow:var(--shadow); background:#000}
 .video-wrap iframe{position:absolute; inset:0; width:100%; height:100%; border:0}
-/* Recorded Sessions tab (Live Classes page): navy-and-gold, compact */
-.rs-tabs{display:flex;gap:8px;margin:0 0 14px}
-.rs-tab{flex:1;padding:9px 10px;border-radius:10px;border:1px solid var(--brd);
-  background:#fff;color:var(--text);font-weight:700;font-size:.9rem;cursor:pointer}
-.rs-tab.on{background:var(--navy);color:var(--gold-lt);border-color:var(--navy)}
+/* Recorded Sessions section (Live Classes page): navy-and-gold, compact */
 .rec-row{display:flex;gap:12px;align-items:center;padding:10px 12px;
   border:1px solid var(--brd);border-radius:12px;margin-bottom:10px;background:#fff}
 .rec-thumb{width:96px;height:60px;flex:0 0 96px;border-radius:8px;overflow:hidden;
@@ -621,6 +617,24 @@ pre{max-width:100%; overflow-x:auto}
 /* topbar avatar shows the uploaded photo when present */
 .tb-user img.av{object-fit:cover; padding:0}
 /* Live Classes page — batch accordion + date-wise session rows (2026-09-29) */
+/* Upcoming section — course cards (same accordion pattern as batch cards) */
+.course-card{margin-bottom:12px}
+.course-card summary{display:flex;gap:12px;align-items:center;padding:14px 16px;
+  cursor:pointer;list-style:none}
+.course-card summary::-webkit-details-marker{display:none}
+.course-card summary::after{content:"▾";color:var(--muted);font-size:.9rem;margin-left:auto}
+.course-card[open] summary::after{content:"▴"}
+/* course strip: horizontal items with small → separators, wraps on mobile */
+.course-card summary.course-strip{flex-wrap:wrap;gap:6px 10px}
+.cs-item{font-size:.86rem;color:var(--ink);white-space:nowrap}
+.cs-first{font-weight:800;font-size:.95rem;color:var(--navy)}
+.cs-sep{color:var(--muted);font-size:.78rem;user-select:none}
+.course-card .bicon{font-size:1.5rem;flex:0 0 auto}
+.course-card .bmeta{flex:1;min-width:0}
+.course-card .bmeta b{display:block;font-size:.95rem}
+.course-card .bmeta small{color:var(--muted);font-size:.78rem;display:block}
+.course-card .bcount{flex:0 0 auto;font-size:.75rem;font-weight:700;color:var(--navy);
+  background:var(--gold-lt);border-radius:20px;padding:3px 10px;margin-right:6px}
 .batch-card{margin-bottom:12px}
 .batch-card summary{display:flex;gap:12px;align-items:center;padding:14px 16px;
   cursor:pointer;list-style:none}

@@ -155,7 +155,7 @@
   <div class="dash-col">
 
     <div class="panel-card">
-      <h3>Upcoming Live Classes <a class="more" href="{{ url_for('ops.calendar') }}">View All →</a></h3>
+      <h3>Upcoming Live Classes <a class="more" href="{{ url_for('ops.calendar') }}#upcoming">View All →</a></h3>
       {% if live_sessions %}
         {% for s in live_sessions[:4] %}
         {% set _st = to_user_tz(s.starts_at, current_user) %}
@@ -163,7 +163,7 @@
           <div class="class-date"><b>{{ _st.strftime('%d') }}</b><small>{{ _st.strftime('%b')|upper }}</small></div>
           <div class="cinfo"><b>{{ s.course.title }} - Live Class</b><small>Topic: {{ s.title }}</small><small>{{ _st.strftime('%I:%M %p %Z') }}</small></div>
           {% if s.is_joinable(now) %}
-          <a class="btn btn-blue btn-sm" href="{{ url_for('ops.live_join', session_id=s.id) }}" target="_blank" rel="noopener">Join</a>
+          <a class="btn btn-blue btn-sm" href="{{ url_for('ops.live_session', session_id=s.id) }}">Join</a>
           {% else %}
           <button class="btn btn-ghost btn-sm" disabled title="Join opens 15 minutes before start">Join</button>
           {% endif %}
