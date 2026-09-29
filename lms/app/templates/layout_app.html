@@ -18,9 +18,7 @@
         <a class="side-link {% if ep.startswith('student.assignments') or ep=='student.assignment_detail' %}on{% endif %}" href="{{ url_for('student.assignments') }}"><span class="ico">📝</span>Assignments</a>
         <a class="side-link {% if ep=='student.quizzes' %}on{% endif %}" href="{{ url_for('student.quizzes') }}"><span class="ico">🧪</span>Quizzes &amp; Exams</a>
         <a class="side-link {% if ep.startswith('student.certificate') %}on{% endif %}" href="{{ url_for('student.certificates') }}"><span class="ico">🏅</span>Certificates</a>
-        <a class="side-link {% if ep.startswith('tutor.') %}on{% endif %}" href="{{ url_for('tutor.tutor_home') }}"><span class="ico">🤖</span>AI Learning Assistant</a>
         <a class="side-link {% if ep.startswith('career.') and ep!='career.employer_dashboard' %}on{% endif %}" href="{{ url_for('career.hub') }}"><span class="ico">🚀</span>Career &amp; Placement</a>
-        <a class="side-link {% if ep.startswith('social13.') %}on{% endif %}" href="{{ url_for('social13.inbox') }}"><span class="ico">💬</span>Messages{% if dm_unread %}<span class="side-badge">{{ dm_unread }}</span>{% endif %}</a>
         <a class="side-link {% if ep=='student.announcements' %}on{% endif %}" href="{{ url_for('student.announcements') }}"><span class="ico">📢</span>Announcements</a>
         <a class="side-link {% if ep.startswith('discuss.') %}on{% endif %}" href="{{ url_for('discuss.community') }}"><span class="ico">👥</span>Community</a>
         <a class="side-link {% if ep=='student.downloads' %}on{% endif %}" href="{{ url_for('student.downloads') }}"><span class="ico">⬇️</span>Downloads</a>
@@ -102,9 +100,17 @@
 (function(){
   var sb = document.getElementById('sidebar'), sc = document.getElementById('sideScrim'),
       tg = document.getElementById('sideToggle');
+  function isOpen(){ return sb && sb.classList.contains('open'); }
   function close(){ if (sb) sb.classList.remove('open'); if (sc) sc.classList.remove('on'); }
-  if (tg) tg.addEventListener('click', function(){ sb.classList.add('open'); sc.classList.add('on'); });
+  if (tg) tg.addEventListener('click', function(e){ e.stopPropagation(); sb.classList.add('open'); sc.classList.add('on'); });
   if (sc) sc.addEventListener('click', close);
+  /* close the drawer on a mouse click anywhere outside it */
+  document.addEventListener('click', function(e){
+    if (!isOpen()) return;
+    if (sb.contains(e.target)) return;
+    if (tg && tg.contains(e.target)) return;
+    close();
+  });
   document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
 })();
 </script>

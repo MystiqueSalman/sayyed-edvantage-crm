@@ -7,17 +7,6 @@
 {% set announcements = announcements|default([], true) %}
 {% set overall_pct = overall_pct|default(0, true) %}
 
-<div class="welcome-banner">
-  <h2>Welcome Back,<br><span class="hl">{{ current_user.name }}! 👋</span></h2>
-  <p>Keep learning, keep growing.<br>Your future in technology starts here.</p>
-  {% set first_cc = course_cards[0] if course_cards else None %}
-  {% if first_cc and first_cc.continue_lesson_id %}
-    <a class="btn btn-gold" href="{{ url_for('student.lesson', lesson_id=first_cc.continue_lesson_id) }}">Continue Learning &nbsp;→</a>
-  {% else %}
-    <a class="btn btn-gold" href="{{ url_for('main.catalog') }}">Explore Courses &nbsp;→</a>
-  {% endif %}
-</div>
-
 <div class="stat-cards">
   <div class="stat-card"><span class="sic blue">🎓</span><div><b>{{ dash.enrolled }}</b><small>Enrolled Courses</small></div></div>
   <div class="stat-card"><span class="sic green">▶️</span><div><b>{{ dash.lessons_done }}</b><small>Lessons Completed</small></div></div>
@@ -189,12 +178,6 @@
       {% else %}
         <div class="empty">No live classes scheduled. Check the <a href="{{ url_for('ops.calendar') }}">calendar</a>.</div>
       {% endif %}
-    </div>
-
-    <div class="ai-card">
-      <h3>AI Learning Assistant</h3>
-      <p>Ask doubts, get instant answers, notes, quizzes and study guidance.</p>
-      <a class="btn btn-blue btn-sm" href="{{ url_for('tutor.tutor_home') }}">Ask AI Assistant &nbsp;→</a>
     </div>
 
     <div class="panel-card">
