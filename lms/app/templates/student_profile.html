@@ -69,6 +69,7 @@
 <div class="panel" style="max-width:560px">
   <h3 style="margin-top:0">Account settings</h3>
   <p><a class="btn btn-ghost btn-sm" href="{{ url_for('money13.timezone_settings') }}">🌍 Timezone preferences</a></p>
-  <p style="margin-bottom:0"><a class="btn btn-ghost btn-sm" href="{{ url_for('auth13.mfa_setup') }}">🔐 Two-factor (MFA) setup</a></p>
+  <p><a class="btn btn-ghost btn-sm" href="{{ url_for('auth13.mfa_setup') }}">🔐 Two-factor (MFA) setup</a></p>
+  <p style="margin-bottom:0"><a class="btn btn-sm" style="background:#dc2626;color:#fff" href="{{ url_for('auth.logout') }}">🚪 Logout</a></p>
 </div>
 {% endblock %}
