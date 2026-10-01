@@ -180,6 +180,49 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
   font-size:17px;cursor:pointer;transition:all .25s;vertical-align:middle}
 .backbtn:hover{background:rgba(232,185,60,.25);box-shadow:0 0 16px rgba(232,185,60,.4);transform:translateX(-3px)}
 .brand[data-sec]{cursor:pointer}
+/* ===== Career & Placement ===== */
+.careerview{display:none}
+.careerview h3{font-size:20px;margin:6px 0 16px}
+.careerview h4{font-size:15px;margin:20px 0 12px;color:var(--gold2)}
+.field textarea,.field select{width:100%;padding:13px 15px;border-radius:12px;border:1px solid rgba(154,166,199,.3);
+  background:rgba(5,8,26,.75);color:var(--text);font-size:15px;outline:none;font-family:inherit;transition:border .25s,box-shadow .25s}
+.field textarea{min-height:96px;resize:vertical}
+.field textarea:focus,.field select:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(232,185,60,.16)}
+.field select option{background:#0a1030}
+.qcard{background:rgba(10,16,48,.7);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.qq{font-size:16.5px;font-weight:600;line-height:1.6}
+.qmeta{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+.scorebig{font-size:46px;font-weight:800;color:var(--gold2);text-align:center;line-height:1}
+.scorebar{height:10px;border-radius:6px;background:rgba(154,166,199,.18);overflow:hidden;margin:8px 0 4px}
+.scorebar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,var(--gold2),var(--gold))}
+.aibadge{display:inline-block;font-size:11.5px;padding:4px 12px;border-radius:20px;border:1px solid var(--gold);color:var(--gold2);vertical-align:middle}
+.aibadge.off{border-color:rgba(154,166,199,.4);color:var(--muted)}
+.chk{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:10px;margin-bottom:8px;
+  background:rgba(10,16,48,.55);border:1px solid rgba(154,166,199,.16);cursor:pointer;font-size:14px;line-height:1.5}
+.chk input{margin-top:3px;accent-color:#e8b93c;transform:scale(1.2)}
+.chk.done{opacity:.55}.chk.done span{text-decoration:line-through}
+.prog{height:10px;border-radius:6px;background:rgba(154,166,199,.18);overflow:hidden;margin:6px 0 4px}
+.prog i{display:block;height:100%;background:linear-gradient(90deg,var(--gold2),var(--gold));transition:width .4s}
+.pill{font-size:11.5px;padding:3px 10px;border-radius:14px;background:rgba(232,185,60,.12);border:1px solid var(--line);color:var(--gold2);white-space:nowrap}
+.jobrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;
+  background:rgba(10,16,48,.55);border:1px solid rgba(154,166,199,.16);margin-bottom:10px}
+.jobrow .jt b{font-size:14.5px}.jobrow .jt small{color:var(--muted);display:block;font-size:12px;margin-top:2px}
+.jobrow select{background:rgba(5,8,26,.85);color:var(--text);border:1px solid rgba(154,166,199,.3);border-radius:8px;padding:7px 9px;font-size:13px}
+.jobrow select option{background:#0a1030}
+.delbtn{background:none;border:none;color:#ff9d9d;cursor:pointer;font-size:17px;padding:4px}
+.enhbtn{float:right;font-size:12px;padding:6px 12px;margin-top:-2px}
+.rvpreview{background:#fff;color:#1a1a2e;border-radius:14px;padding:30px;max-width:720px;margin:0 auto}
+.rvpreview h1{font-size:24px;margin:0 0 4px;color:#0a1030}
+.rvpreview .rvcontact{font-size:12.5px;color:#555;margin-bottom:6px}
+.rvpreview .rvsec{margin-top:16px}
+.rvpreview .rvsec h4{font-size:12.5px;text-transform:uppercase;letter-spacing:1.5px;color:#8a6d1c;border-bottom:2px solid #e8b93c;padding-bottom:4px;margin:0 0 8px}
+.rvpreview p,.rvpreview li{font-size:13.5px;line-height:1.65;white-space:pre-wrap;margin:0 0 4px}
+.rvpreview ul{margin:0;padding-left:18px}
+.histrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 13px;border-radius:10px;
+  background:rgba(10,16,48,.55);border:1px solid rgba(154,166,199,.16);margin-bottom:8px;cursor:pointer;font-size:13.5px}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(232,185,60,.3);border-top-color:var(--gold2);
+  border-radius:50%;animation:sp 0.8s linear infinite;vertical-align:-3px;margin-right:8px}
+@keyframes sp{to{transform:rotate(360deg)}}
 .clickable-brand{cursor:pointer}
 .sec{display:none}
 .sec.active{display:block;animation:secIn .5s cubic-bezier(.2,.7,.2,1)}
@@ -440,12 +483,93 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
       </section>
       <section class="sec" id="sec-career">
         <h2><button class="backbtn" data-sec="home" title="Back to Dashboard">←</button>Career &amp; <span class="g">Placement</span></h2><p class="sub">Internships, placement drives and career guidance.</p>
-        <div class="cards">
-          <div class="card tilt"><h3>🎯 Placement Readiness</h3><p>Track your placement readiness score as you complete courses, assignments and mock interviews.</p></div>
-          <div class="card tilt"><h3>📄 Resume Builder</h3><p>Build your ATS-friendly resume from verified records.</p></div>
-          <div class="card tilt"><h3>🌐 Portfolio</h3><p>Share your work with a public portfolio page.</p></div>
-          <div class="card tilt"><h3>🎤 Mock Interviews</h3><p>Practice with the AI interviewer and sharpen your answers.</p></div>
-          <div class="card tilt"><h3>💼 Job Board</h3><p>Browse open jobs &amp; internships and track your applications.</p></div>
+        <div id="careerHome">
+          <div class="cards">
+            <div class="card boxlink tilt" data-career="ready"><h3>🎯 Placement Readiness</h3><p>Track your placement readiness score as you complete courses, assignments and mock interviews.</p></div>
+            <div class="card boxlink tilt" data-career="resume"><h3>📄 Resume Builder</h3><p>Build your ATS-friendly resume with AI help, then print or save as PDF.</p></div>
+            <div class="card boxlink tilt" data-career="portfolio"><h3>🌐 Portfolio</h3><p>Showcase your projects and share your work.</p></div>
+            <div class="card boxlink tilt" data-career="mock"><h3>🎤 Mock Interviews</h3><p>Practice with the AI interviewer — answer questions, get scored.</p></div>
+            <div class="card boxlink tilt" data-career="jobs"><h3>💼 Job Board</h3><p>Find real openings and track every application in one place.</p></div>
+          </div>
+        </div>
+
+        <div class="careerview" id="cv-mock">
+          <h3><button class="backbtn" data-careerback title="Back">←</button>🎤 <span class="g">AI Mock Interview</span> <span class="aibadge" id="mockAiBadge">…</span></h3>
+          <div id="mockSetup">
+            <div class="field"><label>Subject</label><select id="mockSubject"></select></div>
+            <div class="field"><label>Level</label><select id="mockLevel"><option value="mixed">Mixed</option><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></div>
+            <div class="field"><label>Number of questions</label><select id="mockCount"><option value="3">3</option><option value="5" selected>5</option><option value="8">8</option></select></div>
+            <button class="btn" id="mockStart">▶ Start Interview</button>
+            <div id="mockMsg" class="pwmsg"></div>
+            <h4>📊 Past interviews</h4>
+            <div id="mockHistory"><p class="hint">No interviews yet — start your first one above.</p></div>
+          </div>
+          <div id="mockRun" style="display:none">
+            <p class="qmeta" id="mockProg"></p>
+            <div class="qcard"><div class="qq" id="mockQ"></div></div>
+            <div class="field"><label>Your answer</label><textarea id="mockA" rows="5" placeholder="Type your answer here — 3–5 sentences with an example works best…"></textarea></div>
+            <button class="btn" id="mockNext">Submit Answer</button>
+            <div id="mockRunMsg" class="pwmsg"></div>
+          </div>
+          <div id="mockResult" style="display:none"></div>
+        </div>
+
+        <div class="careerview" id="cv-resume">
+          <h3><button class="backbtn" data-careerback title="Back">←</button>📄 <span class="g">Resume Builder</span> <span class="aibadge" id="resumeAiBadge">…</span></h3>
+          <div class="field"><label>Full name</label><input id="rv-name" placeholder="Your full name"></div>
+          <div class="field"><label>Email</label><input id="rv-email" placeholder="you@example.com"></div>
+          <div class="field"><label>Phone</label><input id="rv-phone" placeholder="+91 …"></div>
+          <div class="field"><label>City</label><input id="rv-city" placeholder="Mumbai"></div>
+          <div class="field"><label>Professional summary <button class="btn ghost enhbtn" data-enhance="summary" data-target="rv-summary">✨ AI Enhance</button></label><textarea id="rv-summary" placeholder="2–3 lines about you and your skills…"></textarea></div>
+          <div class="field"><label>Skills <button class="btn ghost enhbtn" data-enhance="skills" data-target="rv-skills">✨ AI Enhance</button></label><textarea id="rv-skills" placeholder="Python, SQL, …"></textarea></div>
+          <div class="field"><label>Experience / Projects <button class="btn ghost enhbtn" data-enhance="experience" data-target="rv-exp">✨ AI Enhance</button></label><textarea id="rv-exp" rows="6" placeholder="What you built, your role, the outcome…"></textarea></div>
+          <div class="field"><label>Education <button class="btn ghost enhbtn" data-enhance="education" data-target="rv-edu">✨ AI Enhance</button></label><textarea id="rv-edu" placeholder="Degree, institute, year, score…"></textarea></div>
+          <div class="field"><label>Certifications &amp; extra <button class="btn ghost enhbtn" data-enhance="projects" data-target="rv-extra">✨ AI Enhance</button></label><textarea id="rv-extra" placeholder="Certifications, achievements…"></textarea></div>
+          <button class="btn" id="rvSave">💾 Save Resume</button>
+          <button class="btn ghost" id="rvPreview" style="margin-top:10px">👁 Preview</button>
+          <button class="btn ghost" id="rvPrint" style="margin-top:10px">🖨 Print / Save as PDF</button>
+          <div id="rvMsg" class="pwmsg"></div>
+          <div id="rvPreviewBox" style="display:none;margin-top:18px"><div class="rvpreview" id="rvPreviewInner"></div></div>
+        </div>
+
+        <div class="careerview" id="cv-ready">
+          <h3><button class="backbtn" data-careerback title="Back">←</button>🎯 <span class="g">Placement Readiness</span></h3>
+          <div class="field"><label>Subject</label><select id="readySubject"></select></div>
+          <div class="prog"><i id="readyBar" style="width:0%"></i></div>
+          <p class="qmeta" id="readyPct">0% ready</p>
+          <div id="readyList"></div>
+        </div>
+
+        <div class="careerview" id="cv-portfolio">
+          <h3><button class="backbtn" data-careerback title="Back">←</button>🌐 <span class="g">Portfolio</span></h3>
+          <div class="card"><h4 style="margin-top:0">➕ Add project</h4>
+            <div class="field"><label>Title</label><input id="pf-title" placeholder="e.g. Sales Dashboard"></div>
+            <div class="field"><label>Description</label><textarea id="pf-desc" placeholder="What it does, what you built…"></textarea></div>
+            <div class="field"><label>Tech stack</label><input id="pf-tech" placeholder="Python, Pandas, Streamlit"></div>
+            <div class="field"><label>Link</label><input id="pf-link" placeholder="https://github.com/…"></div>
+            <button class="btn" id="pfAdd">Add Project</button>
+            <div id="pfMsg" class="pwmsg"></div>
+          </div>
+          <h4>Your projects</h4>
+          <div class="cards" id="pfGrid"><p class="hint">No projects yet.</p></div>
+        </div>
+
+        <div class="careerview" id="cv-jobs">
+          <h3><button class="backbtn" data-careerback title="Back">←</button>💼 <span class="g">Job Board</span></h3>
+          <div class="card"><h4 style="margin-top:0">🔍 Find real openings</h4><div id="jobLinks" class="cards"></div>
+          <p class="hint">Apply on these platforms, then track every application below.</p></div>
+          <div class="card"><h4 style="margin-top:0">📝 Track application</h4>
+            <div class="field"><label>Company</label><input id="jb-company" placeholder="e.g. TCS"></div>
+            <div class="field"><label>Role</label><input id="jb-role" placeholder="e.g. Python Developer (Fresher)"></div>
+            <div class="field"><label>Platform</label><input id="jb-platform" placeholder="Naukri, LinkedIn…"></div>
+            <div class="field"><label>Status</label><select id="jb-status"></select></div>
+            <div class="field"><label>Date applied</label><input id="jb-date" type="date"></div>
+            <div class="field"><label>Notes</label><textarea id="jb-notes" placeholder="HR contact, next round…"></textarea></div>
+            <button class="btn" id="jbAdd">Add Application</button>
+            <div id="jbMsg" class="pwmsg"></div>
+          </div>
+          <h4>Your applications</h4>
+          <div id="jbList"><p class="hint">No applications tracked yet.</p></div>
         </div>
       </section>
       <section class="sec" id="sec-help">
@@ -709,6 +833,281 @@ $('pwGo').addEventListener('click',async()=>{
   b.disabled=false;b.textContent='Update Password';
 });
 ['in-pass','up-pass'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')(id==='in-pass'?doLogin:doSignup)();}));
+/* ================= Career & Placement ================= */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function capi(sub,body){body=body||{};body.session_token=localStorage.getItem(TOKEN_KEY);return api('/api/public/career/'+sub,body);}
+let careerSubjects=[],careerAi=false;
+async function careerLoadSubjects(){
+  if(!careerSubjects.length){
+    try{const r=await capi('subjects',{});if(r.ok){careerSubjects=r.subjects;careerAi=!!r.ai;}}catch(e){}
+    setAiBadge('mockAiBadge');setAiBadge('resumeAiBadge');
+  }
+}
+function setAiBadge(id){const b=$(id);if(!b)return;b.textContent=careerAi?'🤖 AI ON':'BASIC MODE';b.classList.toggle('off',!careerAi);}
+function openCareer(name){
+  document.querySelectorAll('.careerview').forEach(v=>v.style.display='none');
+  $('careerHome').style.display=name?'none':'block';
+  if(!name){window.scrollTo(0,0);return;}
+  const v=$('cv-'+name);if(v)v.style.display='block';
+  if(name==='mock')mockInit();
+  if(name==='resume')resumeInit();
+  if(name==='ready')readyInit();
+  if(name==='portfolio')portfolioInit();
+  if(name==='jobs')jobsInit();
+  window.scrollTo(0,0);
+}
+document.querySelectorAll('[data-career]').forEach(c=>c.addEventListener('click',()=>openCareer(c.dataset.career)));
+document.querySelectorAll('[data-careerback]').forEach(b=>b.addEventListener('click',()=>openCareer(null)));
+document.querySelectorAll('[data-sec="career"]').forEach(b=>b.addEventListener('click',()=>setTimeout(()=>openCareer(null),0)));
+
+/* ---- AI Mock Interview ---- */
+let mockState=null;
+async function mockInit(){
+  await careerLoadSubjects();
+  const sel=$('mockSubject');
+  if(!sel.options.length)careerSubjects.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;sel.appendChild(o);});
+  $('mockSetup').style.display='block';$('mockRun').style.display='none';$('mockResult').style.display='none';
+  loadMockHistory();
+}
+$('mockStart').addEventListener('click',async()=>{
+  const m=$('mockMsg');m.className='pwmsg';m.textContent='';
+  const b=$('mockStart');b.disabled=true;b.innerHTML='<span class="spin"></span>Preparing…';
+  try{
+    const r=await capi('interview-start',{subject:$('mockSubject').value,level:$('mockLevel').value,count:$('mockCount').value});
+    if(r.ok){mockState={id:r.interview_id};$('mockSetup').style.display='none';$('mockRun').style.display='block';showMockQ(r.n,r.total,r.question);}
+    else{m.textContent='Could not start. Try again.';m.classList.add('err');}
+  }catch(e){m.textContent='Could not reach the server.';m.classList.add('err');}
+  b.disabled=false;b.textContent='▶ Start Interview';
+});
+function showMockQ(n,total,q){$('mockProg').textContent='Question '+n+' of '+total;$('mockQ').textContent=q;$('mockA').value='';$('mockRunMsg').textContent='';$('mockRunMsg').className='pwmsg';}
+$('mockNext').addEventListener('click',async()=>{
+  const m=$('mockRunMsg');m.className='pwmsg';m.textContent='';
+  const ans=$('mockA').value.trim();
+  if(!ans){m.textContent='Type your answer first.';m.classList.add('err');return;}
+  const b=$('mockNext');b.disabled=true;b.innerHTML='<span class="spin"></span>Submitting…';
+  try{
+    const r=await capi('interview-answer',{interview_id:mockState.id,answer:ans});
+    if(r.ok){if(r.done)finishMock();else showMockQ(r.n,r.total,r.question);}
+    else{m.textContent='Could not submit. Try again.';m.classList.add('err');}
+  }catch(e){m.textContent='Could not reach the server.';m.classList.add('err');}
+  b.disabled=false;b.textContent='Submit Answer';
+});
+async function finishMock(){
+  $('mockRun').style.display='none';
+  const res=$('mockResult');res.style.display='block';
+  res.innerHTML='<p class="hint"><span class="spin"></span>'+(careerAi?'AI is scoring your answers…':'Scoring your answers…')+'</p>';
+  try{
+    const r=await capi('interview-finish',{interview_id:mockState.id});
+    if(r.ok){renderMockResult(r.result);mockState=null;}
+    else res.innerHTML='<p class="hint">Could not score. <button class="btn ghost" onclick="mockInit()">← Back</button></p>';
+  }catch(e){res.innerHTML='<p class="hint">Could not reach the server.</p>';}
+  window.scrollTo(0,0);
+}
+function renderMockResult(r){
+  const badge=r.ai?'<span class="aibadge">🤖 AI evaluated</span>':'<span class="aibadge off">Basic auto-score</span>';
+  let h='<h4>Your score '+badge+'</h4><div class="scorebig">'+r.overall+'<span style="font-size:20px">/10</span></div>'
+    +'<div class="qcard"><b>💪 Strengths</b><p style="font-size:13.5px;margin:8px 0 0">'+esc(r.strengths)+'</p></div>'
+    +'<div class="qcard"><b>🚀 To improve</b><p style="font-size:13.5px;margin:8px 0 0">'+esc(r.improvements)+'</p></div>';
+  r.items.forEach((it,i)=>{
+    h+='<div class="qcard"><div class="qq">Q'+(i+1)+'. '+esc(it.q)+'</div>'
+      +'<p style="font-size:13.5px;color:var(--muted);margin:10px 0"><i>Your answer:</i> '+esc(it.answer)+'</p>'
+      +'<div><span class="pill">'+it.score+'/10</span></div><div class="scorebar"><i style="width:'+(it.score*10)+'%"></i></div>'
+      +'<p style="font-size:13.5px;margin:8px 0 0">'+esc(it.feedback)+'</p></div>';
+  });
+  h+='<button class="btn" onclick="mockInit()">＋ New Interview</button> <button class="btn ghost" id="mockBackBtn">← Back</button>';
+  $('mockResult').innerHTML=h;
+  $('mockBackBtn').addEventListener('click',()=>openCareer(null));
+}
+async function loadMockHistory(){
+  const box=$('mockHistory');
+  try{
+    const r=await capi('interview-history',{});
+    if(r.ok&&r.history.length){
+      box.innerHTML='';
+      r.history.forEach(h=>{
+        const d=document.createElement('div');d.className='histrow';
+        d.innerHTML='<span>📝 '+esc(h.subject_name)+' <small style="color:var(--muted)">· '+esc(h.at.slice(0,10))+' · '+h.count+' Qs</small></span><span class="pill">'+h.overall+'/10</span>';
+        d.addEventListener('click',()=>viewMockDetail(h.id));
+        box.appendChild(d);
+      });
+    }else box.innerHTML='<p class="hint">No interviews yet — start your first one above.</p>';
+  }catch(e){box.innerHTML='<p class="hint">Could not load history.</p>';}
+}
+async function viewMockDetail(id){
+  const res=$('mockResult');res.style.display='block';$('mockSetup').style.display='none';
+  res.innerHTML='<p class="hint"><span class="spin"></span>Loading…</p>';
+  try{const r=await capi('interview-detail',{interview_id:id});if(r.ok)renderMockResult(r.result);}
+  catch(e){res.innerHTML='<p class="hint">Could not load.</p>';}
+  window.scrollTo(0,0);
+}
+
+/* ---- Resume Builder ---- */
+async function resumeInit(){
+  await careerLoadSubjects();
+  try{
+    const r=await capi('resume-get',{});
+    if(r.ok&&r.resume){
+      const d=r.resume;
+      $('rv-name').value=d.name||'';$('rv-email').value=d.email||'';$('rv-phone').value=d.phone||'';
+      $('rv-city').value=d.city||'';$('rv-summary').value=d.summary||'';$('rv-skills').value=d.skills||'';
+      $('rv-exp').value=d.experience||'';$('rv-edu').value=d.education||'';$('rv-extra').value=d.projects||'';
+    }
+  }catch(e){}
+}
+function rvData(){return{name:$('rv-name').value.trim(),email:$('rv-email').value.trim(),phone:$('rv-phone').value.trim(),city:$('rv-city').value.trim(),summary:$('rv-summary').value.trim(),skills:$('rv-skills').value.trim(),experience:$('rv-exp').value.trim(),education:$('rv-edu').value.trim(),projects:$('rv-extra').value.trim()};}
+$('rvSave').addEventListener('click',async()=>{
+  const m=$('rvMsg');m.className='pwmsg';m.textContent='';
+  const b=$('rvSave');b.disabled=true;b.textContent='Saving…';
+  try{
+    const r=await capi('resume-save',{resume:rvData()});
+    if(r.ok){m.textContent='Resume saved.';m.classList.add('ok');}else{m.textContent='Could not save.';m.classList.add('err');}
+  }catch(e){m.textContent='Could not reach the server.';m.classList.add('err');}
+  b.disabled=false;b.textContent='💾 Save Resume';
+});
+document.querySelectorAll('[data-enhance]').forEach(btn=>btn.addEventListener('click',async()=>{
+  const target=$(btn.dataset.target),text=target.value.trim(),m=$('rvMsg');m.className='pwmsg';
+  if(text.length<3){m.textContent='Write something first, then enhance it.';m.classList.add('err');return;}
+  btn.disabled=true;const old=btn.innerHTML;btn.innerHTML='<span class="spin"></span>';
+  try{
+    const r=await capi('resume-enhance',{kind:btn.dataset.enhance,text:text});
+    if(r.ok){target.value=r.enhanced;m.textContent=r.ai?'✨ Enhanced with AI.':'Tips applied (AI key not configured, so basic mode).';m.classList.add('ok');}
+    else{m.textContent='Could not enhance.';m.classList.add('err');}
+  }catch(e){m.textContent='Could not reach the server.';m.classList.add('err');}
+  btn.disabled=false;btn.innerHTML=old;
+}));
+function rvHTML(d){
+  const sec=(t,v)=>v?'<div class="rvsec"><h4>'+t+'</h4><p>'+esc(v)+'</p></div>':'';
+  return '<h1>'+esc(d.name||'Your Name')+'</h1><div class="rvcontact">'+esc([d.email,d.phone,d.city].filter(Boolean).join(' · '))+'</div>'
+    +sec('Summary',d.summary)+sec('Skills',d.skills)+sec('Experience / Projects',d.experience)+sec('Education',d.education)+sec('Certifications',d.projects);
+}
+$('rvPreview').addEventListener('click',()=>{$('rvPreviewInner').innerHTML=rvHTML(rvData());$('rvPreviewBox').style.display='block';$('rvPreviewBox').scrollIntoView({behavior:'smooth'});});
+$('rvPrint').addEventListener('click',()=>{
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><title>Resume</title><style>body{font-family:Arial,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;color:#1a1a2e}h1{font-size:26px;margin:0}.rvcontact{font-size:13px;color:#555;margin:4px 0 8px}h4{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:#8a6d1c;border-bottom:2px solid #e8b93c;padding-bottom:4px;margin:18px 0 8px}p{font-size:14px;line-height:1.65;white-space:pre-wrap}</style></head><body>'+rvHTML(rvData())+'</body></html>');
+  w.document.close();w.focus();setTimeout(()=>w.print(),300);
+});
+
+/* ---- Placement Readiness ---- */
+async function readyInit(){
+  await careerLoadSubjects();
+  const sel=$('readySubject');
+  if(!sel.options.length)careerSubjects.forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.name;sel.appendChild(o);});
+  sel.onchange=loadChecklist;loadChecklist();
+}
+async function loadChecklist(){
+  const box=$('readyList');box.innerHTML='<p class="hint"><span class="spin"></span>Loading…</p>';
+  try{
+    const r=await capi('checklist-get',{subject:$('readySubject').value});
+    if(r.ok){
+      const checked=new Set(r.checked);box.innerHTML='';
+      r.items.forEach(it=>{
+        const l=document.createElement('label');l.className='chk'+(checked.has(it.id)?' done':'');l.dataset.id=it.id;
+        l.innerHTML='<input type="checkbox"'+(checked.has(it.id)?' checked':'')+'><span>'+esc(it.label)+'</span>';
+        l.querySelector('input').addEventListener('change',ev=>{l.classList.toggle('done',ev.target.checked);saveChecklist();});
+        box.appendChild(l);
+      });
+      updateReadyBar();
+    }
+  }catch(e){box.innerHTML='<p class="hint">Could not load.</p>';}
+}
+function updateReadyBar(){
+  const boxes=$('readyList').querySelectorAll('input[type=checkbox]');
+  const done=[...boxes].filter(b=>b.checked).length;
+  const pct=boxes.length?Math.round(100*done/boxes.length):0;
+  $('readyBar').style.width=pct+'%';$('readyPct').textContent=pct+'% ready ('+done+'/'+boxes.length+')';
+}
+async function saveChecklist(){
+  updateReadyBar();
+  const checked=[...document.querySelectorAll('#readyList .chk')].filter(l=>l.querySelector('input').checked).map(l=>l.dataset.id);
+  try{await capi('checklist-save',{subject:$('readySubject').value,checked:checked});}catch(e){}
+}
+
+/* ---- Portfolio ---- */
+async function portfolioInit(){loadPortfolio();}
+async function loadPortfolio(){
+  const g=$('pfGrid');
+  try{
+    const r=await capi('portfolio-list',{});
+    if(r.ok&&r.items.length){
+      g.innerHTML='';
+      r.items.forEach(p=>{
+        const d=document.createElement('div');d.className='card';
+        d.innerHTML='<h3>'+esc(p.title)+'</h3><p>'+esc(p.description)+'</p>'
+          +(p.tech?'<p><span class="pill">'+esc(p.tech)+'</span></p>':'')
+          +(p.link?'<p><a href="'+esc(p.link)+'" target="_blank" rel="noopener" style="color:var(--gold2)">🔗 View project</a></p>':'')
+          +'<button class="delbtn" title="Delete">🗑</button>';
+        d.querySelector('.delbtn').addEventListener('click',async()=>{await capi('portfolio-delete',{id:p.id});loadPortfolio();});
+        g.appendChild(d);
+      });
+    }else g.innerHTML='<p class="hint">No projects yet.</p>';
+  }catch(e){g.innerHTML='<p class="hint">Could not load.</p>';}
+}
+$('pfAdd').addEventListener('click',async()=>{
+  const m=$('pfMsg');m.className='pwmsg';m.textContent='';
+  const title=$('pf-title').value.trim();
+  if(title.length<2){m.textContent='Give your project a title.';m.classList.add('err');return;}
+  const b=$('pfAdd');b.disabled=true;b.textContent='Adding…';
+  try{
+    const r=await capi('portfolio-add',{title:title,description:$('pf-desc').value.trim(),tech:$('pf-tech').value.trim(),link:$('pf-link').value.trim()});
+    if(r.ok){['pf-title','pf-desc','pf-tech','pf-link'].forEach(id=>$(id).value='');m.textContent='Project added.';m.classList.add('ok');loadPortfolio();}
+    else{m.textContent='Could not add.';m.classList.add('err');}
+  }catch(e){m.textContent='Could not reach the server.';m.classList.add('err');}
+  b.disabled=false;b.textContent='Add Project';
+});
+
+/* ---- Job Board ---- */
+let jobStatuses=[];
+async function jobsInit(){
+  await careerLoadSubjects();
+  try{
+    const r=await capi('jobs-meta',{});
+    if(r.ok){
+      jobStatuses=r.statuses;
+      $('jobLinks').innerHTML='';
+      r.platforms.forEach(p=>{
+        const a=document.createElement('a');a.className='card boxlink tilt';a.href=p.url;a.target='_blank';a.rel='noopener';a.style.textDecoration='none';
+        a.innerHTML='<h3>🔗 '+esc(p.name)+'</h3><p>'+esc(p.note)+'</p>';
+        $('jobLinks').appendChild(a);
+      });
+      const sel=$('jb-status');
+      if(!sel.options.length)r.statuses.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+    }
+  }catch(e){}
+  loadJobs();
+}
+async function loadJobs(){
+  const box=$('jbList');
+  try{
+    const r=await capi('jobs-list',{});
+    if(r.ok&&r.jobs.length){
+      box.innerHTML='';
+      const statuses=jobStatuses.length?jobStatuses:['Wishlist','Applied','Screening','Interview','Offer','Rejected'];
+      r.jobs.forEach(j=>{
+        const d=document.createElement('div');d.className='jobrow';
+        d.innerHTML='<div class="jt"><b>'+esc(j.company)+'</b> — '+esc(j.role)+'<small>'+esc([j.platform,j.date].filter(Boolean).join(' · '))+'</small></div>'
+          +'<div style="display:flex;gap:8px;align-items:center"><select></select><button class="delbtn" title="Delete">🗑</button></div>';
+        const sel=d.querySelector('select');
+        statuses.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;if(s===j.status)o.selected=true;sel.appendChild(o);});
+        sel.addEventListener('change',async()=>{await capi('jobs-update',{id:j.id,status:sel.value});});
+        d.querySelector('.delbtn').addEventListener('click',async()=>{await capi('jobs-delete',{id:j.id});loadJobs();});
+        box.appendChild(d);
+      });
+    }else box.innerHTML='<p class="hint">No applications tracked yet.</p>';
+  }catch(e){box.innerHTML='<p class="hint">Could not load.</p>';}
+}
+$('jbAdd').addEventListener('click',async()=>{
+  const m=$('jbMsg');m.className='pwmsg';m.textContent='';
+  const company=$('jb-company').value.trim(),role=$('jb-role').value.trim();
+  if(company.length<2||role.length<2){m.textContent='Company and role are required.';m.classList.add('err');return;}
+  const b=$('jbAdd');b.disabled=true;b.textContent='Adding…';
+  try{
+    const r=await capi('jobs-add',{company:company,role:role,platform:$('jb-platform').value.trim(),status:$('jb-status').value,date:$('jb-date').value,notes:$('jb-notes').value.trim()});
+    if(r.ok){['jb-company','jb-role','jb-platform','jb-date','jb-notes'].forEach(id=>$(id).value='');m.textContent='Application tracked.';m.classList.add('ok');loadJobs();}
+    else{m.textContent='Could not add.';m.classList.add('err');}
+  }catch(e){m.textContent='Could not reach the server.';m.classList.add('err');}
+  b.disabled=false;b.textContent='Add Application';
+});
+
 (async function init(){
   const t=localStorage.getItem(TOKEN_KEY);if(!t)return;
   try{const r=await api('/api/public/student-me',{session_token:t});

@@ -58,6 +58,8 @@ import threading
 import time
 import urllib.error
 import urllib.request
+
+import career_api
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from urllib.parse import urlparse
@@ -803,6 +805,17 @@ def _handle_student_password(handler, data: dict, ip: str) -> None:
     _public_json(handler, payload, status)
 
 
+def _handle_career(handler, path: str, data: dict, ip: str) -> None:
+    # Career & Placement: session-authenticated, then delegated to career_api.
+    student = _student_from_token(_session_token_from(data, handler))
+    if not student:
+        _public_json(handler, {"ok": False, "error": "not_logged_in"}, 401)
+        return
+    payload, status = career_api.dispatch(
+        path[len("/api/public/career/"):], student, data, ip)
+    _public_json(handler, payload, status)
+
+
 # --------------------------------------------------------------------------
 # Router (called from the main Handler)
 # --------------------------------------------------------------------------
@@ -828,5 +841,7 @@ def handle_public_post(handler) -> None:
         _handle_student_logout(handler, data, ip)
     elif path == "/api/public/student-password":
         _handle_student_password(handler, data, ip)
+    elif path.startswith("/api/public/career/"):
+        _handle_career(handler, path, data, ip)
     else:
         _public_json(handler, {"ok": False, "error": "not_found"}, 404)
