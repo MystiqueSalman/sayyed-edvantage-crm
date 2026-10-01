@@ -211,13 +211,14 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 .jobrow select option{background:#0a1030}
 .delbtn{background:none;border:none;color:#ff9d9d;cursor:pointer;font-size:17px;padding:4px}
 .enhbtn{float:right;font-size:12px;padding:6px 12px;margin-top:-2px}
-.rvpreview{background:#fff;color:#1a1a2e;border-radius:14px;padding:30px;max-width:720px;margin:0 auto}
-.rvpreview h1{font-size:24px;margin:0 0 4px;color:#0a1030}
-.rvpreview .rvcontact{font-size:12.5px;color:#555;margin-bottom:6px}
-.rvpreview .rvsec{margin-top:16px}
-.rvpreview .rvsec h4{font-size:12.5px;text-transform:uppercase;letter-spacing:1.5px;color:#8a6d1c;border-bottom:2px solid #e8b93c;padding-bottom:4px;margin:0 0 8px}
-.rvpreview p,.rvpreview li{font-size:13.5px;line-height:1.65;white-space:pre-wrap;margin:0 0 4px}
-.rvpreview ul{margin:0;padding-left:18px}
+.rvpreview{background:#fff;color:#1a1a2e;border-radius:6px;padding:38px 40px;max-width:760px;margin:0 auto;font-family:Georgia,'Times New Roman',serif}
+.rv-head{border-bottom:3px solid #14213d;padding-bottom:14px}
+.rv-head h1{font-size:30px;margin:0;color:#14213d;letter-spacing:.5px;font-family:Arial,Helvetica,sans-serif}
+.rv-title{font-size:12.5px;text-transform:uppercase;letter-spacing:2.5px;color:#5a6c8d;margin-top:7px;font-family:Arial,Helvetica,sans-serif}
+.rv-contact{font-size:12.5px;color:#444;margin-top:9px;font-family:Arial,Helvetica,sans-serif}
+.rv-sec{margin-top:20px}
+.rv-sec h4{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:#14213d;border-bottom:1px solid #c9a227;padding-bottom:6px;margin:0 0 10px;font-family:Arial,Helvetica,sans-serif}
+.rv-sec p{font-size:13.5px;line-height:1.7;white-space:pre-wrap;margin:0;color:#2b2b3a}
 .histrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 13px;border-radius:10px;
   background:rgba(10,16,48,.55);border:1px solid rgba(154,166,199,.16);margin-bottom:8px;cursor:pointer;font-size:13.5px}
 .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(232,185,60,.3);border-top-color:var(--gold2);
@@ -517,6 +518,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
         <div class="careerview" id="cv-resume">
           <h3><button class="backbtn" data-careerback title="Back">←</button>📄 <span class="g">Resume Builder</span> <span class="aibadge" id="resumeAiBadge">…</span></h3>
           <div class="field"><label>Full name</label><input id="rv-name" placeholder="Your full name"></div>
+          <div class="field"><label>Professional title</label><input id="rv-title" placeholder="e.g. Aspiring Data Analyst · Python Developer (Fresher)"></div>
           <div class="field"><label>Email</label><input id="rv-email" placeholder="you@example.com"></div>
           <div class="field"><label>Phone</label><input id="rv-phone" placeholder="+91 …"></div>
           <div class="field"><label>City</label><input id="rv-city" placeholder="Mumbai"></div>
@@ -926,7 +928,7 @@ async function loadMockHistory(){
       box.innerHTML='';
       r.history.forEach(h=>{
         const d=document.createElement('div');d.className='histrow';
-        d.innerHTML='<span>📝 '+esc(h.subject_name)+' <small style="color:var(--muted)">· '+esc(h.at.slice(0,10))+' · '+h.count+' Qs</small></span><span class="pill">'+h.overall+'/10</span>';
+        d.innerHTML='<span>📝 '+esc(h.subject_name)+' <small style="color:var(--muted)">· '+esc(h.at.slice(0,10))+' · '+h.count+' Qs<br><span style="color:var(--gold2)">Tap to view full report ›</span></small></span><span class="pill">'+h.overall+'/10</span>';
         d.addEventListener('click',()=>viewMockDetail(h.id));
         box.appendChild(d);
       });
@@ -948,13 +950,13 @@ async function resumeInit(){
     const r=await capi('resume-get',{});
     if(r.ok&&r.resume){
       const d=r.resume;
-      $('rv-name').value=d.name||'';$('rv-email').value=d.email||'';$('rv-phone').value=d.phone||'';
+      $('rv-name').value=d.name||'';$('rv-title').value=d.title||'';$('rv-email').value=d.email||'';$('rv-phone').value=d.phone||'';
       $('rv-city').value=d.city||'';$('rv-summary').value=d.summary||'';$('rv-skills').value=d.skills||'';
       $('rv-exp').value=d.experience||'';$('rv-edu').value=d.education||'';$('rv-extra').value=d.projects||'';
     }
   }catch(e){}
 }
-function rvData(){return{name:$('rv-name').value.trim(),email:$('rv-email').value.trim(),phone:$('rv-phone').value.trim(),city:$('rv-city').value.trim(),summary:$('rv-summary').value.trim(),skills:$('rv-skills').value.trim(),experience:$('rv-exp').value.trim(),education:$('rv-edu').value.trim(),projects:$('rv-extra').value.trim()};}
+function rvData(){return{name:$('rv-name').value.trim(),title:$('rv-title').value.trim(),email:$('rv-email').value.trim(),phone:$('rv-phone').value.trim(),city:$('rv-city').value.trim(),summary:$('rv-summary').value.trim(),skills:$('rv-skills').value.trim(),experience:$('rv-exp').value.trim(),education:$('rv-edu').value.trim(),projects:$('rv-extra').value.trim()};}
 $('rvSave').addEventListener('click',async()=>{
   const m=$('rvMsg');m.className='pwmsg';m.textContent='';
   const b=$('rvSave');b.disabled=true;b.textContent='Saving…';
@@ -976,14 +978,19 @@ document.querySelectorAll('[data-enhance]').forEach(btn=>btn.addEventListener('c
   btn.disabled=false;btn.innerHTML=old;
 }));
 function rvHTML(d){
-  const sec=(t,v)=>v?'<div class="rvsec"><h4>'+t+'</h4><p>'+esc(v)+'</p></div>':'';
-  return '<h1>'+esc(d.name||'Your Name')+'</h1><div class="rvcontact">'+esc([d.email,d.phone,d.city].filter(Boolean).join(' · '))+'</div>'
-    +sec('Summary',d.summary)+sec('Skills',d.skills)+sec('Experience / Projects',d.experience)+sec('Education',d.education)+sec('Certifications',d.projects);
+  const sec=(t,v)=>v?'<div class="rv-sec"><h4>'+t+'</h4><p>'+esc(v)+'</p></div>':'';
+  const contact=[d.email,d.phone,d.city].filter(Boolean).map(esc).join(' &nbsp;|&nbsp; ');
+  return '<div class="rv-head"><h1>'+esc(d.name||'Your Name')+'</h1>'
+    +(d.title?'<div class="rv-title">'+esc(d.title)+'</div>':'')
+    +(contact?'<div class="rv-contact">'+contact+'</div>':'')+'</div>'
+    +sec('Professional Summary',d.summary)+sec('Core Skills',d.skills)
+    +sec('Experience & Projects',d.experience)+sec('Education',d.education)
+    +sec('Certifications & Achievements',d.projects);
 }
 $('rvPreview').addEventListener('click',()=>{$('rvPreviewInner').innerHTML=rvHTML(rvData());$('rvPreviewBox').style.display='block';$('rvPreviewBox').scrollIntoView({behavior:'smooth'});});
 $('rvPrint').addEventListener('click',()=>{
   const w=window.open('','_blank');
-  w.document.write('<!DOCTYPE html><html><head><title>Resume</title><style>body{font-family:Arial,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;color:#1a1a2e}h1{font-size:26px;margin:0}.rvcontact{font-size:13px;color:#555;margin:4px 0 8px}h4{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:#8a6d1c;border-bottom:2px solid #e8b93c;padding-bottom:4px;margin:18px 0 8px}p{font-size:14px;line-height:1.65;white-space:pre-wrap}</style></head><body>'+rvHTML(rvData())+'</body></html>');
+  w.document.write('<!DOCTYPE html><html><head><title>Resume</title><style>body{font-family:Georgia,serif;max-width:760px;margin:44px auto;padding:0 24px;color:#1a1a2e}.rv-head{border-bottom:3px solid #14213d;padding-bottom:14px}h1{font-size:30px;margin:0;color:#14213d;font-family:Arial,sans-serif}.rv-title{font-size:12.5px;text-transform:uppercase;letter-spacing:2.5px;color:#5a6c8d;margin-top:7px;font-family:Arial,sans-serif}.rv-contact{font-size:12.5px;color:#444;margin-top:9px;font-family:Arial,sans-serif}h4{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:#14213d;border-bottom:1px solid #c9a227;padding-bottom:6px;margin:20px 0 10px;font-family:Arial,sans-serif}p{font-size:13.5px;line-height:1.7;white-space:pre-wrap;margin:0;color:#2b2b3a}</style></head><body>'+rvHTML(rvData())+'</body></html>');
   w.document.close();w.focus();setTimeout(()=>w.print(),300);
 });
 
@@ -1083,13 +1090,25 @@ async function loadJobs(){
       box.innerHTML='';
       const statuses=jobStatuses.length?jobStatuses:['Wishlist','Applied','Screening','Interview','Offer','Rejected'];
       r.jobs.forEach(j=>{
-        const d=document.createElement('div');d.className='jobrow';
+        const d=document.createElement('div');d.className='jobrow';d.style.cursor='pointer';
         d.innerHTML='<div class="jt"><b>'+esc(j.company)+'</b> — '+esc(j.role)+'<small>'+esc([j.platform,j.date].filter(Boolean).join(' · '))+'</small></div>'
-          +'<div style="display:flex;gap:8px;align-items:center"><select></select><button class="delbtn" title="Delete">🗑</button></div>';
+          +'<div style="display:flex;gap:8px;align-items:center"><select></select><button class="delbtn" title="Delete">🗑</button><span style="color:var(--gold2);font-size:18px">›</span></div>'
+          +'<div class="jobdetail" style="display:none;flex-basis:100%;font-size:13px;color:var(--muted);border-top:1px solid rgba(154,166,199,.16);padding-top:10px;margin-top:4px">'
+          +'<div><b style="color:var(--text)">Company:</b> '+esc(j.company)+'</div>'
+          +'<div style="margin-top:4px"><b style="color:var(--text)">Role:</b> '+esc(j.role)+'</div>'
+          +(j.platform?'<div style="margin-top:4px"><b style="color:var(--text)">Platform:</b> '+esc(j.platform)+'</div>':'')
+          +(j.date?'<div style="margin-top:4px"><b style="color:var(--text)">Date applied:</b> '+esc(j.date)+'</div>':'')
+          +'<div style="margin-top:4px"><b style="color:var(--text)">Status:</b> '+esc(j.status)+'</div>'
+          +'<div style="margin-top:6px"><b style="color:var(--text)">Notes:</b> '+(j.notes?esc(j.notes):'—')+'</div></div>';
         const sel=d.querySelector('select');
         statuses.forEach(s=>{const o=document.createElement('option');o.value=s;o.textContent=s;if(s===j.status)o.selected=true;sel.appendChild(o);});
         sel.addEventListener('change',async()=>{await capi('jobs-update',{id:j.id,status:sel.value});});
-        d.querySelector('.delbtn').addEventListener('click',async()=>{await capi('jobs-delete',{id:j.id});loadJobs();});
+        sel.addEventListener('click',ev=>ev.stopPropagation());
+        d.querySelector('.delbtn').addEventListener('click',async ev=>{ev.stopPropagation();await capi('jobs-delete',{id:j.id});loadJobs();});
+        d.addEventListener('click',()=>{
+          const det=d.querySelector('.jobdetail');
+          det.style.display=det.style.display==='none'?'block':'none';
+        });
         box.appendChild(d);
       });
     }else box.innerHTML='<p class="hint">No applications tracked yet.</p>';

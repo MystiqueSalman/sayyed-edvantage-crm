@@ -450,7 +450,7 @@ def dispatch(subpath: str, student: dict, data: dict, ip: str) -> tuple[dict, in
         if not isinstance(resume, dict) or len(json.dumps(resume)) > 50000:
             return {"ok": False, "error": "invalid_resume"}, 400
         clean = {k: str(resume.get(k, ""))[:5000]
-                 for k in ("name", "email", "phone", "city", "summary",
+                 for k in ("name", "title", "email", "phone", "city", "summary",
                            "skills", "experience", "education", "projects")}
         clean["updated_at"] = _now_iso()
         with _lock:
