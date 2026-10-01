@@ -213,6 +213,174 @@ _ENHANCE_TIPS = {
 
 
 # --------------------------------------------------------------------------
+# Resume professional polishing (rule-based fallback when no AI key)
+# --------------------------------------------------------------------------
+
+_SKILL_CATS = [
+    ("Programming Languages", ("python", "java", "javascript", "typescript",
+     "c++", "c#", "go", "rust", "php", "ruby", "swift", "kotlin", "scala")),
+    ("Data & AI", ("pandas", "numpy", "scikit-learn", "tensorflow", "pytorch",
+     "keras", "sql", "mysql", "postgresql", "mongodb", "power bi", "tableau",
+     "excel", "matplotlib", "seaborn", "machine learning", "deep learning",
+     "nlp", "statistics", "scipy")),
+    ("Web & Frameworks", ("html", "css", "react", "angular", "vue", "django",
+     "flask", "fastapi", "node", "express", "bootstrap", "tailwind")),
+    ("DevOps & Tools", ("git", "github", "docker", "kubernetes", "jenkins",
+     "linux", "aws", "azure", "gcp", "terraform", "ansible", "ci/cd")),
+    ("Cybersecurity", ("nmap", "wireshark", "burp", "metasploit", "kali",
+     "owasp", "penetration testing", "networking", "cryptography")),
+]
+
+_SKILL_FIX = {"sql": "SQL", "power bi": "Power BI", "powerbi": "Power BI",
+              "machine learning": "Machine Learning",
+              "deep learning": "Deep Learning", "ci/cd": "CI/CD",
+              "javascript": "JavaScript", "typescript": "TypeScript",
+              "github": "GitHub", "mysql": "MySQL", "postgresql": "PostgreSQL",
+              "mongodb": "MongoDB", "html": "HTML", "css": "CSS", "php": "PHP",
+              "aws": "AWS", "gcp": "GCP", "azure": "Azure", "nlp": "NLP",
+              "ai": "AI", "ml": "ML", "scikit-learn": "Scikit-learn"}
+
+
+def _canon_skill(s: str) -> str:
+    low = s.strip().lower()
+    if low in _SKILL_FIX:
+        return _SKILL_FIX[low]
+    s = s.strip()
+    return s[:1].upper() + s[1:] if s else s
+
+
+def _polish_summary(text: str, rctx: dict) -> str:
+    t = " ".join((text or "").split())
+    title = ((rctx.get("title") or "").strip())
+    if not t:
+        skills = [_canon_skill(s) for s in
+                  re.split(r"[,\n]", rctx.get("skills") or "") if s.strip()][:4]
+        who = title or "Motivated IT fresher"
+        t = (f"{who} with hands-on skills in "
+             f"{', '.join(skills) if skills else 'core technologies'}")
+    t = re.sub(r"^(i am|i'm|my name is|this is)\s+", "", t, flags=re.I).strip()
+    t = re.sub(r"\bi\b", "I", t)
+    if t:
+        t = t[0].upper() + t[1:]
+    if t and not re.search(r"[.!?]$", t):
+        t += "."
+    if not re.search(r"seeking|looking for|open to|aspiring", t, re.I):
+        t += (" Seeking an entry-level opportunity to apply these skills "
+              "and grow with the team.")
+    if len(t) > 600:
+        t = t[:597].rsplit(" ", 1)[0] + "."
+    return t
+
+
+def _polish_skills(text: str, rctx: dict) -> str:
+    raw = [s.strip() for s in re.split(r"[,\n;|]", text or "") if s.strip()]
+    seen, uniq = set(), []
+    for s in raw:
+        c = _canon_skill(s)
+        if c.lower() not in seen:
+            seen.add(c.lower())
+            uniq.append(c)
+    if not uniq:
+        return ""
+    rest = list(uniq)
+    cats = []
+    for cat, kws in _SKILL_CATS:
+        hit = [s for s in rest if s.lower() in kws]
+        if hit:
+            cats.append(f"{cat}: {', '.join(hit)}")
+            rest = [s for s in rest if s not in hit]
+    if rest:
+        cats.append("Other: " + ", ".join(rest))
+    return "\n".join(cats)
+
+
+def _polish_bullets(text: str) -> str:
+    lines = [re.sub(r"^[•\-\*▪\d\.\)\s]+", "", l).strip()
+             for l in (text or "").split("\n")]
+    lines = [l for l in lines if len(l) >= 3]
+    out = []
+    for l in lines:
+        l = l[0].upper() + l[1:]
+        if not re.search(r"[.!?%”\"]$", l):
+            l += "."
+        out.append("• " + l)
+    return "\n".join(out)
+
+
+def _polish_education(text: str, rctx: dict) -> str:
+    lines = [" ".join(l.split()) for l in (text or "").split("\n")]
+    lines = [l for l in lines if l]
+    out = []
+    for l in lines:
+        l = l[0].upper() + l[1:] if l else l
+        out.append("• " + l if len(lines) > 1 else l)
+    return "\n".join(out)
+
+
+_POLISHERS = {
+    "summary": _polish_summary,
+    "skills": _polish_skills,
+    "experience": lambda t, r: _polish_bullets(t),
+    "education": _polish_education,
+    "projects": lambda t, r: _polish_bullets(t),
+}
+
+
+# --------------------------------------------------------------------------
+# Resume strength analysis (rule-based; AI adds suggestions when available)
+# --------------------------------------------------------------------------
+
+_ACTION_VERBS = ("built", "developed", "created", "designed", "implemented",
+                 "automated", "led", "managed", "improved", "increased",
+                 "reduced", "optimized", "optimised", "launched", "deployed",
+                 "analyzed", "analysed", "trained", "engineered",
+                 "collaborated", "delivered", "achieved", "spearheaded")
+
+
+def _analyze_resume(r: dict) -> dict:
+    checks: list[dict] = []
+    score = 0
+
+    def add(label: str, ok: bool, tip: str, weight: int) -> None:
+        nonlocal score
+        checks.append({"label": label, "ok": bool(ok), "tip": tip})
+        if ok:
+            score += weight
+
+    name = (r.get("name") or "").strip()
+    add("Full name added", len(name) >= 2,
+        "Add your full name, as on your certificates.", 10)
+    title = (r.get("title") or "").strip()
+    add("Professional title added", len(title) >= 3,
+        "Add a title like 'Aspiring Data Analyst' — recruiters scan this first.", 8)
+    email = (r.get("email") or "").strip()
+    phone = (r.get("phone") or "").strip()
+    add("Contact details complete", bool(email) and bool(phone),
+        "Add both email and phone so recruiters can reach you.", 10)
+    summary = (r.get("summary") or "").strip()
+    add("Summary is 2–4 lines", 60 <= len(summary) <= 600,
+        "Write 2–4 crisp lines: who you are, your top skills, the role you want.", 12)
+    skills = [s for s in re.split(r"[,\n]", r.get("skills") or "") if s.strip()]
+    add(f"{len(skills)} skills listed", len(skills) >= 8,
+        "Aim for 8–12 relevant skills, most important first.", 12)
+    exp = (r.get("experience") or "").strip()
+    verbs = sum(1 for v in _ACTION_VERBS if v in exp.lower())
+    add("Experience uses action verbs", verbs >= 2,
+        "Start bullets with action verbs: Built, Developed, Automated…", 12)
+    add("Experience shows measurable results", bool(re.search(r"\d", exp)),
+        "Add numbers: 'cut load time by 40%', 'trained on 10k rows'.", 12)
+    add("Experience has substance", len(exp) >= 200,
+        "Describe 2–3 projects or work with your role and the outcome.", 8)
+    edu = (r.get("education") or "").strip()
+    add("Education filled", len(edu) >= 10,
+        "Add degree, institute, year and percentage/CGPA.", 8)
+    proj = (r.get("projects") or "").strip()
+    add("Certifications / achievements added", len(proj) >= 5,
+        "Certifications and achievements make freshers stand out.", 8)
+    return {"score": min(score, 100), "checks": checks}
+
+
+# --------------------------------------------------------------------------
 # Interview scoring
 # --------------------------------------------------------------------------
 
@@ -451,7 +619,10 @@ def dispatch(subpath: str, student: dict, data: dict, ip: str) -> tuple[dict, in
             return {"ok": False, "error": "invalid_resume"}, 400
         clean = {k: str(resume.get(k, ""))[:5000]
                  for k in ("name", "title", "email", "phone", "city", "summary",
-                           "skills", "experience", "education", "projects")}
+                           "skills", "experience", "education", "projects",
+                           "template")}
+        if clean["template"] not in ("classic", "modern", "exec"):
+            clean["template"] = "classic"
         clean["updated_at"] = _now_iso()
         with _lock:
             store = _load()
@@ -465,25 +636,69 @@ def dispatch(subpath: str, student: dict, data: dict, ip: str) -> tuple[dict, in
             return r
         kind = (data.get("kind") or "").strip()
         text = (data.get("text") or "").strip()
+        rctx = data.get("resume")
+        if not isinstance(rctx, dict):
+            rctx = {}
         if kind not in ("summary", "skills", "experience", "education", "projects"):
             return {"ok": False, "error": "invalid_kind"}, 400
-        if not (3 <= len(text) <= 4000):
+        # Summary may be drafted from scratch (title + skills); others need input.
+        if kind == "summary":
+            if len(text) > 4000:
+                return {"ok": False, "error": "invalid_text"}, 400
+        elif not (3 <= len(text) <= 4000):
             return {"ok": False, "error": "invalid_text"}, 400
-        prompts = {
-            "summary": "Rewrite this resume professional summary into 2–3 crisp, confident lines suitable for an IT fresher in India. Keep every fact truthful — do not invent experience. Return ONLY the rewritten summary.",
-            "skills": "Convert these into a clean, comma-separated ATS-friendly skills list, grouped logically if helpful (e.g. Languages, Tools). Return ONLY the list.",
-            "experience": "Rewrite these into strong resume bullet points, each starting with an action verb (Built, Developed, Automated…). Keep every fact truthful — do not invent anything. Return ONLY the bullets, one per line.",
-            "education": "Format this education information cleanly for a resume: degree, institute, year, score. Return ONLY the formatted text.",
-            "projects": "Rewrite these project descriptions as crisp resume entries: project name, one-line purpose, tech stack, and outcome. Keep facts truthful. Return ONLY the rewritten text.",
-        }
+        if kind == "summary" and not text:
+            ai_prompt = (
+                "Write a professional 2–3 line resume summary for an Indian IT fresher. "
+                f"Title: {(rctx.get('title') or 'IT fresher').strip()}. "
+                f"Skills: {(rctx.get('skills') or 'core technologies').strip()}. "
+                "Confident tone, no invented experience. Return ONLY the summary.")
+            ai_input = ai_prompt
+        else:
+            prompts = {
+                "summary": "Rewrite this resume professional summary into 2–3 crisp, confident lines suitable for an IT fresher in India. Keep every fact truthful — do not invent experience. Return ONLY the rewritten summary.",
+                "skills": "Convert these into a clean, comma-separated ATS-friendly skills list, grouped logically if helpful (e.g. Languages, Tools). Return ONLY the list.",
+                "experience": "Rewrite these into strong resume bullet points, each starting with an action verb (Built, Developed, Automated…). Keep every fact truthful — do not invent anything. Return ONLY the bullets, one per line.",
+                "education": "Format this education information cleanly for a resume: degree, institute, year, score. Return ONLY the formatted text.",
+                "projects": "Rewrite these project descriptions as crisp resume entries: project name, one-line purpose, tech stack, and outcome. Keep facts truthful. Return ONLY the rewritten text.",
+            }
+            ai_input = f"{prompts[kind]}\n\nInput:\n{text}"
         enhanced = _ai_chat(
             "You are an expert resume writer for Indian IT freshers. "
             "Never invent experience, degrees or achievements.",
-            f"{prompts[kind]}\n\nInput:\n{text}",
+            ai_input,
             max_tokens=600, timeout=45)
         if enhanced:
             return {"ok": True, "enhanced": enhanced, "ai": True}, 200
-        return {"ok": True, "enhanced": _ENHANCE_TIPS[kind], "ai": False}, 200
+        polished = _POLISHERS[kind](text, rctx)
+        if not polished.strip():
+            return {"ok": False, "error": "nothing_to_polish"}, 400
+        return {"ok": True, "enhanced": polished, "ai": False}, 200
+
+    if subpath == "resume-analyze":
+        r = need_rl(30)
+        if r:
+            return r
+        resume = data.get("resume")
+        if not isinstance(resume, dict):
+            with _lock:
+                store = _load()
+                resume = _profile(store, sid)["resume"]
+        analysis = _analyze_resume(resume)
+        ai_notes = _ai_chat(
+            "You are an expert resume coach for Indian IT freshers. "
+            "Never invent experience. Be specific and brief.",
+            "Review this fresher resume and give exactly 3 specific, actionable "
+            "improvements (one line each). Resume:\n" +
+            "\n".join(f"{k}: {resume.get(k, '')}" for k in
+                       ("name", "title", "summary", "skills", "experience",
+                        "education", "projects") if resume.get(k)),
+            max_tokens=300, timeout=40)
+        analysis["ai_suggestions"] = (
+            [l.strip("•- ") for l in ai_notes.split("\n") if l.strip()][:3]
+            if ai_notes else [])
+        analysis["ai"] = bool(ai_notes)
+        return {"ok": True, "analysis": analysis, "ai": analysis["ai"]}, 200
 
     # ---------------- Readiness checklist ----------------
     if subpath == "checklist-get":
