@@ -141,16 +141,20 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 /* ===== dashboard ===== */
 #view-app{display:none}
 .shell{display:flex;min-height:calc(100vh - 77px)}
-.side{width:258px;flex-shrink:0;padding:26px 16px;border-right:1px solid var(--line);background:rgba(5,8,26,.55);backdrop-filter:blur(10px)}
-.side .who{padding:0 10px 18px;border-bottom:1px solid var(--line);margin-bottom:14px}
-.side .who .nm{font-weight:800;font-size:17px}
-.side .who .id{font-size:12px;color:var(--muted)}
-.slink{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:none;border:1px solid transparent;color:var(--muted);
-  padding:11px 12px;border-radius:12px;font-size:14.5px;cursor:pointer;margin-bottom:4px;transition:all .25s}
-.slink .ic{font-size:17px;width:24px;text-align:center}
-.slink:hover{color:var(--text);background:rgba(232,185,60,.08);transform:translateX(4px)}
-.slink.active{color:var(--gold2);background:rgba(232,185,60,.13);border-color:var(--line);box-shadow:0 0 18px rgba(232,185,60,.12)}
-.main{flex:1;padding:34px;min-width:0;max-width:1080px}
+.main{flex:1;padding:34px;min-width:0;max-width:1080px;margin:0 auto;width:100%}
+/* navbar user menu */
+.navlink{display:inline-flex;align-items:center;gap:8px;background:none;border:1px solid transparent;color:var(--muted);
+  padding:9px 14px;border-radius:12px;font-size:14.5px;font-weight:600;cursor:pointer;transition:all .25s;white-space:nowrap}
+.navlink:hover{color:var(--text);background:rgba(232,185,60,.08)}
+.navlink.active{color:var(--gold2);background:rgba(232,185,60,.13);border-color:var(--line)}
+.userwrap{position:relative}
+.usermenu{position:absolute;right:0;top:calc(100% + 8px);min-width:170px;background:#0a1030;border:1px solid var(--line);
+  border-radius:14px;padding:8px;display:none;box-shadow:0 18px 40px rgba(0,0,0,.5);z-index:60}
+.userwrap.open .usermenu{display:block}
+.usermenu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;
+  color:var(--text);padding:10px 12px;border-radius:10px;font-size:14.5px;cursor:pointer}
+.usermenu button:hover{background:rgba(232,185,60,.1);color:var(--gold2)}
+.boxlink{cursor:pointer}
 .sec{display:none}
 .sec.active{display:block;animation:secIn .5s cubic-bezier(.2,.7,.2,1)}
 @keyframes secIn{from{opacity:0;transform:translateY(24px) scale(.99)}to{opacity:1;transform:none}}
@@ -178,18 +182,44 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 .empty .big{font-size:44px;margin-bottom:12px;animation:logoFloat 5s ease-in-out infinite}
 .profile-row{display:flex;justify-content:space-between;gap:12px;padding:12px 2px;border-bottom:1px solid rgba(154,166,199,.14);font-size:14.5px}
 .profile-row .k{color:var(--muted)}
-.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:26px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;text-align:center}
-.stat .n{font-size:34px;font-weight:800;color:var(--gold2)}
-.stat .l{font-size:12.5px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-top:6px}
 @media(max-width:860px){
-  .shell{flex-direction:column}
-  .side{width:100%;border-right:none;border-bottom:1px solid var(--line);display:flex;overflow-x:auto;gap:6px;padding:12px}
-  .side .who{display:none}
-  .slink{white-space:nowrap;margin-bottom:0}
   .brand{font-size:25px}.nav img.logo{height:40px}
+  .navlink{padding:8px 10px;font-size:13px}
   .slide{padding:40px 26px}
+  .main{padding:22px 14px}
 }
+/* ===== futuristic 3D effects ===== */
+@property --ang{syntax:'<angle>';initial-value:0deg;inherits:false}
+.live-card::before{content:'';position:absolute;inset:-2px;border-radius:24px;padding:2px;pointer-events:none;
+  background:conic-gradient(from var(--ang),transparent 0%,rgba(232,185,60,.9) 12%,transparent 26%,transparent 55%,rgba(91,155,255,.85) 67%,transparent 80%);
+  -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;
+  animation:angSpin 5s linear infinite}
+@keyframes angSpin{to{--ang:360deg}}
+.hud{position:relative}
+.hud i{position:absolute;width:26px;height:26px;border:2px solid rgba(232,185,60,.75);pointer-events:none;z-index:2}
+.hud i:nth-child(1){top:10px;left:10px;border-right:none;border-bottom:none;border-radius:8px 0 0 0}
+.hud i:nth-child(2){top:10px;right:10px;border-left:none;border-bottom:none;border-radius:0 8px 0 0}
+.hud i:nth-child(3){bottom:10px;left:10px;border-right:none;border-top:none;border-radius:0 0 0 8px}
+.hud i:nth-child(4){bottom:10px;right:10px;border-left:none;border-top:none;border-radius:0 0 8px 0}
+.card{position:relative;overflow:hidden;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s}
+.card::after{content:'';position:absolute;top:0;left:-80%;width:60%;height:100%;transform:skewX(-20deg);pointer-events:none;
+  background:linear-gradient(90deg,transparent,rgba(232,185,60,.16),rgba(140,175,255,.12),transparent);transition:left .7s ease}
+.boxlink:hover::after{left:130%}
+.boxlink:hover{box-shadow:0 18px 44px rgba(232,185,60,.16),0 0 0 1px rgba(232,185,60,.35)}
+.sec.active .boxlink{animation:boxIn .6s cubic-bezier(.2,.8,.2,1) backwards}
+.sec.active .boxlink:nth-child(1){animation-delay:.03s}.sec.active .boxlink:nth-child(2){animation-delay:.08s}
+.sec.active .boxlink:nth-child(3){animation-delay:.13s}.sec.active .boxlink:nth-child(4){animation-delay:.18s}
+.sec.active .boxlink:nth-child(5){animation-delay:.23s}.sec.active .boxlink:nth-child(6){animation-delay:.28s}
+.sec.active .boxlink:nth-child(7){animation-delay:.33s}.sec.active .boxlink:nth-child(8){animation-delay:.38s}
+.sec.active .boxlink:nth-child(9){animation-delay:.43s}.sec.active .boxlink:nth-child(10){animation-delay:.48s}
+@keyframes boxIn{from{opacity:0;transform:perspective(900px) rotateX(55deg) translateY(34px)}to{opacity:1;transform:none}}
+.orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.35;pointer-events:none;z-index:0;animation:orbFloat 14s ease-in-out infinite}
+.orb.o1{width:340px;height:340px;left:-90px;top:16%;background:#1b2a6e}
+.orb.o2{width:280px;height:280px;right:-70px;top:52%;background:#6e4d12;animation-delay:-5s}
+.orb.o3{width:220px;height:220px;left:34%;bottom:-80px;background:#123a6e;animation-delay:-9s}
+@keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(46px,-38px) scale(1.12)}}
+#hello{text-shadow:0 0 34px rgba(232,185,60,.35);animation:headGlow 4s ease-in-out infinite}
+@keyframes headGlow{0%,100%{text-shadow:0 0 22px rgba(232,185,60,.22)}50%{text-shadow:0 0 44px rgba(232,185,60,.5)}}
 </style>
 </head>
 <body>
@@ -197,6 +227,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 <canvas id="dust"></canvas>
 <div id="glow"></div>
 <div class="vignette"></div>
+<div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
 <div id="wipe"><div class="wbrand"><span style="color:var(--gold2)">Sayyed</span> <span style="color:var(--blue)">EdVantage</span></div></div>
 
 <div class="page">
@@ -314,33 +345,20 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
   <nav class="nav" style="position:sticky">
     <img class="logo" src="/portal/logo.png" alt="Sayyed EdVantage logo">
     <div class="brand"><span class="s">Sayyed</span> <span class="e">EdVantage</span></div>
-    <div class="sp"></div><div class="tag">Study Portal</div>
+    <div class="sp"></div>
+    <button class="navlink active" data-sec="home">🏠 Dashboard</button>
+    <div class="userwrap" id="userWrap">
+      <button class="navlink" id="userBtn">👤 <span id="nav-username">—</span> ▾</button>
+      <div class="usermenu"><button onclick="doLogout()">🚪 Logout</button></div>
+    </div>
+    <div class="tag">Study Portal</div>
   </nav>
   <div class="shell">
-    <aside class="side">
-      <div class="who"><div class="nm" id="who-name">—</div><div class="id" id="who-id">—</div></div>
-      <button class="slink active" data-sec="home"><span class="ic">🏠</span>Dashboard</button>
-      <button class="slink" data-sec="courses"><span class="ic">📚</span>My Courses</button>
-      <button class="slink" data-sec="live"><span class="ic">🔴</span>Upcoming Live Classes</button>
-      <button class="slink" data-sec="recorded"><span class="ic">🎬</span>Recorded Sessions</button>
-      <button class="slink" data-sec="materials"><span class="ic">📄</span>Course Materials</button>
-      <button class="slink" data-sec="assignments"><span class="ic">📝</span>Assignments</button>
-      <button class="slink" data-sec="certificates"><span class="ic">🏆</span>Certificates</button>
-      <button class="slink" data-sec="career"><span class="ic">💼</span>Career &amp; Placement</button>
-      <button class="slink" data-sec="community"><span class="ic">👥</span>Community &amp; Support</button>
-      <button class="slink" data-sec="help"><span class="ic">❓</span>Help &amp; Support</button>
-      <button class="slink" onclick="doLogout()"><span class="ic">🚪</span>Logout</button>
-    </aside>
     <main class="main">
       <section class="sec active" id="sec-home">
         <h2 id="hello">Welcome <span class="g">Back</span></h2>
         <p class="sub">Your learning universe — join today's lecture and track everything.</p>
-        <div class="stat-grid">
-          <div class="stat"><div class="n" data-count="7">0</div><div class="l">Courses Offered</div></div>
-          <div class="stat"><div class="n" data-count="9">0</div><div class="l">Portal Sections</div></div>
-          <div class="stat"><div class="n" data-count="100">0</div><div class="l">% Commitment</div></div>
-        </div>
-        <div class="live-card tilt" id="liveCard">
+        <div class="live-card tilt hud" id="liveCard"><i></i><i></i><i></i><i></i>
           <span class="pill">● Today's Live Lecture</span>
           <h3>Sample Lecture — Timetable Coming Soon</h3>
           <div class="when">The real lecture schedule and meeting links will appear here shortly.</div>
@@ -348,17 +366,24 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
           <div class="sample-note">Sample card: your actual batch timetable and Join link will replace this as soon as they are published.</div>
         </div>
         <div class="cards">
-          <div class="card"><h3>🔴 Upcoming Live Classes</h3><p>Your week's live lecture schedule with one-tap Join buttons.</p></div>
-          <div class="card"><h3>🎬 Recorded Sessions</h3><p>Missed a class? Watch the recording anytime.</p></div>
-          <div class="card"><h3>📄 Course Materials</h3><p>Notes, slides and resources shared by your faculty.</p></div>
+          <div class="card boxlink tilt" data-sec="courses"><h3>📚 Enrolled Courses</h3><p>Your courses and learning paths, all in one place.</p></div>
+          <div class="card boxlink tilt" data-goto="liveCard"><h3>🔴 Today's Live Lecture</h3><p>Join today's live lecture — tap to jump to the lecture card.</p></div>
+          <div class="card boxlink tilt" data-sec="live"><h3>📡 Upcoming Lectures</h3><p>Your upcoming lecture schedule with one-tap Join.</p></div>
+          <div class="card boxlink tilt" data-sec="recorded"><h3>🎬 Recorded Sessions</h3><p>Missed a class? Watch the recording anytime.</p></div>
+          <div class="card boxlink tilt" data-sec="materials"><h3>📄 Course Materials</h3><p>Notes, slides and resources shared by your faculty.</p></div>
+          <div class="card boxlink tilt" data-sec="assignments"><h3>📝 Assignments</h3><p>Your tasks, deadlines and submissions.</p></div>
+          <div class="card boxlink tilt" data-sec="certificates"><h3>🏆 Certificate</h3><p>Your course completion certificates live here.</p></div>
+          <div class="card boxlink tilt" data-sec="career"><h3>💼 Career &amp; Placement</h3><p>Internships, placement drives and career guidance.</p></div>
+          <div class="card boxlink tilt" data-sec="community"><h3>👥 Community &amp; Support</h3><p>Connect with fellow learners and mentors.</p></div>
+          <div class="card boxlink tilt" data-sec="help"><h3>❓ Help &amp; Support</h3><p>Contact us, manage your profile, browse FAQs.</p></div>
         </div>
       </section>
       <section class="sec" id="sec-courses">
-        <h2>My <span class="g">Courses</span></h2><p class="sub">The courses you are enrolled in.</p>
+        <h2>Enrolled <span class="g">Courses</span></h2><p class="sub">The courses you are enrolled in.</p>
         <div class="empty"><div class="big">📚</div><p>No enrollments yet.<br>Your courses will appear here once your admission is confirmed.</p></div>
       </section>
       <section class="sec" id="sec-live">
-        <h2>Upcoming <span class="g">Live Classes</span></h2><p class="sub">Join your online lectures from here every day.</p>
+        <h2>Upcoming <span class="g">Lectures</span></h2><p class="sub">Join your online lectures from here every day.</p>
         <div class="empty"><div class="big">🔴</div><p>No live classes scheduled yet.<br>The timetable will appear here once it is published.</p></div>
       </section>
       <section class="sec" id="sec-recorded">
@@ -374,7 +399,7 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
         <div class="empty"><div class="big">📝</div><p>No assignments yet.</p></div>
       </section>
       <section class="sec" id="sec-certificates">
-        <h2><span class="g">Certificates</span></h2><p class="sub">Your course completion certificates.</p>
+        <h2><span class="g">Certificate</span></h2><p class="sub">Your course completion certificates.</p>
         <div class="empty"><div class="big">🏆</div><p>No certificates yet.<br>Complete a course to earn your certificate here.</p></div>
       </section>
       <section class="sec" id="sec-career">
@@ -542,15 +567,6 @@ addEventListener('scroll',()=>{
   restart();
 })();
 
-/* ================= animated counters ================= */
-const cio=new IntersectionObserver(es=>es.forEach(e=>{
-  if(!e.isIntersecting)return;cio.unobserve(e.target);
-  const el=e.target,end=+el.dataset.count,t0=performance.now();
-  (function c(t){const p=Math.min(1,(t-t0)/1400),v=Math.round(end*(1-Math.pow(1-p,3)));
-    el.textContent=v+(end===100?'%':'');if(p<1)requestAnimationFrame(c);})(t0);
-}),{threshold:.5});
-document.querySelectorAll('[data-count]').forEach(el=>cio.observe(el));
-
 /* ================= auth + app logic (same-origin API) ================= */
 async function api(path,body){
   const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})});
@@ -600,8 +616,7 @@ async function doLogout(){
 }
 function enterApp(st,token){
   student=st;if(token)localStorage.setItem(TOKEN_KEY,token);
-  $('who-name').textContent=st.full_name;
-  $('who-id').textContent='@'+st.username+' · '+st.student_id;
+  $('nav-username').textContent='@'+st.username;
   $('hello').innerHTML='Welcome <span class="g">'+st.full_name.split(' ')[0]+'</span>';
   $('profile-box').innerHTML=
     '<div class="profile-row"><span class="k">Student ID</span><span>'+st.student_id+'</span></div>'+
@@ -620,13 +635,18 @@ function enterApp(st,token){
   });
   window.scrollTo(0,0);
 }
-document.querySelectorAll('.slink[data-sec]').forEach(b=>b.addEventListener('click',()=>{
-  document.querySelectorAll('.slink[data-sec]').forEach(x=>x.classList.remove('active'));
+document.querySelectorAll('[data-sec]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-sec]').forEach(x=>x.classList.remove('active'));
   b.classList.add('active');
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('active'));
   const sec=$('sec-'+b.dataset.sec);void sec.offsetWidth;sec.classList.add('active');
   window.scrollTo(0,0);
 }));
+document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>{
+  const t=$(b.dataset.goto);if(t)t.scrollIntoView({behavior:'smooth',block:'center'});
+}));
+$('userBtn').addEventListener('click',e=>{e.stopPropagation();$('userWrap').classList.toggle('open');});
+document.addEventListener('click',e=>{if(!$('userWrap').contains(e.target))$('userWrap').classList.remove('open');});
 ['in-pass','up-pass'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')(id==='in-pass'?doLogin:doSignup)();}));
 (async function init(){
   const t=localStorage.getItem(TOKEN_KEY);if(!t)return;
