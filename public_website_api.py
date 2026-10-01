@@ -4,14 +4,15 @@ Exposes a small, unauthenticated surface for the public marketing website:
 
     POST /api/public/request-otp   {phone, email, channel?} -> sends 6-digit OTP
     POST /api/public/verify-otp    {phone, email, code}      -> {verify_token}
-    POST /api/public/lead          {name, phone, email, verify_token, ...}
+    POST /api/public/lead          {name, phone, email, verify_token?, ...}
 
 Security model (no dashboard credentials involved; dashboard Basic Auth untouched):
   * CORS enabled for browser calls from the website.
   * Per-target and per-IP rate limits (in-memory sliding windows).
   * OTP: 6 digits, 5-minute expiry, max 5 verify attempts, constant-time compare.
-  * Verification tokens: random, 15-minute expiry, single-use, bound to
-    phone+email. A lead can only be created with a valid token.
+  * Verification tokens are optional: when verify_token is supplied it must be a
+    valid single-use token bound to phone+email; when omitted, the lead is
+    accepted directly (honeypot + rate limits still apply).
   * Honeypot field on the lead endpoint to catch naive bots.
 
 Configuration (all via environment, nothing secret in code):
@@ -376,8 +377,8 @@ def _handle_public_lead(handler, data: dict, ip: str) -> None:
     email = (data.get("email", "") or "").strip().lower()
     verify_token = (data.get("verify_token", "") or "").strip()
 
-    if not name or not phone or not email or not verify_token:
-        _public_json(handler, {"ok": False, "error": "name_phone_email_token_required"}, 400)
+    if not name or not phone or not email:
+        _public_json(handler, {"ok": False, "error": "name_phone_email_required"}, 400)
         return
     if not _valid_phone(phone):
         _public_json(handler, {"ok": False, "error": "invalid_phone"}, 400)
@@ -386,14 +387,16 @@ def _handle_public_lead(handler, data: dict, ip: str) -> None:
         _public_json(handler, {"ok": False, "error": "invalid_email"}, 400)
         return
 
-    with _lock:
-        token_entry = _verify_tokens.pop(verify_token, None)
-    if not token_entry or time.time() > token_entry["expires_at"]:
-        _public_json(handler, {"ok": False, "error": "verification_required"}, 403)
-        return
-    if token_entry["phone"] != phone or token_entry["email"] != email:
-        _public_json(handler, {"ok": False, "error": "verification_mismatch"}, 403)
-        return
+    if verify_token:
+        # OTP verification is optional: when a token is supplied it must be valid.
+        with _lock:
+            token_entry = _verify_tokens.pop(verify_token, None)
+        if not token_entry or time.time() > token_entry["expires_at"]:
+            _public_json(handler, {"ok": False, "error": "verification_required"}, 403)
+            return
+        if token_entry["phone"] != phone or token_entry["email"] != email:
+            _public_json(handler, {"ok": False, "error": "verification_mismatch"}, 403)
+            return
 
     if create_or_update_lead is None:
         _public_json(handler, {"ok": False, "error": "server_misconfigured"}, 500)
