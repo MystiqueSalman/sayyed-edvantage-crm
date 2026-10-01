@@ -6,6 +6,23 @@ Exposes a small, unauthenticated surface for the public marketing website:
     POST /api/public/verify-otp    {phone, email, code}      -> {verify_token}
     POST /api/public/lead          {name, phone, email, verify_token?, ...}
 
+Student portal (Study Portal / elearning subdomain) — real accounts:
+
+    POST /api/public/student-signup  {username, full_name, email, phone,
+                                      password} -> {student_id, session_token}
+    POST /api/public/student-login   {username, password} -> {session_token}
+    POST /api/public/student-me      {session_token} -> {student}
+    POST /api/public/student-logout  {session_token} -> {}
+
+Student security model:
+  * Passwords hashed with PBKDF2-HMAC-SHA256 (200k iterations, per-user salt);
+    hashes never leave the server.
+  * Session tokens are 256-bit secrets stored server-side, 30-day sliding
+    expiry, passed in the JSON body (CORS-safe, no cookies needed).
+  * students.json lives in the same data/ dir as leads.json, so it rides the
+    same Railway volume persistence.
+  * Per-IP and per-username rate limits on signup/login; honeypot on signup.
+
 Security model (no dashboard credentials involved; dashboard Basic Auth untouched):
   * CORS enabled for browser calls from the website.
   * Per-target and per-IP rate limits (in-memory sliding windows).
@@ -431,6 +448,243 @@ def _handle_public_lead(handler, data: dict, ip: str) -> None:
 
 
 # --------------------------------------------------------------------------
+# Student accounts (Study Portal)
+# --------------------------------------------------------------------------
+
+from hashlib import pbkdf2_hmac
+from pathlib import Path as _Path
+
+_STUDENTS_FILE = _Path(__file__).resolve().parent / "data" / "students.json"
+
+PBKDF2_ITERATIONS = 200_000
+SESSION_TTL_SEC = 30 * 24 * 3600      # 30 days, sliding
+SIGNUP_LIMIT = 5                       # per IP
+SIGNUP_WINDOW = 3600                   # per hour
+LOGIN_IP_LIMIT = 20                    # per IP
+LOGIN_USER_LIMIT = 10                  # per username
+LOGIN_WINDOW = 600                     # per 10 minutes
+
+_USERNAME_RE = re.compile(r"^[A-Za-z0-9_.]{3,30}$")
+
+
+def _load_student_store() -> dict:
+    try:
+        _STUDENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        if _STUDENTS_FILE.exists():
+            data = json.loads(_STUDENTS_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                data.setdefault("students", {})
+                data.setdefault("sessions", {})
+                data.setdefault("seq", 0)
+                return data
+    except Exception as exc:
+        print(f"[public-api] student store read failed: {exc}")
+    return {"students": {}, "sessions": {}, "seq": 0}
+
+
+def _save_student_store(data: dict) -> None:
+    try:
+        _STUDENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _STUDENTS_FILE.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        tmp.replace(_STUDENTS_FILE)
+    except Exception as exc:
+        print(f"[public-api] student store write failed: {exc}")
+
+
+def _hash_password(password: str) -> str:
+    salt = secrets.token_bytes(16)
+    dk = pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PBKDF2_ITERATIONS)
+    return f"pbkdf2_sha256${PBKDF2_ITERATIONS}${salt.hex()}${dk.hex()}"
+
+
+def _verify_password(password: str, stored: str) -> bool:
+    try:
+        algo, iters, salt_hex, dk_hex = stored.split("$")
+        if algo != "pbkdf2_sha256":
+            return False
+        dk = pbkdf2_hmac(
+            "sha256", password.encode("utf-8"),
+            bytes.fromhex(salt_hex), int(iters),
+        )
+        return secrets.compare_digest(dk.hex(), dk_hex)
+    except Exception:
+        return False
+
+
+def _valid_username(username: str) -> bool:
+    return bool(_USERNAME_RE.match(username or ""))
+
+
+def _public_student(student: dict) -> dict:
+    return {
+        "student_id": student.get("student_id"),
+        "username": student.get("username"),
+        "full_name": student.get("full_name"),
+        "email": _mask_email(student.get("email", "")),
+        "phone": _mask_phone(student.get("phone", "")),
+        "created_at": student.get("created_at"),
+    }
+
+
+def _session_token_from(data: dict, handler) -> str:
+    token = (data.get("session_token", "") or "").strip()
+    if not token and handler is not None:
+        auth = handler.headers.get("Authorization", "")
+        if auth.lower().startswith("bearer "):
+            token = auth[7:].strip()
+    return token
+
+
+def _student_signup(data: dict, ip: str) -> tuple[dict, int]:
+    # Honeypot: real users leave this empty.
+    if (data.get("website", "") or "").strip():
+        return {"ok": True, "student_id": None}, 200
+
+    if not _rate_ok(f"student-signup:{ip}", SIGNUP_LIMIT, SIGNUP_WINDOW):
+        return {"ok": False, "error": "too_many_requests"}, 429
+
+    username = (data.get("username", "") or "").strip()
+    full_name = (data.get("full_name", "") or "").strip()
+    email = (data.get("email", "") or "").strip().lower()
+    phone = _normalize_phone(data.get("phone", ""))
+    password = data.get("password", "") or ""
+
+    if not _valid_username(username):
+        return {"ok": False, "error": "invalid_username"}, 400
+    if not (2 <= len(full_name) <= 80):
+        return {"ok": False, "error": "invalid_full_name"}, 400
+    if not _valid_email(email):
+        return {"ok": False, "error": "invalid_email"}, 400
+    if not _valid_phone(phone):
+        return {"ok": False, "error": "invalid_phone"}, 400
+    if not (6 <= len(password) <= 128):
+        return {"ok": False, "error": "invalid_password"}, 400
+
+    key = username.lower()
+    with _lock:
+        store = _load_student_store()
+        students = store["students"]
+        if key in students:
+            return {"ok": False, "error": "username_taken"}, 409
+        for s in students.values():
+            if s.get("email") == email:
+                return {"ok": False, "error": "email_taken"}, 409
+            if s.get("phone") == phone:
+                return {"ok": False, "error": "phone_taken"}, 409
+
+        store["seq"] += 1
+        student_id = f"STU-{store['seq']:05d}"
+        now = time.time()
+        students[key] = {
+            "student_id": student_id,
+            "username": username,
+            "full_name": full_name,
+            "email": email,
+            "phone": phone,
+            "password_hash": _hash_password(password),
+            "created_at": datetime.now().isoformat(timespec="seconds"),
+        }
+        token = secrets.token_urlsafe(32)
+        store["sessions"][token] = {"username": key, "expires_at": now + SESSION_TTL_SEC}
+        _save_student_store(store)
+
+    return {
+        "ok": True,
+        "student_id": student_id,
+        "session_token": token,
+        "student": _public_student(students[key]),
+    }, 200
+
+
+def _student_login(data: dict, ip: str) -> tuple[dict, int]:
+    username = (data.get("username", "") or "").strip()
+    password = data.get("password", "") or ""
+
+    if not username or not password:
+        return {"ok": False, "error": "username_and_password_required"}, 400
+    if not _rate_ok(f"student-login-ip:{ip}", LOGIN_IP_LIMIT, LOGIN_WINDOW):
+        return {"ok": False, "error": "too_many_requests"}, 429
+    if not _rate_ok(f"student-login-user:{username.lower()}", LOGIN_USER_LIMIT, LOGIN_WINDOW):
+        return {"ok": False, "error": "too_many_requests"}, 429
+
+    key = username.lower()
+    with _lock:
+        store = _load_student_store()
+        student = store["students"].get(key)
+        if not student or not _verify_password(password, student.get("password_hash", "")):
+            # Constant-ish failure path: do not reveal whether the username exists.
+            return {"ok": False, "error": "invalid_credentials"}, 401
+        token = secrets.token_urlsafe(32)
+        store["sessions"][token] = {
+            "username": key, "expires_at": time.time() + SESSION_TTL_SEC,
+        }
+        _save_student_store(store)
+
+    return {
+        "ok": True,
+        "session_token": token,
+        "student": _public_student(student),
+    }, 200
+
+
+def _student_from_token(token: str) -> dict | None:
+    if not token:
+        return None
+    with _lock:
+        store = _load_student_store()
+        sess = store["sessions"].get(token)
+        if not sess:
+            return None
+        if time.time() > sess.get("expires_at", 0):
+            store["sessions"].pop(token, None)
+            _save_student_store(store)
+            return None
+        # Sliding expiry.
+        sess["expires_at"] = time.time() + SESSION_TTL_SEC
+        student = store["students"].get(sess.get("username", ""))
+        _save_student_store(store)
+        return student
+
+
+def _student_me(data: dict, handler) -> tuple[dict, int]:
+    student = _student_from_token(_session_token_from(data, handler))
+    if not student:
+        return {"ok": False, "error": "not_logged_in"}, 401
+    return {"ok": True, "student": _public_student(student)}, 200
+
+
+def _student_logout(data: dict, handler) -> tuple[dict, int]:
+    token = _session_token_from(data, handler)
+    if token:
+        with _lock:
+            store = _load_student_store()
+            if store["sessions"].pop(token, None) is not None:
+                _save_student_store(store)
+    return {"ok": True}, 200
+
+
+def _handle_student_signup(handler, data: dict, ip: str) -> None:
+    payload, status = _student_signup(data, ip)
+    _public_json(handler, payload, status)
+
+
+def _handle_student_login(handler, data: dict, ip: str) -> None:
+    payload, status = _student_login(data, ip)
+    _public_json(handler, payload, status)
+
+
+def _handle_student_me(handler, data: dict, ip: str) -> None:
+    payload, status = _student_me(data, handler)
+    _public_json(handler, payload, status)
+
+
+def _handle_student_logout(handler, data: dict, ip: str) -> None:
+    payload, status = _student_logout(data, handler)
+    _public_json(handler, payload, status)
+
+
+# --------------------------------------------------------------------------
 # Router (called from the main Handler)
 # --------------------------------------------------------------------------
 
@@ -445,5 +699,13 @@ def handle_public_post(handler) -> None:
         _handle_verify_otp(handler, data, ip)
     elif path == "/api/public/lead":
         _handle_public_lead(handler, data, ip)
+    elif path == "/api/public/student-signup":
+        _handle_student_signup(handler, data, ip)
+    elif path == "/api/public/student-login":
+        _handle_student_login(handler, data, ip)
+    elif path == "/api/public/student-me":
+        _handle_student_me(handler, data, ip)
+    elif path == "/api/public/student-logout":
+        _handle_student_logout(handler, data, ip)
     else:
         _public_json(handler, {"ok": False, "error": "not_found"}, 404)
