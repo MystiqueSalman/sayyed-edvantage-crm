@@ -148,12 +148,30 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 .navlink:hover{color:var(--text);background:rgba(232,185,60,.08)}
 .navlink.active{color:var(--gold2);background:rgba(232,185,60,.13);border-color:var(--line)}
 .userwrap{position:relative}
-.usermenu{position:absolute;right:0;top:calc(100% + 8px);min-width:170px;background:#0a1030;border:1px solid var(--line);
-  border-radius:14px;padding:8px;display:none;box-shadow:0 18px 40px rgba(0,0,0,.5);z-index:60}
-.userwrap.open .usermenu{display:block}
-.usermenu button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;
-  color:var(--text);padding:10px 12px;border-radius:10px;font-size:14.5px;cursor:pointer}
-.usermenu button:hover{background:rgba(232,185,60,.1);color:var(--gold2)}
+.usermenu{position:absolute;right:0;top:calc(100% + 8px);min-width:270px;background:#0a1030;border:1px solid var(--line);
+  border-radius:16px;padding:14px;display:none;box-shadow:0 18px 40px rgba(0,0,0,.5);z-index:60}
+.userwrap.open .usermenu{display:block;animation:menuIn .25s cubic-bezier(.2,.8,.2,1)}
+@keyframes menuIn{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
+.phead{display:flex;align-items:center;gap:12px;padding:4px 4px 12px;border-bottom:1px solid var(--line);margin-bottom:8px}
+.pavatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;
+  background:rgba(232,185,60,.14);border:1px solid var(--gold)}
+.pname{font-weight:800;font-size:15.5px}
+.pid{font-size:12.5px;color:var(--muted)}
+.prow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 4px;font-size:13.5px}
+.prow span{color:var(--muted)}
+.prow b{font-weight:600;font-size:13px;word-break:break-all;text-align:right}
+.plink{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:none;
+  color:var(--text);padding:10px 12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px}
+.plink:hover{background:rgba(232,185,60,.1);color:var(--gold2)}
+.plink.logout{color:#ff9d9d;border-top:1px solid var(--line);border-radius:0;margin-top:8px;padding-top:14px}
+.plink.logout:hover{background:rgba(255,80,80,.08);color:#ff6b6b}
+.pwform{padding:6px 4px 2px}
+.pwform input{width:100%;box-sizing:border-box;background:rgba(5,8,26,.7);border:1px solid var(--line);border-radius:10px;
+  color:var(--text);padding:10px 12px;font-size:13.5px;margin-bottom:8px;outline:none}
+.pwform input:focus{border-color:var(--gold)}
+.pwform .btn{width:100%;padding:10px;font-size:13.5px}
+.pwmsg{font-size:12.5px;margin-top:8px;min-height:16px}
+.pwmsg.ok{color:#7ee2a8}.pwmsg.err{color:#ff9d9d}
 .boxlink{cursor:pointer}
 .backbtn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;margin-right:12px;
   border-radius:50%;border:1px solid var(--gold);background:rgba(232,185,60,.1);color:var(--gold2);
@@ -355,7 +373,19 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
     <button class="navlink active" data-sec="home">🏠 Dashboard</button>
     <div class="userwrap" id="userWrap">
       <button class="navlink" id="userBtn">👤 <span id="nav-username">—</span> ▾</button>
-      <div class="usermenu"><button onclick="doLogout()">🚪 Logout</button></div>
+      <div class="usermenu" id="userMenu">
+        <div class="phead"><div class="pavatar">👤</div><div><div class="pname" id="pf-name">—</div><div class="pid" id="pf-user">—</div></div></div>
+        <div class="prow"><span>📱 Mobile</span><b id="pf-phone">—</b></div>
+        <div class="prow"><span>✉️ Email</span><b id="pf-email">—</b></div>
+        <button class="plink" id="pwToggle">🔑 Change Password</button>
+        <div class="pwform" id="pwForm" style="display:none">
+          <input type="password" id="pw-new" placeholder="New password (min 6 characters)" autocomplete="new-password">
+          <input type="password" id="pw-confirm" placeholder="Confirm new password" autocomplete="new-password">
+          <button class="btn" id="pwGo">Update Password</button>
+          <div class="pwmsg" id="pwMsg"></div>
+        </div>
+        <button class="plink logout" onclick="doLogout()">🚪 Logout</button>
+      </div>
     </div>
     <div class="tag">Study Portal</div>
   </nav>
@@ -614,6 +644,10 @@ async function doLogout(){
 function enterApp(st,token){
   student=st;if(token)localStorage.setItem(TOKEN_KEY,token);
   $('nav-username').textContent='@'+st.username;
+  $('pf-name').textContent=st.full_name;
+  $('pf-user').textContent='@'+st.username+' · '+st.student_id;
+  $('pf-phone').textContent=st.phone;
+  $('pf-email').textContent=st.email;
   $('hello').innerHTML='Welcome <span class="g">'+st.full_name.split(' ')[0]+'</span>';
   $('profile-box').innerHTML=
     '<div class="profile-row"><span class="k">Student ID</span><span>'+st.student_id+'</span></div>'+
@@ -644,6 +678,24 @@ document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',(
 }));
 $('userBtn').addEventListener('click',e=>{e.stopPropagation();$('userWrap').classList.toggle('open');});
 document.addEventListener('click',e=>{if(!$('userWrap').contains(e.target))$('userWrap').classList.remove('open');});
+$('pwToggle').addEventListener('click',()=>{
+  const f=$('pwForm');f.style.display=f.style.display==='none'?'block':'none';
+  $('pwMsg').textContent='';$('pwMsg').className='pwmsg';
+});
+$('pwGo').addEventListener('click',async()=>{
+  const m=$('pwMsg');m.className='pwmsg';m.textContent='';
+  const np=$('pw-new').value,cf=$('pw-confirm').value;
+  if(np.length<6){m.textContent='Password must be at least 6 characters.';m.classList.add('err');return;}
+  if(np!==cf){m.textContent='Passwords do not match.';m.classList.add('err');return;}
+  const b=$('pwGo');b.disabled=true;b.textContent='Updating…';
+  try{
+    const r=await api('/api/public/student-password',{session_token:localStorage.getItem(TOKEN_KEY),new_password:np});
+    if(r.ok){m.textContent='Password updated. Other devices were signed out.';m.classList.add('ok');
+      $('pw-new').value='';$('pw-confirm').value='';}
+    else{m.textContent={invalid_password:'Password must be 6–128 characters.',not_logged_in:'Session expired. Please sign in again.',too_many_requests:'Too many attempts — try again later.'}[r.error]||'Could not update password. Try again.';m.classList.add('err');}
+  }catch(e){m.textContent='Could not reach the server. Check your connection.';m.classList.add('err');}
+  b.disabled=false;b.textContent='Update Password';
+});
 ['in-pass','up-pass'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')(id==='in-pass'?doLogin:doSignup)();}));
 (async function init(){
   const t=localStorage.getItem(TOKEN_KEY);if(!t)return;
