@@ -727,6 +727,15 @@ def _student_password(data: dict, handler, ip: str) -> tuple[dict, int]:
             student = store["students"].get(sess.get("username", ""))
         if not student:
             return {"ok": False, "error": "not_logged_in"}, 401
+        # Optional email-OTP proof: when a verify_token is supplied it must be a
+        # valid single-use token bound to this student's email address.
+        verify_token = (data.get("verify_token") or "").strip()
+        if verify_token:
+            token_entry = _verify_tokens.pop(verify_token, None)
+            if not token_entry or time.time() > token_entry["expires_at"]:
+                return {"ok": False, "error": "verification_required"}, 403
+            if (token_entry.get("email") or "").lower() != (student.get("email") or "").lower():
+                return {"ok": False, "error": "verification_mismatch"}, 403
         student["password_hash"] = _hash_password(new_password)
         # Invalidate all other sessions for this student.
         me_key = student.get("username", "").lower()
