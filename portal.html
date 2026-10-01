@@ -155,6 +155,12 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
   color:var(--text);padding:10px 12px;border-radius:10px;font-size:14.5px;cursor:pointer}
 .usermenu button:hover{background:rgba(232,185,60,.1);color:var(--gold2)}
 .boxlink{cursor:pointer}
+.backbtn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;margin-right:12px;
+  border-radius:50%;border:1px solid var(--gold);background:rgba(232,185,60,.1);color:var(--gold2);
+  font-size:17px;cursor:pointer;transition:all .25s;vertical-align:middle}
+.backbtn:hover{background:rgba(232,185,60,.25);box-shadow:0 0 16px rgba(232,185,60,.4);transform:translateX(-3px)}
+.brand[data-sec]{cursor:pointer}
+.clickable-brand{cursor:pointer}
 .sec{display:none}
 .sec.active{display:block;animation:secIn .5s cubic-bezier(.2,.7,.2,1)}
 @keyframes secIn{from{opacity:0;transform:translateY(24px) scale(.99)}to{opacity:1;transform:none}}
@@ -343,8 +349,8 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 <!-- ============ APP VIEW ============ -->
 <div id="view-app" style="display:none">
   <nav class="nav" style="position:sticky">
-    <img class="logo" src="/portal/logo.png" alt="Sayyed EdVantage logo">
-    <div class="brand"><span class="s">Sayyed</span> <span class="e">EdVantage</span></div>
+    <img class="logo clickable-brand" data-sec="home" src="/portal/logo.png" alt="Sayyed EdVantage logo" title="Go to Dashboard">
+    <div class="brand" data-sec="home" role="button" title="Go to Dashboard"><span class="s">Sayyed</span> <span class="e">EdVantage</span></div>
     <div class="sp"></div>
     <button class="navlink active" data-sec="home">🏠 Dashboard</button>
     <div class="userwrap" id="userWrap">
@@ -367,54 +373,45 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
         </div>
         <div class="cards">
           <div class="card boxlink tilt" data-sec="courses"><h3>📚 Enrolled Courses</h3><p>Your courses and learning paths, all in one place.</p></div>
-          <div class="card boxlink tilt" data-goto="liveCard"><h3>🔴 Today's Live Lecture</h3><p>Join today's live lecture — tap to jump to the lecture card.</p></div>
           <div class="card boxlink tilt" data-sec="live"><h3>📡 Upcoming Lectures</h3><p>Your upcoming lecture schedule with one-tap Join.</p></div>
           <div class="card boxlink tilt" data-sec="recorded"><h3>🎬 Recorded Sessions</h3><p>Missed a class? Watch the recording anytime.</p></div>
           <div class="card boxlink tilt" data-sec="materials"><h3>📄 Course Materials</h3><p>Notes, slides and resources shared by your faculty.</p></div>
           <div class="card boxlink tilt" data-sec="assignments"><h3>📝 Assignments</h3><p>Your tasks, deadlines and submissions.</p></div>
           <div class="card boxlink tilt" data-sec="certificates"><h3>🏆 Certificate</h3><p>Your course completion certificates live here.</p></div>
           <div class="card boxlink tilt" data-sec="career"><h3>💼 Career &amp; Placement</h3><p>Internships, placement drives and career guidance.</p></div>
-          <div class="card boxlink tilt" data-sec="community"><h3>👥 Community &amp; Support</h3><p>Connect with fellow learners and mentors.</p></div>
           <div class="card boxlink tilt" data-sec="help"><h3>❓ Help &amp; Support</h3><p>Contact us, manage your profile, browse FAQs.</p></div>
         </div>
       </section>
       <section class="sec" id="sec-courses">
-        <h2>Enrolled <span class="g">Courses</span></h2><p class="sub">The courses you are enrolled in.</p>
+        <h2><button class="backbtn" data-sec="home" title="Back to Dashboard">←</button>Enrolled <span class="g">Courses</span></h2><p class="sub">The courses you are enrolled in.</p>
         <div class="empty"><div class="big">📚</div><p>No enrollments yet.<br>Your courses will appear here once your admission is confirmed.</p></div>
       </section>
       <section class="sec" id="sec-live">
-        <h2>Upcoming <span class="g">Lectures</span></h2><p class="sub">Join your online lectures from here every day.</p>
+        <h2><button class="backbtn" data-sec="home" title="Back to Dashboard">←</button>Upcoming <span class="g">Lectures</span></h2><p class="sub">Join your online lectures from here every day.</p>
         <div class="empty"><div class="big">🔴</div><p>No live classes scheduled yet.<br>The timetable will appear here once it is published.</p></div>
       </section>
       <section class="sec" id="sec-recorded">
-        <h2>Recorded <span class="g">Sessions</span></h2><p class="sub">Watch past lectures anytime.</p>
+        <h2><button class="backbtn" data-sec="home" title="Back to Dashboard">←</button>Recorded <span class="g">Sessions</span></h2><p class="sub">Watch past lectures anytime.</p>
         <div class="empty"><div class="big">🎬</div><p>No recordings yet.<br>Session recordings will be listed here after classes begin.</p></div>
       </section>
       <section class="sec" id="sec-materials">
-        <h2>Course <span class="g">Materials</span></h2><p class="sub">Notes, slides and resources from your faculty.</p>
+        <h2><button class="backbtn" data-sec="home" title="Back to Dashboard">←</button>Course <span class="g">Materials</span></h2><p class="sub">Notes, slides and resources from your faculty.</p>
         <div class="empty"><div class="big">📄</div><p>No materials shared yet.</p></div>
       </section>
       <section class="sec" id="sec-assignments">
-        <h2><span class="g">Assignments</span></h2><p class="sub">Your tasks and submissions.</p>
+        <h2><button class="backbtn" data-sec="home" title="Back to Dashboard">←</button><span class="g">Assignments</span></h2><p class="sub">Your tasks and submissions.</p>
         <div class="empty"><div class="big">📝</div><p>No assignments yet.</p></div>
       </section>
       <section class="sec" id="sec-certificates">
-        <h2><span class="g">Certificate</span></h2><p class="sub">Your course completion certificates.</p>
+        <h2><button class="backbtn" data-sec="home" title="Back to Dashboard">←</button><span class="g">Certificate</span></h2><p class="sub">Your course completion certificates.</p>
         <div class="empty"><div class="big">🏆</div><p>No certificates yet.<br>Complete a course to earn your certificate here.</p></div>
       </section>
       <section class="sec" id="sec-career">
-        <h2>Career &amp; <span class="g">Placement</span></h2><p class="sub">Internships, placement drives and career guidance.</p>
+        <h2><button class="backbtn" data-sec="home" title="Back to Dashboard">←</button>Career &amp; <span class="g">Placement</span></h2><p class="sub">Internships, placement drives and career guidance.</p>
         <div class="empty"><div class="big">💼</div><p>Placement updates will appear here.</p></div>
       </section>
-      <section class="sec" id="sec-community">
-        <h2>Community &amp; <span class="g">Support</span></h2><p class="sub">Connect with fellow learners and mentors.</p>
-        <div class="cards">
-          <div class="card"><h3>👥 Student Community</h3><p>Discussion groups and peer learning circles open after batches begin.</p></div>
-          <div class="card"><h3>🎧 Mentor Support</h3><p>Reach your mentors for academic help during batch hours.</p></div>
-        </div>
-      </section>
       <section class="sec" id="sec-help">
-        <h2>Help &amp; <span class="g">Support</span></h2><p class="sub">We're here to help.</p>
+        <h2><button class="backbtn" data-sec="home" title="Back to Dashboard">←</button>Help &amp; <span class="g">Support</span></h2><p class="sub">We're here to help.</p>
         <div class="cards">
           <div class="card"><h3>📞 Contact Us</h3><p>Phone: +91 7977877884<br>Email: sayyededvantage@gmail.com</p></div>
           <div class="card"><h3>👤 My Profile</h3><div id="profile-box"><p>Loading…</p></div></div>
