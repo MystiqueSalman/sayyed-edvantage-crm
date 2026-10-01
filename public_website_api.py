@@ -128,6 +128,53 @@ def is_public_path(path: str) -> bool:
     return urlparse(path).path.startswith(PUBLIC_PREFIX)
 
 
+# --------------------------------------------------------------------------
+# Study Portal page (same-origin web login — no CORS involved)
+# --------------------------------------------------------------------------
+
+from pathlib import Path as _PortalPath
+
+_PORTAL_DIR = _PortalPath(__file__).resolve().parent
+_PORTAL_HTML_FILE = _PORTAL_DIR / "portal.html"
+_PORTAL_LOGO_FILE = _PORTAL_DIR / "portal-logo.png"
+_portal_cache: dict[str, tuple[bytes, str]] = {}
+
+
+def is_portal_path(path: str) -> bool:
+    p = urlparse(path).path
+    return p == "/portal" or p == "/portal/" or p == "/portal/logo.png"
+
+
+def handle_portal_get(handler) -> None:
+    """Serve the Study Portal web app (public, no dashboard auth)."""
+    path = urlparse(handler.path).path
+    try:
+        if path == "/portal/logo.png":
+            key = "logo"
+            if key not in _portal_cache:
+                _portal_cache[key] = (_PORTAL_LOGO_FILE.read_bytes(), "image/png")
+            body, ctype = _portal_cache[key]
+        else:
+            key = "html"
+            if key not in _portal_cache:
+                _portal_cache[key] = (
+                    _PORTAL_HTML_FILE.read_text(encoding="utf-8").encode("utf-8"),
+                    "text/html; charset=utf-8",
+                )
+            body, ctype = _portal_cache[key]
+        handler.send_response(200)
+        handler.send_header("Content-Type", ctype)
+        handler.send_header("Content-Length", str(len(body)))
+        handler.send_header("Cache-Control", "no-cache")
+        handler.end_headers()
+        handler.wfile.write(body)
+    except FileNotFoundError:
+        handler.send_response(404)
+        handler.send_header("Content-Type", "text/plain")
+        handler.end_headers()
+        handler.wfile.write(b"Study Portal not deployed yet")
+
+
 def _client_ip(handler) -> str:
     fwd = handler.headers.get("X-Forwarded-For", "")
     if fwd:

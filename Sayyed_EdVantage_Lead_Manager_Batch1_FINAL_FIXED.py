@@ -45,7 +45,9 @@ from Sayyed_EdVantage_Lead_Manager_FOLLOWUPS import followups_page
 from public_website_api import (
     handle_public_options,
     handle_public_post,
+    handle_portal_get,
     is_public_path,
+    is_portal_path,
 )
 
 
@@ -1538,9 +1540,13 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        parsed = urlparse(self.path)
+        if is_portal_path(parsed.path):
+            # Study Portal web app: public, same-origin as the student API.
+            handle_portal_get(self)
+            return
         if not self._require_auth():
             return
-        parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
 
         if parsed.path == "/":
