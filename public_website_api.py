@@ -664,6 +664,32 @@ def _student_logout(data: dict, handler) -> tuple[dict, int]:
     return {"ok": True}, 200
 
 
+def _student_password(data: dict, handler, ip: str) -> tuple[dict, int]:
+    # Change password for the logged-in student (proves ownership via session).
+    if not _rate_ok(f"student-pw:{ip}", 10, 3600):
+        return {"ok": False, "error": "too_many_requests"}, 429
+    token = _session_token_from(data, handler)
+    new_password = data.get("new_password", "") or ""
+    if not (6 <= len(new_password) <= 128):
+        return {"ok": False, "error": "invalid_password"}, 400
+    with _lock:
+        store = _load_student_store()
+        sess = store["sessions"].get(token or "")
+        student = None
+        if sess and time.time() <= sess.get("expires_at", 0):
+            student = store["students"].get(sess.get("username", ""))
+        if not student:
+            return {"ok": False, "error": "not_logged_in"}, 401
+        student["password_hash"] = _hash_password(new_password)
+        # Invalidate all other sessions for this student.
+        me_key = student.get("username", "").lower()
+        for tok in [t for t, s in store["sessions"].items()
+                    if s.get("username") == me_key and t != token]:
+            store["sessions"].pop(tok, None)
+        _save_student_store(store)
+    return {"ok": True}, 200
+
+
 def _handle_student_signup(handler, data: dict, ip: str) -> None:
     payload, status = _student_signup(data, ip)
     _public_json(handler, payload, status)
@@ -681,6 +707,11 @@ def _handle_student_me(handler, data: dict, ip: str) -> None:
 
 def _handle_student_logout(handler, data: dict, ip: str) -> None:
     payload, status = _student_logout(data, handler)
+    _public_json(handler, payload, status)
+
+
+def _handle_student_password(handler, data: dict, ip: str) -> None:
+    payload, status = _student_password(data, handler, ip)
     _public_json(handler, payload, status)
 
 
@@ -707,5 +738,7 @@ def handle_public_post(handler) -> None:
         _handle_student_me(handler, data, ip)
     elif path == "/api/public/student-logout":
         _handle_student_logout(handler, data, ip)
+    elif path == "/api/public/student-password":
+        _handle_student_password(handler, data, ip)
     else:
         _public_json(handler, {"ok": False, "error": "not_found"}, 404)
