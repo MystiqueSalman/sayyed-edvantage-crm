@@ -1,0 +1,20 @@
+{
+  "students": {
+    "ptest": {
+      "student_id": "STU-00001",
+      "username": "ptest",
+      "full_name": "P Test",
+      "email": "pt@t.com",
+      "phone": "+915555555555",
+      "password_hash": "pbkdf2_sha256$200000$1d761c1031b6771f8e3b5caacf2ced8b$067742ba0ab1e42fc5f0a3cedacadc8d4e06b2fc91d5fc996448a87e848e08c8",
+      "created_at": "2026-10-01T21:07:00"
+    }
+  },
+  "sessions": {
+    "us75Jjpmv5lmZPkLkGPEYGByPSMs-5KX4bz9-yL8MZ4": {
+      "username": "ptest",
+      "expires_at": 1793480819.9652529
+    }
+  },
+  "seq": 1
+}

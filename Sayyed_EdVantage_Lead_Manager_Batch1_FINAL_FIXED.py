@@ -1541,8 +1541,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
-        if is_portal_path(parsed.path):
+        host = (self.headers.get("Host") or "").split(":")[0].lower()
+        if is_portal_path(parsed.path) or (
+            host.startswith("elearning.") and parsed.path == "/"
+        ):
             # Study Portal web app: public, same-origin as the student API.
+            # On the elearning.* hostname the portal also answers at "/".
             handle_portal_get(self)
             return
         if not self._require_auth():
