@@ -41,6 +41,13 @@ from app.leads.lead_manager import (
 # Step 2: connect the existing Follow-up Manager page to this main CRM server.
 from Sayyed_EdVantage_Lead_Manager_FOLLOWUPS import followups_page
 
+# Step 3: public website API (unauthenticated, CORS-enabled lead + OTP endpoints).
+from public_website_api import (
+    handle_public_options,
+    handle_public_post,
+    is_public_path,
+)
+
 
 HOST = os.environ.get("SE_CRM_HOST", "127.0.0.1")
 PORT = int(os.environ.get("PORT", os.environ.get("SE_CRM_PORT", "8000")))
@@ -1522,6 +1529,14 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Location", location)
         self.end_headers()
 
+    def do_OPTIONS(self):
+        parsed = urlparse(self.path)
+        if is_public_path(parsed.path):
+            handle_public_options(self)
+            return
+        self.send_response(404)
+        self.end_headers()
+
     def do_GET(self):
         if not self._require_auth():
             return
@@ -1597,9 +1612,13 @@ class Handler(BaseHTTPRequestHandler):
         self.send_html("<h1>404 - Not Found</h1>", 404)
 
     def do_POST(self):
+        parsed = urlparse(self.path)
+        if is_public_path(parsed.path):
+            # Public website surface: CORS-enabled, rate-limited, no dashboard auth.
+            handle_public_post(self)
+            return
         if not self._require_auth():
             return
-        parsed = urlparse(self.path)
 
         if parsed.path == "/api/ingest-lead":
             # JSON lead ingest for the AI Agent API (WhatsApp / chat).
