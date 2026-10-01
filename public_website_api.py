@@ -33,8 +33,11 @@ Security model (no dashboard credentials involved; dashboard Basic Auth untouche
   * Honeypot field on the lead endpoint to catch naive bots.
 
 Configuration (all via environment, nothing secret in code):
+    SE_BREVO_API_KEY (Brevo HTTPS email API — primary on Railway, where
+    outbound SMTP ports 25/465/587 are blocked; port 443 is never blocked)
     SE_SMTP_HOST, SE_SMTP_PORT (default 587), SE_SMTP_USER, SE_SMTP_PASS,
     SE_SMTP_FROM (default SE_SMTP_USER), SE_SMTP_USE_TLS (default 1)
+    (SMTP fallback for local dev / hosts without SMTP egress filtering)
     SE_SMS_WEBHOOK_URL, SE_SMS_WEBHOOK_METHOD (default POST),
     SE_SMS_WEBHOOK_HEADERS (JSON object, optional),
     SE_SMS_WEBHOOK_BODY (template with {to} and {code} placeholders, optional)
@@ -53,6 +56,8 @@ import secrets
 import smtplib
 import threading
 import time
+import urllib.error
+import urllib.request
 from datetime import datetime, timedelta
 from email.message import EmailMessage
 from urllib.parse import urlparse
@@ -87,6 +92,10 @@ SMTP_USER = _env("SE_SMTP_USER")
 SMTP_PASS = _env("SE_SMTP_PASS")
 SMTP_FROM = _env("SE_SMTP_FROM", SMTP_USER)
 SMTP_USE_TLS = _env("SE_SMTP_USE_TLS", "1") == "1"
+
+# Brevo HTTPS email API (primary on Railway: outbound SMTP ports are blocked
+# there, so port-443 API delivery is used when this key is set).
+BREVO_API_KEY = _env("SE_BREVO_API_KEY")
 
 SMS_WEBHOOK_URL = _env("SE_SMS_WEBHOOK_URL")
 SMS_WEBHOOK_METHOD = _env("SE_SMS_WEBHOOK_METHOD", "POST").upper()
@@ -225,15 +234,38 @@ def _mask_email(email: str) -> str:
 
 
 def _send_otp_email(to_email: str, code: str) -> None:
-    msg = EmailMessage()
-    msg["Subject"] = "Your Sayyed EdVantage OTP"
-    msg["From"] = SMTP_FROM
-    msg["To"] = to_email
-    msg.set_content(
+    body = (
         f"Your Sayyed EdVantage verification code is: {code}\n\n"
         f"It is valid for 5 minutes. Do not share it with anyone.\n\n"
         f"- Team Sayyed EdVantage"
     )
+    # Primary path: Brevo HTTPS API (works on Railway; SMTP ports are blocked).
+    if BREVO_API_KEY:
+        payload = json.dumps({
+            "sender": {"name": "Sayyed EdVantage", "email": SMTP_FROM or "sayyededvantage@gmail.com"},
+            "to": [{"email": to_email}],
+            "subject": "Your Sayyed EdVantage OTP",
+            "textContent": body,
+        }).encode()
+        req = urllib.request.Request(
+            "https://api.brevo.com/v3/smtp/email", data=payload,
+            headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json",
+                     "Accept": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                if resp.status not in (200, 201, 202):
+                    raise RuntimeError(f"Brevo API HTTP {resp.status}")
+        except urllib.error.HTTPError as exc:
+            raise RuntimeError(f"Brevo API HTTP {exc.code}: {exc.read()[:200]}")
+        return
+    # Fallback: direct SMTP (local dev / hosts without egress filtering).
+    msg = EmailMessage()
+    msg["Subject"] = "Your Sayyed EdVantage OTP"
+    msg["From"] = SMTP_FROM
+    msg["To"] = to_email
+    msg.set_content(body)
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as smtp:
         if SMTP_USE_TLS:
             smtp.starttls()
@@ -313,7 +345,7 @@ def _handle_request_otp(handler, data: dict, ip: str) -> None:
         return
 
     sms_ready = bool(SMS_WEBHOOK_URL)
-    email_ready = bool(SMTP_HOST and SMTP_FROM)
+    email_ready = bool(BREVO_API_KEY or (SMTP_HOST and SMTP_FROM))
 
     if want == "sms":
         channel = "sms" if (phone and sms_ready) else None
