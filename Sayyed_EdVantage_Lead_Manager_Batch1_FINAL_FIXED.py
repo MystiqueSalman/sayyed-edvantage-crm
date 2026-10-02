@@ -40,6 +40,7 @@ from app.leads.lead_manager import (
 
 # Step 2: connect the existing Follow-up Manager page to this main CRM server.
 from Sayyed_EdVantage_Lead_Manager_FOLLOWUPS import followups_page
+from staff_page import staff_page
 
 # Step 3: public website API (unauthenticated, CORS-enabled lead + OTP endpoints).
 from public_website_api import (
@@ -48,6 +49,7 @@ from public_website_api import (
     handle_portal_get,
     is_public_path,
     is_portal_path,
+    staff_admin_from_token,
 )
 
 
@@ -333,6 +335,7 @@ def navigation_html(active="dashboard"):
         ("dashboard", "/", "Lead Manager"),
         ("counselling", "/counselling", "Counselling Manager"),
         ("followups", "/follow-ups", "Follow-up Manager"),
+        ("staff", "/staff", "Staff & Faculty"),
     ]
     return "".join(
         f'<a class="nav-link {"active" if key == active else ""}" href="{href}">{label}</a>'
@@ -1485,7 +1488,24 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print(f"[CRM] {self.address_string()} - {fmt % args}")
 
+    def _staff_admin_via_cookie(self):
+        cookie = self.headers.get("Cookie", "") or ""
+        token = ""
+        for part in cookie.split(";"):
+            name, _, value = part.strip().partition("=")
+            if name == "se_staff" and value:
+                token = value.strip()
+                break
+        if not token:
+            return None
+        try:
+            return staff_admin_from_token(token)
+        except Exception:
+            return None
+
     def _auth_ok(self):
+        if self._staff_admin_via_cookie():
+            return True
         if not CRM_USER or not CRM_PASSWORD:
             return True
         auth = self.headers.get("Authorization", "")
@@ -1594,6 +1614,9 @@ class Handler(BaseHTTPRequestHandler):
                     params.get("message", [""])[0],
                 )
             )
+            return
+        if parsed.path == "/staff":
+            self.send_html(staff_page())
             return
 
         if parsed.path == "/lead":

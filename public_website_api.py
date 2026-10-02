@@ -49,6 +49,7 @@ If neither channel is configured, /request-otp answers
 
 from __future__ import annotations
 
+import base64
 import json
 import os
 import re
@@ -735,6 +736,275 @@ def _student_me(data: dict, handler) -> tuple[dict, int]:
     return {"ok": True, "student": _public_student(student)}, 200
 
 
+# --------------------------------------------------------------------------
+# Staff accounts: Admin (Salman's staff, CRM access) and Faculty (teachers).
+# Signups start as "pending" — Salman approves each one before login works.
+# --------------------------------------------------------------------------
+
+_STAFF_FILE = _Path(__file__).resolve().parent / "data" / "staff.json"
+_STAFF_ROLES = ("admin", "faculty")
+_STAFF_ID_PREFIX = {"admin": "ADM", "faculty": "FAC"}
+
+
+def _load_staff_store() -> dict:
+    try:
+        _STAFF_FILE.parent.mkdir(parents=True, exist_ok=True)
+        if _STAFF_FILE.exists():
+            data = json.loads(_STAFF_FILE.read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                data.setdefault("staff", {})
+                data.setdefault("sessions", {})
+                data.setdefault("seq", 0)
+                return data
+    except Exception as exc:
+        print(f"[public-api] staff store read failed: {exc}")
+    return {"staff": {}, "sessions": {}, "seq": 0}
+
+
+def _save_staff_store(data: dict) -> None:
+    try:
+        _STAFF_FILE.parent.mkdir(parents=True, exist_ok=True)
+        tmp = _STAFF_FILE.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        tmp.replace(_STAFF_FILE)
+    except Exception as exc:
+        print(f"[public-api] staff store write failed: {exc}")
+
+
+def _public_staff(member: dict) -> dict:
+    return {
+        "staff_id": member.get("staff_id"),
+        "username": member.get("username"),
+        "full_name": member.get("full_name"),
+        "email": _mask_email(member.get("email", "")),
+        "phone": _mask_phone(member.get("phone", "")),
+        "role": member.get("role"),
+        "status": member.get("status"),
+        "created_at": member.get("created_at"),
+    }
+
+
+def _staff_from_token(token: str) -> dict | None:
+    if not token:
+        return None
+    with _lock:
+        store = _load_staff_store()
+        sess = store["sessions"].get(token)
+        if not sess:
+            return None
+        if time.time() > sess.get("expires_at", 0):
+            store["sessions"].pop(token, None)
+            _save_staff_store(store)
+            return None
+        sess["expires_at"] = time.time() + SESSION_TTL_SEC
+        member = store["staff"].get(sess.get("username", ""))
+        _save_staff_store(store)
+        if not member or member.get("status") != "approved":
+            return None
+        return member
+
+
+def _staff_signup(data: dict, ip: str) -> tuple[dict, int]:
+    role = (data.get("role", "") or "").strip().lower()
+    if role not in _STAFF_ROLES:
+        return {"ok": False, "error": "invalid_role"}, 400
+    # Honeypot.
+    if (data.get("website", "") or "").strip():
+        return {"ok": True, "staff_id": None}, 200
+    if not _rate_ok(f"staff-signup:{ip}", SIGNUP_LIMIT, SIGNUP_WINDOW):
+        return {"ok": False, "error": "too_many_requests"}, 429
+
+    username = (data.get("username", "") or "").strip()
+    full_name = (data.get("full_name", "") or "").strip()
+    email = (data.get("email", "") or "").strip().lower()
+    phone = _normalize_phone(data.get("phone", ""))
+    password = data.get("password", "") or ""
+
+    if not _valid_username(username):
+        return {"ok": False, "error": "invalid_username"}, 400
+    if not (2 <= len(full_name) <= 80):
+        return {"ok": False, "error": "invalid_full_name"}, 400
+    if not _valid_email(email):
+        return {"ok": False, "error": "invalid_email"}, 400
+    if not _valid_phone(phone):
+        return {"ok": False, "error": "invalid_phone"}, 400
+    if not (6 <= len(password) <= 128):
+        return {"ok": False, "error": "invalid_password"}, 400
+
+    key = username.lower()
+    with _lock:
+        store = _load_staff_store()
+        members = store["staff"]
+        if key in members:
+            return {"ok": False, "error": "username_taken"}, 409
+        for m in members.values():
+            if m.get("email") == email:
+                return {"ok": False, "error": "email_taken"}, 409
+            if m.get("phone") == phone:
+                return {"ok": False, "error": "phone_taken"}, 409
+        # Usernames must not collide with student accounts either.
+        s_store = _load_student_store()
+        if key in s_store["students"]:
+            return {"ok": False, "error": "username_taken"}, 409
+
+        store["seq"] += 1
+        staff_id = f"{_STAFF_ID_PREFIX[role]}-{store['seq']:05d}"
+        members[key] = {
+            "staff_id": staff_id,
+            "username": username,
+            "full_name": full_name,
+            "email": email,
+            "phone": phone,
+            "password_hash": _hash_password(password),
+            "role": role,
+            "status": "pending",
+            "created_at": datetime.now().isoformat(timespec="seconds"),
+        }
+        _save_staff_store(store)
+
+    return {"ok": True, "staff_id": staff_id, "status": "pending"}, 200
+
+
+def _staff_login(data: dict, ip: str) -> tuple[dict, int]:
+    username = (data.get("username", "") or "").strip()
+    password = data.get("password", "") or ""
+    if not username or not password:
+        return {"ok": False, "error": "username_and_password_required"}, 400
+    if not _rate_ok(f"staff-login-ip:{ip}", LOGIN_IP_LIMIT, LOGIN_WINDOW):
+        return {"ok": False, "error": "too_many_requests"}, 429
+    if not _rate_ok(f"staff-login-user:{username.lower()}", LOGIN_USER_LIMIT, LOGIN_WINDOW):
+        return {"ok": False, "error": "too_many_requests"}, 429
+
+    key = username.lower()
+    with _lock:
+        store = _load_staff_store()
+        member = store["staff"].get(key)
+        if not member or not _verify_password(password, member.get("password_hash", "")):
+            return {"ok": False, "error": "invalid_credentials"}, 401
+        status = member.get("status")
+        if status == "pending":
+            return {"ok": False, "error": "pending_approval"}, 403
+        if status != "approved":
+            return {"ok": False, "error": "account_disabled"}, 403
+        token = secrets.token_urlsafe(32)
+        store["sessions"][token] = {
+            "username": key,
+            "role": member.get("role"),
+            "expires_at": time.time() + SESSION_TTL_SEC,
+        }
+        _save_staff_store(store)
+
+    return {
+        "ok": True,
+        "session_token": token,
+        "staff": _public_staff(member),
+    }, 200
+
+
+def _staff_me(data: dict, handler) -> tuple[dict, int]:
+    member = _staff_from_token(_session_token_from(data, handler))
+    if not member:
+        return {"ok": False, "error": "not_logged_in"}, 401
+    return {"ok": True, "staff": _public_staff(member)}, 200
+
+
+def _staff_logout(data: dict, handler) -> tuple[dict, int]:
+    token = _session_token_from(data, handler)
+    if token:
+        with _lock:
+            store = _load_staff_store()
+            store["sessions"].pop(token, None)
+            _save_staff_store(store)
+    return {"ok": True}, 200
+
+
+def _is_admin_request(data: dict, handler) -> bool:
+    """True for an approved admin staff session OR the env-based Basic Auth admin."""
+    member = _staff_from_token(_session_token_from(data, handler))
+    if member and member.get("role") == "admin":
+        return True
+    if handler is not None:
+        auth = handler.headers.get("Authorization", "")
+        if auth.startswith("Basic "):
+            try:
+                decoded = base64.b64decode(auth[6:].strip()).decode("utf-8")
+            except Exception:
+                return False
+            user, sep, pwd = decoded.partition(":")
+            env_user = os.environ.get("SE_CRM_USER", "")
+            env_pwd = os.environ.get("SE_CRM_PASSWORD", "")
+            return (sep == ":" and env_user and
+                    secrets.compare_digest(user, env_user) and
+                    secrets.compare_digest(pwd, env_pwd))
+    return False
+
+
+def _staff_pending(data: dict, handler) -> tuple[dict, int]:
+    if not _is_admin_request(data, handler):
+        return {"ok": False, "error": "forbidden"}, 403
+    with _lock:
+        store = _load_staff_store()
+        pending = [_public_staff(m) for m in store["staff"].values()
+                   if m.get("status") == "pending"]
+    pending.sort(key=lambda m: m.get("created_at", ""))
+    return {"ok": True, "pending": pending}, 200
+
+
+def _staff_list(data: dict, handler) -> tuple[dict, int]:
+    if not _is_admin_request(data, handler):
+        return {"ok": False, "error": "forbidden"}, 403
+    with _lock:
+        store = _load_staff_store()
+        members = [_public_staff(m) for m in store["staff"].values()]
+    members.sort(key=lambda m: m.get("created_at", ""), reverse=True)
+    return {"ok": True, "staff": members}, 200
+
+
+def _staff_set_status(data: dict, handler, status: str) -> tuple[dict, int]:
+    if not _is_admin_request(data, handler):
+        return {"ok": False, "error": "forbidden"}, 403
+    username = ((data.get("username", "") or "").strip()).lower()
+    if not username:
+        return {"ok": False, "error": "username_required"}, 400
+    with _lock:
+        store = _load_staff_store()
+        member = store["staff"].get(username)
+        if not member:
+            return {"ok": False, "error": "not_found"}, 404
+        member["status"] = status
+        if status != "approved":
+            # Kill sessions of rejected/disabled accounts.
+            for tok in [t for t, s in store["sessions"].items()
+                        if s.get("username") == username]:
+                store["sessions"].pop(tok, None)
+        _save_staff_store(store)
+    return {"ok": True, "staff": _public_staff(member)}, 200
+
+
+def staff_admin_from_token(token: str) -> dict | None:
+    """Public helper for the dashboard server: approved admin staff member or None."""
+    member = _staff_from_token(token)
+    if member and member.get("role") == "admin":
+        return _public_staff(member)
+    return None
+
+
+def _faculty_students(data: dict, handler) -> tuple[dict, int]:
+    member = _staff_from_token(_session_token_from(data, handler))
+    if not member or member.get("role") not in ("faculty", "admin"):
+        return {"ok": False, "error": "forbidden"}, 403
+    with _lock:
+        store = _load_student_store()
+        students = [{
+            "student_id": s.get("student_id"),
+            "full_name": s.get("full_name"),
+            "username": s.get("username"),
+            "created_at": s.get("created_at"),
+        } for s in store["students"].values()]
+    students.sort(key=lambda s: s.get("created_at", ""), reverse=True)
+    return {"ok": True, "students": students, "count": len(students)}, 200
+
+
 def _student_logout(data: dict, handler) -> tuple[dict, int]:
     token = _session_token_from(data, handler)
     if token:
@@ -782,6 +1052,28 @@ def _student_password(data: dict, handler, ip: str) -> tuple[dict, int]:
 
 def _handle_student_signup(handler, data: dict, ip: str) -> None:
     payload, status = _student_signup(data, ip)
+    _public_json(handler, payload, status)
+
+
+def _handle_staff(handler, data: dict, ip: str, action: str) -> None:
+    if action == "signup":
+        payload, status = _staff_signup(data, ip)
+    elif action == "login":
+        payload, status = _staff_login(data, ip)
+    elif action == "me":
+        payload, status = _staff_me(data, handler)
+    elif action == "logout":
+        payload, status = _staff_logout(data, handler)
+    elif action == "pending":
+        payload, status = _staff_pending(data, handler)
+    elif action == "list":
+        payload, status = _staff_list(data, handler)
+    elif action == "approve":
+        payload, status = _staff_set_status(data, handler, "approved")
+    elif action == "reject":
+        payload, status = _staff_set_status(data, handler, "rejected")
+    else:
+        payload, status = {"ok": False, "error": "not_found"}, 404
     _public_json(handler, payload, status)
 
 
@@ -841,6 +1133,29 @@ def handle_public_post(handler) -> None:
         _handle_student_logout(handler, data, ip)
     elif path == "/api/public/student-password":
         _handle_student_password(handler, data, ip)
+    elif path == "/api/public/staff-signup":
+        _handle_staff(handler, data, ip, "signup")
+    elif path == "/api/public/staff-login":
+        _handle_staff(handler, data, ip, "login")
+    elif path == "/api/public/staff-me":
+        _handle_staff(handler, data, ip, "me")
+    elif path == "/api/public/staff-logout":
+        _handle_staff(handler, data, ip, "logout")
+    elif path == "/api/public/staff-pending":
+        _handle_staff(handler, data, ip, "pending")
+    elif path == "/api/public/staff-list":
+        _handle_staff(handler, data, ip, "list")
+    elif path == "/api/public/staff-approve":
+        _handle_staff(handler, data, ip, "approve")
+    elif path == "/api/public/staff-reject":
+        _handle_staff(handler, data, ip, "reject")
+    elif path == "/api/public/faculty-students":
+        member = _staff_from_token(_session_token_from(data, handler))
+        if not member or member.get("role") not in ("faculty", "admin"):
+            _public_json(handler, {"ok": False, "error": "forbidden"}, 403)
+        else:
+            payload, status = _faculty_students(data, handler)
+            _public_json(handler, payload, status)
     elif path.startswith("/api/public/career/"):
         _handle_career(handler, path, data, ip)
     else:

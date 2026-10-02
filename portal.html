@@ -378,8 +378,13 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 
   <section id="auth">
     <h2 class="sec-title reveal">Enter Your <span class="g">Classroom</span></h2>
-    <p class="sec-sub reveal">Sign in every day to join your live lectures.</p>
+    <p class="sec-sub reveal" id="auth-sub">Sign in every day to join your live lectures.</p>
     <div class="auth-card reveal">
+      <div class="tabs" id="roleTabs" style="margin-bottom:14px">
+        <div class="tab active" data-role="student">🎓 Student</div>
+        <div class="tab" data-role="faculty">👩‍🏫 Faculty</div>
+        <div class="tab" data-role="admin">🛡️ Admin</div>
+      </div>
       <div class="tabs">
         <div class="tab active" id="tab-in" onclick="showTab('in')">Sign In</div>
         <div class="tab" id="tab-up" onclick="showTab('up')">Sign Up</div>
@@ -399,9 +404,38 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
         <div class="field"><label>Password</label><input id="up-pass" type="password" autocomplete="new-password" placeholder="Minimum 6 characters"></div>
         <button class="btn" id="btn-up" onclick="doSignup()">Create Account</button>
       </div>
-      <div class="hint">New here? Tap <b>Sign Up</b> above — it takes less than a minute.</div>
+      <div class="hint" id="auth-hint">New here? Tap <b>Sign Up</b> above — it takes less than a minute.</div>
     </div>
   </section>
+</div>
+
+<!-- ============ FACULTY VIEW ============ -->
+<div id="view-faculty" style="display:none">
+  <nav class="nav" style="position:sticky">
+    <img class="logo clickable-brand" src="/portal/logo.png" alt="Sayyed EdVantage logo">
+    <div class="brand"><span class="s">Sayyed</span> <span class="e">EdVantage</span></div>
+    <div class="sp"></div>
+    <button class="navlink" id="fac-user">👩‍🏫 <span id="fac-username">—</span></button>
+    <button class="navlink" onclick="doLogout()">🚪 Logout</button>
+    <div class="tag">Faculty Panel</div>
+  </nav>
+  <div class="shell">
+    <main class="main">
+      <section class="sec active">
+        <h2>Welcome, <span class="g" id="fac-hello">Teacher</span></h2>
+        <p class="sub" id="fac-sub">Your faculty workspace.</p>
+        <div class="card">
+          <h3>👥 Students</h3>
+          <p style="font-size:13.5px;color:var(--muted);margin-bottom:12px">Enrolled students on the portal.</p>
+          <div id="facStudents"><p class="hint">Loading…</p></div>
+        </div>
+        <div class="card">
+          <h3>👤 My Profile</h3>
+          <div id="facProfile"></div>
+        </div>
+      </section>
+    </main>
+  </div>
 </div>
 
 <!-- ============ APP VIEW ============ -->
@@ -594,6 +628,32 @@ body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--
 'use strict';
 const $ = id => document.getElementById(id);
 const TOKEN_KEY = 'se_student_token';
+const STAFF_TOKEN_KEY = 'se_staff_token';
+let authRole = 'student';
+const ROLE_SUB = {
+  student: 'Sign in every day to join your live lectures.',
+  faculty: 'Faculty sign in — new accounts need Salman\'s approval before they can sign in.',
+  admin: 'Staff sign in — new accounts need Salman\'s approval before they can sign in.'
+};
+document.querySelectorAll('#roleTabs .tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('#roleTabs .tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');authRole=t.dataset.role;clearMsg();
+  $('auth-sub').textContent=ROLE_SUB[authRole];
+  $('auth-hint').innerHTML=authRole==='student'
+    ?'New here? Tap <b>Sign Up</b> above — it takes less than a minute.'
+    :'New here? Tap <b>Sign Up</b> — Salman approves every staff &amp; faculty account.';
+}));
+function dashboardUrl(){
+  const h=location.host;
+  if(h.indexOf('elearning.')===0)return location.protocol+'//'+h.slice(10)+'/';
+  return '/';
+}
+function setStaffCookie(token){
+  document.cookie='se_staff='+encodeURIComponent(token)+';path=/;max-age=2592000;SameSite=Lax';
+}
+function clearStaffCookie(){
+  document.cookie='se_staff=;path=/;max-age=0;SameSite=Lax';
+}
 let student = null;
 
 /* ================= WebGL shader background ================= */
@@ -751,32 +811,93 @@ function errText(c){return{invalid_credentials:'Wrong username or password. Plea
   invalid_password:'Password must be 6–128 characters.',invalid_email:'Please enter a valid email address.',
   invalid_phone:'Please enter a valid phone number.',invalid_name:'Please enter your full name.',
   too_many_requests:'Too many attempts — please wait a bit and try again.',
-  not_logged_in:'Session expired. Please sign in again.'}[c]||'Something went wrong. Please try again.';}
+  not_logged_in:'Session expired. Please sign in again.',
+  pending_approval:'Your account is waiting for Salman\'s approval. Please try after it is approved.',
+  account_disabled:'This account has been disabled. Please contact Salman.',
+  invalid_role:'Please choose a valid role.'}[c]||'Something went wrong. Please try again.';}
 function wipe(fn){
   const w=$('wipe');w.classList.remove('go');void w.offsetWidth;w.classList.add('go');
   setTimeout(fn,380);
 }
 async function doSignup(){clearMsg();
   const b=$('btn-up');b.disabled=true;b.textContent='Creating account…';
-  try{const r=await api('/api/public/student-signup',{username:$('up-user').value.trim(),
-    full_name:$('up-name').value.trim(),email:$('up-email').value.trim(),
-    phone:$('up-phone').value.trim(),password:$('up-pass').value});
-    if(r.ok)wipe(()=>enterApp(r.student,r.session_token));
-    else showErr(errText(r.error));
+  try{
+    if(authRole==='student'){
+      const r=await api('/api/public/student-signup',{username:$('up-user').value.trim(),
+        full_name:$('up-name').value.trim(),email:$('up-email').value.trim(),
+        phone:$('up-phone').value.trim(),password:$('up-pass').value});
+      if(r.ok)wipe(()=>enterApp(r.student,r.session_token));
+      else showErr(errText(r.error));
+    }else{
+      const r=await api('/api/public/staff-signup',{role:authRole,username:$('up-user').value.trim(),
+        full_name:$('up-name').value.trim(),email:$('up-email').value.trim(),
+        phone:$('up-phone').value.trim(),password:$('up-pass').value});
+      if(r.ok)showOk('Request sent! Salman will approve your '+authRole+' account — then you can sign in.');
+      else showErr(errText(r.error));
+    }
   }catch(e){showErr('Could not reach the server. Check your connection and try again.');}
   b.disabled=false;b.textContent='Create Account';}
 async function doLogin(){clearMsg();
   const b=$('btn-in');b.disabled=true;b.textContent='Signing in…';
-  try{const r=await api('/api/public/student-login',{username:$('in-user').value.trim(),password:$('in-pass').value});
-    if(r.ok)wipe(()=>enterApp(r.student,r.session_token));
-    else showErr(errText(r.error));
+  try{
+    if(authRole==='student'){
+      const r=await api('/api/public/student-login',{username:$('in-user').value.trim(),password:$('in-pass').value});
+      if(r.ok)wipe(()=>enterApp(r.student,r.session_token));
+      else showErr(errText(r.error));
+    }else{
+      const r=await api('/api/public/staff-login',{username:$('in-user').value.trim(),password:$('in-pass').value});
+      if(r.ok){
+        const st=r.staff;
+        localStorage.setItem(STAFF_TOKEN_KEY,r.session_token);
+        setStaffCookie(r.session_token);
+        if(st.role==='admin'){
+          b.textContent='Opening dashboard…';
+          location.href=dashboardUrl();
+        }else{
+          wipe(()=>enterFaculty(st,r.session_token));
+        }
+      }
+      else showErr(errText(r.error));
+    }
   }catch(e){showErr('Could not reach the server. Check your connection and try again.');}
   b.disabled=false;b.textContent='Sign In';}
 async function doLogout(){
   const t=localStorage.getItem(TOKEN_KEY);
   try{await api('/api/public/student-logout',{session_token:t});}catch(e){}
-  localStorage.removeItem(TOKEN_KEY);student=null;
-  wipe(()=>{$('view-app').style.display='none';$('view-landing').style.display='block';window.scrollTo(0,0);});
+  const st2=localStorage.getItem(STAFF_TOKEN_KEY);
+  try{await api('/api/public/staff-logout',{session_token:st2});}catch(e){}
+  localStorage.removeItem(TOKEN_KEY);localStorage.removeItem(STAFF_TOKEN_KEY);
+  clearStaffCookie();student=null;
+  wipe(()=>{$('view-app').style.display='none';$('view-faculty').style.display='none';$('view-landing').style.display='block';window.scrollTo(0,0);});
+}
+function enterFaculty(st,token){
+  if(token)localStorage.setItem(STAFF_TOKEN_KEY,token);
+  $('fac-username').textContent='@'+st.username;
+  $('fac-hello').textContent=st.full_name.split(' ')[0];
+  $('fac-sub').textContent='Signed in as '+st.full_name+' · '+st.staff_id;
+  $('facProfile').innerHTML=
+    '<div class="profile-row"><span class="k">Staff ID</span><span>'+st.staff_id+'</span></div>'+
+    '<div class="profile-row"><span class="k">Username</span><span>@'+st.username+'</span></div>'+
+    '<div class="profile-row"><span class="k">Full Name</span><span>'+st.full_name+'</span></div>'+
+    '<div class="profile-row"><span class="k">Email</span><span>'+st.email+'</span></div>'+
+    '<div class="profile-row"><span class="k">Phone</span><span>'+st.phone+'</span></div>';
+  $('view-landing').style.display='none';$('view-app').style.display='none';$('view-faculty').style.display='block';
+  loadFacultyStudents(token);
+  window.scrollTo(0,0);
+}
+async function loadFacultyStudents(token){
+  const box=$('facStudents');
+  try{
+    const r=await api('/api/public/faculty-students',{session_token:token||localStorage.getItem(STAFF_TOKEN_KEY)});
+    if(r.ok&&r.students.length){
+      let h='<table style="width:100%;font-size:13.5px;border-collapse:collapse"><tr style="text-align:left;color:var(--muted)"><th style="padding:8px">Name</th><th style="padding:8px">Student ID</th><th style="padding:8px">Joined</th></tr>';
+      r.students.forEach(s=>{
+        h+='<tr style="border-top:1px solid rgba(154,166,199,.16)"><td style="padding:8px">'+esc(s.full_name)+'</td><td style="padding:8px">'+esc(s.student_id)+'</td><td style="padding:8px;color:var(--muted)">'+esc((s.created_at||'').slice(0,10))+'</td></tr>';
+      });
+      box.innerHTML=h+'</table><p class="hint" style="margin-top:8px">'+r.count+' student(s) enrolled.</p>';
+    }else if(r.ok){box.innerHTML='<p class="hint">No students enrolled yet.</p>';}
+    else{box.innerHTML='<p class="hint">Could not load students.</p>';}
+  }catch(e){box.innerHTML='<p class="hint">Could not reach the server.</p>';}
 }
 function enterApp(st,token){
   student=st;if(token)localStorage.setItem(TOKEN_KEY,token);
@@ -1190,10 +1311,21 @@ $('jbAdd').addEventListener('click',async()=>{
 });
 
 (async function init(){
-  const t=localStorage.getItem(TOKEN_KEY);if(!t)return;
+  const t=localStorage.getItem(TOKEN_KEY);
+  if(t){
   try{const r=await api('/api/public/student-me',{session_token:t});
     if(r.ok)enterApp(r.student,null);else localStorage.removeItem(TOKEN_KEY);
   }catch(e){}
+  }
+  const st=localStorage.getItem(STAFF_TOKEN_KEY);
+  if(st){
+  try{const r=await api('/api/public/staff-me',{session_token:st});
+    if(r.ok){
+      if(r.staff.role==='admin'){setStaffCookie(st);}
+      else enterFaculty(r.staff,null);
+    }else{localStorage.removeItem(STAFF_TOKEN_KEY);clearStaffCookie();}
+  }catch(e){}
+  }
 })();
 </script>
 </body>
